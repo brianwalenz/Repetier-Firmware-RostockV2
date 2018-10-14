@@ -42,8 +42,6 @@ public:
     virtual void writeByte(uint8_t byte);
     virtual void close();
 };
-//#pragma message "Sd support: " XSTR(SDSUPPORT)  
-#if SDSUPPORT
 class SDCardGCodeSource: public GCodeSource {
     public:
     virtual bool isOpen();
@@ -54,8 +52,9 @@ class SDCardGCodeSource: public GCodeSource {
     virtual void writeByte(uint8_t byte);
     virtual void close();
 };
-#endif
+extern SerialGCodeSource serial0Source;
 
+#if 0
 class FlashGCodeSource: public GCodeSource {
     public:
     FSTRINGPARAM(pointer);
@@ -77,16 +76,11 @@ class FlashGCodeSource: public GCodeSource {
     void executeCommands(FSTRINGPARAM(data),bool waitFinish,int action);
 };
 
-#if NEW_COMMUNICATION
 extern FlashGCodeSource flashSource;
-extern SerialGCodeSource serial0Source;
-#if BLUETOOTH_SERIAL > 0
-extern SerialGCodeSource serial1Source;
 #endif
-#if SDSUPPORT
+
+
 extern SDCardGCodeSource sdSource;
-#endif
-#endif
 
 class GCode   // 52 uint8_ts per command needed
 {
@@ -304,38 +298,11 @@ protected:
     static volatile uint8_t bufferLength; ///< Number of commands stored in gcode_buffer
     static uint8_t formatErrors; ///< Number of sequential format errors
 	static millis_t lastBusySignal; ///< When was the last busy signal
-#if NEW_COMMUNICATION == 0
-    static int8_t waitingForResend; ///< Waiting for line to be resend. -1 = no wait.
-    static uint32_t lastLineNumber; ///< Last line number received.
-    static millis_t timeOfLastDataPacket; ///< Time, when we got the last data packet. Used to detect missing uint8_ts.
-    static uint8_t wasLastCommandReceivedAsBinary; ///< Was the last successful command in binary mode?
-#else
 public:
     GCodeSource *source;    
-#endif    
 };
 
 
-#if JSON_OUTPUT
-#include "src/SdFat/SdFat.h"
-// Struct to hold Gcode file information 32 bytes
-#define GENBY_SIZE 16
-class GCodeFileInfo {
-public:
-    void init(SdFile &file);
-
-    unsigned long fileSize;
-    float objectHeight;
-    float layerHeight;
-    float filamentNeeded;
-    char generatedBy[GENBY_SIZE];
-
-    bool findGeneratedBy(char *buf, char *genBy);
-    bool findLayerHeight(char *buf, float &layerHeight);
-    bool findFilamentNeed(char *buf, float &filament);
-    bool findTotalHeight(char *buf, float &objectHeight);
-};
-#endif
 
 #endif
 

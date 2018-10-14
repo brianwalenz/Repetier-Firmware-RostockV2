@@ -4,19 +4,8 @@ More and more printers now have automatic bed leveling using an ever increasing 
 This makes the leveling routine one of the most complex parts of the firmware and there is not one
 way to level but hundreds of combinations.
 
-First you should decide on the correction method. Once we know how our bed is tilted we want to
-remove that. This correction is defined by BED_CORRECTION_METHOD and allows the following values:
-BED_CORRECTION_METHOD 0
 Use a rotation matrix. This will make z axis go up/down while moving in x/y direction to compensate
 the tilt. For multiple extruders make sure the height match the tilt of the bed or one will scratch.
-
-BED_CORRECTION_METHOD 1
-Motorized correction. This method needs a bed that is fixed on 3 points from which 2 have a motor
-to change the height. The positions are defined by
-BED_MOTOR_1_X, BED_MOTOR_1_Y, BED_MOTOR_2_X, BED_MOTOR_2_Y, BED_MOTOR_3_X, BED_MOTOR_3_Y
-Motor 2 and 3 are the one driven by motor driver 0 and 1. These can be extra motors like Felix Pro 1
-uses them or a system with 3 z axis where motors can be controlled individually like the Sparkcube
-does.
 
 Next we have to distinguish several methods of z probing sensors. Each have their own advantages and
 disadvantages. First the z probe has a position when activated and that position is defined by
@@ -90,28 +79,12 @@ from 1 and use that as plane.
 By now the leveling process is finished. All errors that remain are measuring errors and bumps on
 the bed it self. For deltas you can enable distortion correction to follow the bumps.
 
-There are 2 ways to consider a changing bed coating, which are defined by Z_PROBE_Z_OFFSET_MODE.
-Z_PROBE_Z_OFFSET_MODE = 0 means we measure the surface of the bed below any coating. This is e.g.
-the case with inductive sensors where we put BuildTak on top. In that case we can set Z_PROBE_Z_OFFSET
-to the thickness of BuildTak to compensate. If we later change the coating, we only change Z_PROBE_Z_OFFSET
-to new coating thickness.
-
-Z_PROBE_Z_OFFSET_MODE = 1 means we measure the surface of the coating, e.g. because we have a mechanical switch.
-In that case we add Z_PROBE_Z_OFFSET for the measured height to compensate for correct distance to bed surface.
-
-In homing to max we reduce z length by Z_PROBE_Z_OFFSET to get a correct height.
-In homing to z min we assume z endstop is bed level so we move up Z_PROBE_Z_OFFSET after endstop is hit. This
-requires the extruder to bend the coating thickness without harm!
 */
 
 #include "Repetier.h"
 
 #ifndef BED_LEVELING_METHOD
 #define BED_LEVELING_METHOD 0
-#endif
-
-#ifndef BED_CORRECTION_METHOD
-#define BED_CORRECTION_METHOD 0
 #endif
 
 #ifndef BED_LEVELING_GRID_SIZE
@@ -136,25 +109,6 @@ void Printer::prepareForProbing() {
 #if EXTRUDER_IS_Z_PROBE == 0
     float ZPOffsetX = EEPROM::zProbeXOffset();
     float ZPOffsetY = EEPROM::zProbeYOffset();
-#if DRIVE_SYSTEM != DELTA
-    float targetX = Printer::currentPosition[X_AXIS];
-    float targetY = Printer::currentPosition[Y_AXIS];
-    if(ZPOffsetX > 0 && targetX - ZPOffsetX < Printer::xMin) {
-        targetX = Printer::xMin + ZPOffsetX;
-    }
-    if(ZPOffsetY > 0 && targetY - ZPOffsetY < Printer::yMin) {
-        targetY = Printer::yMin + ZPOffsetY;
-    }
-    if(ZPOffsetX < 0 && targetX - ZPOffsetX > Printer::xMin + Printer::xLength) {
-        targetX = Printer::xMin + Printer::xLength + ZPOffsetX;
-    }
-    if(ZPOffsetY < 0 && targetY - ZPOffsetY > Printer::yMin + Printer::yLength) {
-        targetY = Printer::yMin + Printer::yLength + ZPOffsetY;
-    }
-    Printer::moveToReal(targetX, targetY, IGNORE_COORDINATE, IGNORE_COORDINATE, EXTRUDER_SWITCH_XY_SPEED);
-    Printer::updateCurrentPosition(true);
-    Commands::waitUntilEndOfAllMoves();
-#endif
 #endif
 #endif
 }
@@ -182,6 +136,7 @@ bool measureAutolevelPlane(Plane &plane) {
     if(h == ILLEGAL_Z_PROBE)
         return false;
     builder.addPoint(EEPROM::zProbeX3(), EEPROM::zProbeY3(), h);
+
 #elif BED_LEVELING_METHOD == 1 // linear regression
     float delta = 1.0 / (BED_LEVELING_GRID_SIZE - 1);
     float ox = EEPROM::zProbeX1();
@@ -237,48 +192,16 @@ bool measureAutolevelPlane(Plane &plane) {
     builder.addPoint(EEPROM::zProbeX2(), EEPROM::zProbeY2(), h2);
     builder.addPoint(EEPROM::zProbeX3(), EEPROM::zProbeY3(), h3);
 #else
+
 #error Unknown bed leveling method
 #endif
+
     builder.createPlane(plane, false);
     return true;
 }
 
 void correctAutolevel(Plane &plane) {
-#if BED_CORRECTION_METHOD == 0 // rotation matrix
-    //Printer::buildTransformationMatrix(plane.z(EEPROM::zProbeX1(),EEPROM::zProbeY1()),plane.z(EEPROM::zProbeX2(),EEPROM::zProbeY2()),plane.z(EEPROM::zProbeX3(),EEPROM::zProbeY3()));
     Printer::buildTransformationMatrix(plane);
-#elif BED_CORRECTION_METHOD == 1 // motorized correction
-#if !defined(NUM_MOTOR_DRIVERS) || NUM_MOTOR_DRIVERS < 2
-#error You need to define 2 motors for motorized bed correction
-#endif
-    Commands::waitUntilEndOfAllMoves(); // move steppers might be leveling steppers as well !
-    float h1 = plane.z(BED_MOTOR_1_X, BED_MOTOR_1_Y);
-    float h2 = plane.z(BED_MOTOR_2_X, BED_MOTOR_2_Y);
-    float h3 = plane.z(BED_MOTOR_3_X, BED_MOTOR_3_Y);
-    // h1 is reference heights, h2 => motor 0, h3 => motor 1
-    h2 -= h1;
-    h3 -= h1;
-#if defined(LIMIT_MOTORIZED_CORRECTION)
-    if(h2 < -LIMIT_MOTORIZED_CORRECTION) h2 = -LIMIT_MOTORIZED_CORRECTION;
-    if(h2 > LIMIT_MOTORIZED_CORRECTION) h2 = LIMIT_MOTORIZED_CORRECTION;
-    if(h3 < -LIMIT_MOTORIZED_CORRECTION) h3 = -LIMIT_MOTORIZED_CORRECTION;
-    if(h3 > LIMIT_MOTORIZED_CORRECTION) h3 = LIMIT_MOTORIZED_CORRECTION;
-#endif
-    MotorDriverInterface *motor2 = getMotorDriver(0);
-    MotorDriverInterface *motor3 = getMotorDriver(1);
-    motor2->setCurrentAs(0);
-    motor3->setCurrentAs(0);
-    motor2->gotoPosition(h2);
-    motor3->gotoPosition(h3);
-    motor2->disable();
-    motor3->disable(); // now bed is even
-    Printer::currentPositionSteps[Z_AXIS] = h1 * Printer::axisStepsPerMM[Z_AXIS];
-#if NONLINEAR_SYSTEM
-    transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
-#endif
-#else
-#error Unknown bed correction method set
-#endif
 }
 
 
@@ -336,21 +259,9 @@ bool runBedLeveling(int s) {
     Printer::startProbing(true);
     //GCode::executeFString(Com::tZProbeStartScript);
     Plane plane;
-#if BED_CORRECTION_METHOD == 1
-	success = false;
-    for(int r = 0; r < BED_LEVELING_REPETITIONS; r++) {
-#if DRIVE_SYSTEM == DELTA
-        if(r > 0) {
-            Printer::finishProbing();
-            Printer::homeAxis(true, true, true);
-            Printer::moveTo(IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0), IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
-            Printer::startProbing(true);
-        }
-#endif // DELTA
-#endif // BED_CORRECTION_METHOD == 1
         if(!measureAutolevelPlane(plane)) {
             Com::printErrorFLN(PSTR("Probing had returned errors - autoleveling canceled."));
-            UI_MESSAGE(1);
+            uid.showMessage(1);
             return false;
         }
         correctAutolevel(plane);
@@ -372,42 +283,13 @@ bool runBedLeveling(int s) {
             Com::printFLN(Com::tZProbePrinterHeight, Printer::zLength);
         }
 #endif
-#if Z_PROBE_Z_OFFSET_MODE == 1
-        currentZ -= EEPROM::zProbeZOffset();
-#endif
         Com::printF(PSTR("CurrentZ:"), currentZ);
         Com::printFLN(PSTR(" atZ:"), Printer::currentPosition[Z_AXIS]);
         Printer::currentPositionSteps[Z_AXIS] = currentZ * Printer::axisStepsPerMM[Z_AXIS];
         Printer::updateCurrentPosition(true); // set position based on steps position
-#if BED_CORRECTION_METHOD == 1
-        if(fabsf(plane.a) < 0.00025 && fabsf(plane.b) < 0.00025 ) {
-			success = true;
-            break;  // we reached achievable precision so we can stop
-		}
-    } // for BED_LEVELING_REPETITIONS
-#if Z_HOME_DIR > 0 && MAX_HARDWARE_ENDSTOP_Z
-    float zall = Printer::runZProbe(false, false, 1, false);
-    if(zall == ILLEGAL_Z_PROBE)
-        return false;
-    Printer::currentPosition[Z_AXIS] = zall;
-    Printer::currentPositionSteps[Z_AXIS] = zall * Printer::axisStepsPerMM[Z_AXIS];
-#if NONLINEAR_SYSTEM
-    transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
-#endif
-    if(s >= 1) {
-        float zMax = Printer::runZMaxProbe();
-        if(zMax == ILLEGAL_Z_PROBE)
-            return false;
-        zall += zMax - ENDSTOP_Z_BACK_ON_HOME;
-        Printer::zLength = zall;
-    }
-#endif
-#endif // BED_CORRECTION_METHOD == 1
     Printer::updateDerivedParameter();
     Printer::finishProbing();
-#if BED_CORRECTION_METHOD != 1
     Printer::setAutolevelActive(true); // only for software correction or we can spare the comp. time
-#endif
     if(s >= 2) {
         EEPROM::storeDataIntoEEPROM();
     }
@@ -462,9 +344,7 @@ void Printer::setAutolevelActive(bool on) {
 
 \return Distance until triggering in mm. */
 float Printer::runZMaxProbe() {
-#if NONLINEAR_SYSTEM
     long startZ = realDeltaPositionSteps[Z_AXIS] = currentNonlinearPositionSteps[Z_AXIS]; // update real
-#endif
     Commands::waitUntilEndOfAllMoves();
     long probeDepth = 2 * (Printer::zMaxSteps - Printer::zMinSteps);
     stepsRemainingAtZHit = -1;
@@ -476,12 +356,8 @@ float Printer::runZMaxProbe() {
     }
     setZProbingActive(false);
     currentPositionSteps[Z_AXIS] -= stepsRemainingAtZHit;
-#if NONLINEAR_SYSTEM
     transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
     probeDepth = (realDeltaPositionSteps[Z_AXIS] - startZ);
-#else
-    probeDepth -= stepsRemainingAtZHit;
-#endif
     float distance = (float)probeDepth * invAxisStepsPerMM[Z_AXIS];
     Com::printF(Com::tZProbeMax, distance);
     Com::printF(Com::tSpaceXColon, realXPosition());
@@ -561,11 +437,7 @@ void Printer::finishProbing() {
     realPosition(cx, cy, cz);
     GCode::executeFString(Com::tZProbeEndScript);
     if(Extruder::current) {
-#if DUAL_X_AXIS
-        offsetX = 0; // offsets are parking positions for dual x axis!
-#else
         offsetX = -Extruder::current->xOffset * invAxisStepsPerMM[X_AXIS];
-#endif
         offsetY = -Extruder::current->yOffset * invAxisStepsPerMM[Y_AXIS];
         offsetZ = -Extruder::current->zOffset * invAxisStepsPerMM[Z_AXIS];
     } else {
@@ -586,9 +458,8 @@ This is the most important function for bed leveling. It does
 Now we compute the nozzle height as follows:
 a) Compute average height from repeated measurements
 b) Add zProbeHeight to correct difference between triggering point and nozzle height above bed
-c) If Z_PROBE_Z_OFFSET_MODE == 1 we add zProbeZOffset() that is coating thickness if we measure below coating with indictive sensor.
-d) Add distortion correction.
-e) Add bending correction
+c) Add distortion correction.
+d) Add bending correction
 
 Then we return the measured and corrected z distance.
 
@@ -608,18 +479,10 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
             return ILLEGAL_Z_PROBE;
     }
     Commands::waitUntilEndOfAllMoves();
-#if defined(Z_PROBE_USE_MEDIAN) && Z_PROBE_USE_MEDIAN
-	int32_t measurements[Z_PROBE_REPETITIONS];
-	repeat = RMath::min(repeat, Z_PROBE_REPETITIONS);
-#else
-	int32_t sum = 0;
-#endif
-    int32_t probeDepth;
+    int32_t sum = 0, probeDepth;
     int32_t shortMove = static_cast<int32_t>((float)Z_PROBE_SWITCHING_DISTANCE * axisStepsPerMM[Z_AXIS]); // distance to go up for repeated moves
     int32_t lastCorrection = currentPositionSteps[Z_AXIS]; // starting position
-#if NONLINEAR_SYSTEM
     realDeltaPositionSteps[Z_AXIS] = currentNonlinearPositionSteps[Z_AXIS]; // update real
-#endif
     //int32_t updateZ = 0;
     waitForZProbeStart();
 #if defined(Z_PROBE_DELAY) && Z_PROBE_DELAY > 0
@@ -648,29 +511,19 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
             Com::printErrorFLN(Com::tZProbeFailed);
             return ILLEGAL_Z_PROBE;
         }
-#if NONLINEAR_SYSTEM
         stepsRemainingAtZHit = realDeltaPositionSteps[C_TOWER] - currentNonlinearPositionSteps[C_TOWER]; // nonlinear moves may split z so stepsRemainingAtZHit is only what is left from last segment not total move. This corrects the problem.
-#endif
-#if DRIVE_SYSTEM == DELTA
         currentNonlinearPositionSteps[A_TOWER] += stepsRemainingAtZHit; // Update difference
         currentNonlinearPositionSteps[B_TOWER] += stepsRemainingAtZHit;
         currentNonlinearPositionSteps[C_TOWER] += stepsRemainingAtZHit;
-#elif NONLINEAR_SYSTEM
-        currentNonlinearPositionSteps[Z_AXIS] += stepsRemainingAtZHit;
-#endif
         currentPositionSteps[Z_AXIS] += stepsRemainingAtZHit; // now current position is correct
-#if defined(Z_PROBE_USE_MEDIAN) && Z_PROBE_USE_MEDIAN
-        measurements[r] = lastCorrection - currentPositionSteps[Z_AXIS];
-#else
         sum += lastCorrection - currentPositionSteps[Z_AXIS];
-#endif
         //Com::printFLN(PSTR("ZHSteps:"),lastCorrection - currentPositionSteps[Z_AXIS]);
         if(r + 1 < repeat) {
             // go only shortest possible move up for repetitions
             PrintLine::moveRelativeDistanceInSteps(0, 0, shortMove, 0, HOMING_FEEDRATE_Z, true, true);
             if(Endstops::zProbe()) {
                 Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!"));
-                UI_MESSAGE(1);
+                uid.showMessage(1);
                 return ILLEGAL_Z_PROBE;
             }
         }
@@ -686,29 +539,13 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
     PrintLine::moveRelativeDistanceInSteps(0, 0, lastCorrection - currentPositionSteps[Z_AXIS], 0, HOMING_FEEDRATE_Z, true, true);
     if(Endstops::zProbe()) { // did we untrigger? If not don't trust result!
         Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!"));
-        UI_MESSAGE(1);
+        uid.showMessage(1);
         return ILLEGAL_Z_PROBE;
     }
     updateCurrentPosition(false);
     //Com::printFLN(PSTR("after probe"));
     //Commands::printCurrentPosition();
-#if defined(Z_PROBE_USE_MEDIAN) && Z_PROBE_USE_MEDIAN
-	// bubble sort the measurements
-	int32_t tmp;
-	for(fast8_t i = 0 ; i < repeat - 1; i++) {  // n numbers require at most n-1 rounds of swapping
-		for(fast8_t j = 0; j < repeat - i - 1; j++)  {  //
-			if( measurements[j] > measurements[j + 1] ) {   // out of order?			
-				tmp = measurements[j]; // swap them:
-				measurements[j] = measurements[j + 1];
-				measurements[j + 1] = tmp;
-			}
-		}
-	}
-// process result
-	float distance = static_cast<float>(measurements[repeat >> 1]) * invAxisStepsPerMM[Z_AXIS] + EEPROM::zProbeHeight();
-#else
-	float distance = static_cast<float>(sum) * invAxisStepsPerMM[Z_AXIS] / static_cast<float>(repeat) + EEPROM::zProbeHeight();
-#endif
+    float distance = static_cast<float>(sum) * invAxisStepsPerMM[Z_AXIS] / static_cast<float>(repeat) + EEPROM::zProbeHeight();
 #if FEATURE_AUTOLEVEL
     // we must change z for the z change from moving in rotated coordinates away from real position
     float dx, dy, dz;
@@ -720,9 +557,6 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
     distance += dz;
 #endif
     //Com::printFLN(PSTR("OrigDistance:"),distance);
-#if Z_PROBE_Z_OFFSET_MODE == 1
-    distance += EEPROM::zProbeZOffset(); // We measured including coating, so we need to add coating thickness!
-#endif
 
 #if DISTORTION_CORRECTION
     float zCorr = 0;
@@ -749,7 +583,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
 #endif
     if(Endstops::zProbe()) {
         Com::printErrorFLN(PSTR("z-probe did not untrigger after going back to start position."));
-        UI_MESSAGE(1);
+        uid.showMessage(1);
         return ILLEGAL_Z_PROBE;
     }
     if(last)
@@ -765,9 +599,9 @@ void Printer::measureZProbeHeight(float curHeight) {
 #if FEATURE_Z_PROBE
     currentPositionSteps[Z_AXIS] = curHeight * axisStepsPerMM[Z_AXIS];
     updateCurrentPosition(true);
-#if NONLINEAR_SYSTEM
+
     transformCartesianStepsToDeltaSteps(currentPositionSteps, currentNonlinearPositionSteps);
-#endif
+
     float startHeight = EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0);
     moveTo(IGNORE_COORDINATE, IGNORE_COORDINATE, startHeight, IGNORE_COORDINATE, homingFeedrate[Z_AXIS]);
 	float zheight = Printer::runZProbe(true, true, Z_PROBE_REPETITIONS, true);
@@ -776,11 +610,8 @@ void Printer::measureZProbeHeight(float curHeight) {
 	}
     float zProbeHeight = EEPROM::zProbeHeight() + startHeight -zheight;
 
-#if EEPROM_MODE != 0 // Com::tZProbeHeight is not declared when EEPROM_MODE is 0
     EEPROM::setZProbeHeight(zProbeHeight); // will also report on output
-#else
     Com::printFLN(PSTR("Z-probe height [mm]:"), zProbeHeight);
-#endif
 #endif
 }
 
@@ -799,10 +630,8 @@ void Printer::waitForZProbeStart() {
     Endstops::update();
     Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
     if(Endstops::zProbe()) return;
-#if UI_DISPLAY_TYPE != NO_DISPLAY
     uid.setStatusP(Com::tHitZProbe);
     uid.refreshPage();
-#endif
 #ifdef DEBUG_PRINT
     debugWaitLoop = 3;
 #endif
@@ -835,12 +664,7 @@ void Printer::waitForZProbeStart() {
  we need to be at to get the desired result, the real coordinates.
 */
 void Printer::transformToPrinter(float x, float y, float z, float &transX, float &transY, float &transZ) {
-#if FEATURE_AXISCOMP
-    // Axis compensation:
-    x = x + y * EEPROM::axisCompTanXY() + z * EEPROM::axisCompTanXZ();
-    y = y + z * EEPROM::axisCompTanYZ();
-#endif
-#if BED_CORRECTION_METHOD != 1 && FEATURE_AUTOLEVEL
+#if FEATURE_AUTOLEVEL
     if(isAutolevelActive()) {
         transX = x * autolevelTransformation[0] + y * autolevelTransformation[3] + z * autolevelTransformation[6];
         transY = x * autolevelTransformation[1] + y * autolevelTransformation[4] + z * autolevelTransformation[7];
@@ -859,7 +683,7 @@ void Printer::transformToPrinter(float x, float y, float z, float &transX, float
 
 /* Transform back to real printer coordinates. */
 void Printer::transformFromPrinter(float x, float y, float z, float &transX, float &transY, float &transZ) {
-#if BED_CORRECTION_METHOD != 1 && FEATURE_AUTOLEVEL
+#if FEATURE_AUTOLEVEL
     if(isAutolevelActive()) {
         transX = x * autolevelTransformation[0] + y * autolevelTransformation[1] + z * autolevelTransformation[2];
         transY = x * autolevelTransformation[3] + y * autolevelTransformation[4] + z * autolevelTransformation[5];
@@ -873,11 +697,6 @@ void Printer::transformFromPrinter(float x, float y, float z, float &transX, flo
     transX = x;
     transY = y;
     transZ = z;
-#endif
-#if FEATURE_AXISCOMP
-    // Axis compensation:
-    transY = transY - transZ * EEPROM::axisCompTanYZ();
-    transX = transX - transY * EEPROM::axisCompTanXY() - transZ * EEPROM::axisCompTanXZ();
 #endif
 }
 #if FEATURE_AUTOLEVEL

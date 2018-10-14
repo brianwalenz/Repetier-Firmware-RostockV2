@@ -122,19 +122,6 @@ FSTRINGVAR(tSlash)
 FSTRINGVAR(tSpaceSlash)
 FSTRINGVAR(tFatal)
 FSTRINGVAR(tDoorOpen)
-#if JSON_OUTPUT
-FSTRINGVAR(tJSONDir)
-FSTRINGVAR(tJSONFiles)
-FSTRINGVAR(tJSONArrayEnd)
-FSTRINGVAR(tJSONErrorStart)
-FSTRINGVAR(tJSONErrorEnd)
-FSTRINGVAR(tJSONFileInfoStart)
-FSTRINGVAR(tJSONFileInfoHeight)
-FSTRINGVAR(tJSONFileInfoLayerHeight)
-FSTRINGVAR(tJSONFileInfoFilament)
-FSTRINGVAR(tJSONFileInfoGeneratedBy)
-FSTRINGVAR(tJSONFileInfoName)
-#endif
 FSTRINGVAR(tSpaceXColon)
 FSTRINGVAR(tSpaceYColon)
 FSTRINGVAR(tSpaceZColon)
@@ -189,11 +176,8 @@ FSTRINGVAR(tEEPROMUpdated)
 FSTRINGVAR(tFilamentSlipping)
 FSTRINGVAR(tPauseCommunication)
 FSTRINGVAR(tContinueCommunication)
-#if NONLINEAR_SYSTEM
 FSTRINGVAR(tInvalidDeltaCoordinate)
 FSTRINGVAR(tDBGDeltaNoMoveinDSegment)
-#endif
-#if DRIVE_SYSTEM == DELTA
 FSTRINGVAR(tMeasurementReset)
 FSTRINGVAR(tMeasureDeltaSteps)
 FSTRINGVAR(tMeasureDelta)
@@ -213,10 +197,7 @@ FSTRINGVAR(tDeltaDiagonalCorrectionA)
 FSTRINGVAR(tDeltaDiagonalCorrectionB)
 FSTRINGVAR(tDeltaDiagonalCorrectionC)
 FSTRINGVAR(tEPRDeltaMaxRadius)
-#endif // DRIVE_SYSTEM
-#if DRIVE_SYSTEM==TUGA
-FSTRINGVAR(tEPRDiagonalRodLength)
-#endif
+
 #ifdef DEBUG_GENERIC
 FSTRINGVAR(tGenTemp)
 #endif // DEBUG_GENERICFSTRINGVALUE(Com::,"")
@@ -305,10 +286,8 @@ FSTRINGVAR(tZProbePrinterHeight)
 FSTRINGVAR(tWait)
 #endif // WAITING_IDENTIFIER
 
-#if EEPROM_MODE==0
-FSTRINGVAR(tNoEEPROMSupport)
-#else
 FSTRINGVAR(tZProbeOffsetZ)
+
 #if FEATURE_Z_PROBE
 FSTRINGVAR(tZProbeHeight)
 FSTRINGVAR(tZProbeOffsetX)
@@ -325,14 +304,11 @@ FSTRINGVAR(zZProbeBendingCorA)
 FSTRINGVAR(zZProbeBendingCorB)
 FSTRINGVAR(zZProbeBendingCorC)
 #endif
+
 #if FEATURE_AUTOLEVEL
 FSTRINGVAR(tAutolevelActive)
 #endif
-#if FEATURE_AXISCOMP
-FSTRINGVAR(tAxisCompTanXY)
-FSTRINGVAR(tAxisCompTanYZ)
-FSTRINGVAR(tAxisCompTanXZ)
-#endif
+
 FSTRINGVAR(tConfigStoredEEPROM)
 FSTRINGVAR(tConfigLoadedEEPROM)
 FSTRINGVAR(tEPRConfigResetDefaults)
@@ -363,28 +339,11 @@ FSTRINGVAR(tEPRAccelerationFactorAtTop)
 FSTRINGVAR(tEPRZStepsPerMM)
 FSTRINGVAR(tEPRZMaxFeedrate)
 FSTRINGVAR(tEPRZHomingFeedrate)
-#if DRIVE_SYSTEM != DELTA
-FSTRINGVAR(tEPRMaxZJerk)
-FSTRINGVAR(tEPRXStepsPerMM)
-#if DUAL_X_RESOLUTION
-FSTRINGVAR(tEPRX2StepsPerMM)
-#endif
-FSTRINGVAR(tEPRYStepsPerMM)
-FSTRINGVAR(tEPRXMaxFeedrate)
-FSTRINGVAR(tEPRYMaxFeedrate)
-FSTRINGVAR(tEPRXHomingFeedrate)
-FSTRINGVAR(tEPRYHomingFeedrate)
-FSTRINGVAR(tEPRXAcceleration)
-FSTRINGVAR(tEPRYAcceleration)
-FSTRINGVAR(tEPRXTravelAcceleration)
-FSTRINGVAR(tEPRYTravelAcceleration)
-#else
 FSTRINGVAR(tEPRDiagonalRodLength)
 FSTRINGVAR(tEPRHorizontalRadius)
 FSTRINGVAR(tEPRTowerXOffset)
 FSTRINGVAR(tEPRTowerYOffset)
 FSTRINGVAR(tEPRTowerZOffset)
-#endif
 FSTRINGVAR(tEPROPSMode)
 FSTRINGVAR(tEPROPSMoveAfter)
 FSTRINGVAR(tEPROPSMinDistance)
@@ -421,8 +380,7 @@ FSTRINGVAR(tEPRAdvanceK)
 FSTRINGVAR(tEPRAdvanceL)
 FSTRINGVAR(tEPRPreheatTemp)
 FSTRINGVAR(tEPRPreheatBedTemp)
-#endif
-#if SDSUPPORT
+
 //FSTRINGVAR(tSDRemoved)
 //FSTRINGVAR(tSDInserted)
 FSTRINGVAR(tSDInitFail)
@@ -443,15 +401,16 @@ FSTRINGVAR(tDeletionFailed)
 FSTRINGVAR(tDirectoryCreated)
 FSTRINGVAR(tCreationFailed)
 FSTRINGVAR(tSDErrorCode)
-#endif // SDSUPPORT
+
 FSTRINGVAR(tHeaterDecoupled)
 FSTRINGVAR(tHeaterDecoupledWarning)
+
 #if DISTORTION_CORRECTION
 FSTRINGVAR(tZCorrectionEnabled)
 FSTRINGVAR(tZCorrectionDisabled)
 #endif
+
 #if FEATURE_RETRACTION
-FSTRINGVAR(tEPRAutoretractEnabled)
 FSTRINGVAR(tEPRRetractionLength)
 FSTRINGVAR(tEPRRetractionLongLength)
 FSTRINGVAR(tEPRRetractionSpeed)
@@ -460,70 +419,73 @@ FSTRINGVAR(tEPRRetractionUndoExtraLength)
 FSTRINGVAR(tEPRRetractionUndoExtraLongLength)
 FSTRINGVAR(tEPRRetractionUndoSpeed)
 #endif
+
 FSTRINGVAR(tConfig)
 FSTRINGVAR(tExtrDot)
 
-#if STEPPER_CURRENT_CONTROL == CURRENT_CONTROL_MCP4728
-FSTRINGVAR(tMCPEpromSettings)
-FSTRINGVAR(tMCPCurrentSettings)
-#endif
 FSTRINGVAR(tPrinterModeFFF)
 FSTRINGVAR(tPrinterModeLaser)
 FSTRINGVAR(tPrinterModeCNC)
+
 #ifdef STARTUP_GCODE
 FSTRINGVAR(tStartupGCode)
 #endif
-#if NONLINEAR_SYSTEM
+
 FSTRINGVAR(tEPRSegmentsPerSecondPrint)
 FSTRINGVAR(tEPRSegmentsPerSecondTravel)
-#endif
-#ifdef DRV_TMC2130
-FSTRINGVAR(tTrinamicMotorCurrent)
-FSTRINGVAR(tTrinamicMicrostepMode)
-#endif
 
 static void cap(FSTRINGPARAM(text));
+
 static void config(FSTRINGPARAM(text));
 static void config(FSTRINGPARAM(text),int value);
 static void config(FSTRINGPARAM(text),const char *msg);
 static void config(FSTRINGPARAM(text),int32_t value);
 static void config(FSTRINGPARAM(text),uint32_t value);
 static void config(FSTRINGPARAM(text),float value,uint8_t digits=2);
+
 static void printNumber(uint32_t n);
+static void printFloat(float number, uint8_t digits);
+
 static void printWarningF(FSTRINGPARAM(text));
 static void printInfoF(FSTRINGPARAM(text));
 static void printErrorF(FSTRINGPARAM(text));
 static void printWarningFLN(FSTRINGPARAM(text));
 static void printInfoFLN(FSTRINGPARAM(text));
 static void printErrorFLN(FSTRINGPARAM(text));
-static void printFLN(FSTRINGPARAM(text));
+
 static void printF(FSTRINGPARAM(text));
 static void printF(FSTRINGPARAM(text),int value);
 static void printF(FSTRINGPARAM(text),const char *msg);
 static void printF(FSTRINGPARAM(text),int32_t value);
 static void printF(FSTRINGPARAM(text),uint32_t value);
 static void printF(FSTRINGPARAM(text),float value,uint8_t digits=2);
+
+static void printFLN(FSTRINGPARAM(text));
 static void printFLN(FSTRINGPARAM(text),int value);
 static void printFLN(FSTRINGPARAM(text),int32_t value);
 static void printFLN(FSTRINGPARAM(text),uint32_t value);
 static void printFLN(FSTRINGPARAM(text),const char *msg);
 static void printFLN(FSTRINGPARAM(text),float value,uint8_t digits=2);
+
 static void printArrayFLN(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
 static void printArrayFLN(FSTRINGPARAM(text),long *arr,uint8_t n=4);
-static void print(long value);
-static inline void print(uint32_t value) {printNumber(value);}
-static inline void print(int value) {print((int32_t)value);}
+
+//static void print(long value);
+//static inline void print(int value) {print((int32_t)value);}
+
+static void print(int16_t value)   { print((int32_t)value); };
+static void print(uint16_t value)  { print((uint32_t)value); };
+
+static void print(int32_t value);
+static void print(uint32_t value);
 static void print(const char *text);
-static inline void print(char c) {GCodeSource::writeToAll(c);}
-static void printFloat(float number, uint8_t digits);
-static inline void print(float number) {printFloat(number, 6);}
-static inline void println() {GCodeSource::writeToAll('\r');GCodeSource::writeToAll('\n');}
+static void print(char c) {GCodeSource::writeToAll(c);}
+
+static void print(float number) {printFloat(number, 6);}
+
+static void println() {GCodeSource::writeToAll('\r');GCodeSource::writeToAll('\n');}
+
 static bool writeToAll;    
-#if FEATURE_CONTROLLER != NO_CONTROLLER
-static const char* translatedF(int textId);
-static void selectLanguage(fast8_t lang);
-static uint8_t selectedLanguage;
-#endif
     protected:
     private:
 };

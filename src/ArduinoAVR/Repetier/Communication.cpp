@@ -21,24 +21,11 @@
 
 #include "Repetier.h"
 
-#if FEATURE_CONTROLLER != NO_CONTROLLER
-uint8_t Com::selectedLanguage;
-#endif
-
 #ifndef MACHINE_TYPE
-#if DRIVE_SYSTEM == DELTA
 #define MACHINE_TYPE "Delta"
-#elif DRIVE_SYSTEM == CARTESIAN
-#define MACHINE_TYPE "Mendel"
-#else
-#define MACHINE_TYPE "Core_XY"
 #endif
-#endif
-#ifndef FIRMWARE_URL
-#define FIRMWARE_URL "https://github.com/repetier/Repetier-Firmware/"
-#endif // FIRMWARE_URL
 
-FSTRINGVALUE(Com::tFirmware, "FIRMWARE_NAME:Repetier_" REPETIER_VERSION " COMPILED:" __DATE__ " FIRMWARE_URL:" FIRMWARE_URL " PROTOCOL_VERSION:1.0 MACHINE_TYPE:" MACHINE_TYPE " EXTRUDER_COUNT:" XSTR(NUM_EXTRUDER) " REPETIER_PROTOCOL:3")
+FSTRINGVALUE(Com::tFirmware, "Repetier_1.0.2(bri)")
 FSTRINGVALUE(Com::tDebug, "Debug:")
 FSTRINGVALUE(Com::tOk, "ok")
 FSTRINGVALUE(Com::tNewline, "\r\n")
@@ -103,19 +90,6 @@ FSTRINGVALUE(Com::tSlash, "/")
 FSTRINGVALUE(Com::tSpaceSlash, " /")
 FSTRINGVALUE(Com::tFatal, "fatal:")
 FSTRINGVALUE(Com::tDoorOpen, "Door open")
-#if JSON_OUTPUT
-FSTRINGVALUE(Com::tJSONDir, "{\"dir\":\"")
-FSTRINGVALUE(Com::tJSONFiles, "\",\"files\":[")
-FSTRINGVALUE(Com::tJSONArrayEnd, "]}")
-FSTRINGVALUE(Com::tJSONErrorStart, "{\"err\":\"")
-FSTRINGVALUE(Com::tJSONErrorEnd, "\"}")
-FSTRINGVALUE(Com::tJSONFileInfoStart, "{\"err\":0,\"size\":");
-FSTRINGVALUE(Com::tJSONFileInfoHeight, ",\"height\":");
-FSTRINGVALUE(Com::tJSONFileInfoLayerHeight, ",\"layerHeight\":");
-FSTRINGVALUE(Com::tJSONFileInfoFilament, ",\"filament\":[");
-FSTRINGVALUE(Com::tJSONFileInfoGeneratedBy, "],\"generatedBy\":\"");
-FSTRINGVALUE(Com::tJSONFileInfoName, ",\"fileName\":\"");
-#endif // JSON_OUTPUT
 FSTRINGVALUE(Com::tSpeedMultiply, "SpeedMultiply:")
 FSTRINGVALUE(Com::tFlowMultiply, "FlowMultiply:")
 FSTRINGVALUE(Com::tFanspeed, "Fanspeed:")
@@ -159,7 +133,6 @@ FSTRINGVALUE(Com::tQuadraticKColon, " quadratic K:")
 FSTRINGVALUE(Com::tFilamentSlipping, "Filament slipping")
 FSTRINGVALUE(Com::tPauseCommunication, "// action:pause")
 FSTRINGVALUE(Com::tContinueCommunication, "// action:resume")
-#if DRIVE_SYSTEM == DELTA
 FSTRINGVALUE(Com::tMeasurementReset, "Measurement reset.")
 FSTRINGVALUE(Com::tMeasureDeltaSteps, "Measure/delta (Steps) =")
 FSTRINGVALUE(Com::tMeasureDelta, "Measure/delta =")
@@ -175,23 +148,9 @@ FSTRINGVALUE(Com::tDeltaAlphaC, "Alpha C(90):")
 FSTRINGVALUE(Com::tDeltaRadiusCorrectionA, "Delta Radius A(0):")
 FSTRINGVALUE(Com::tDeltaRadiusCorrectionB, "Delta Radius B(0):")
 FSTRINGVALUE(Com::tDeltaRadiusCorrectionC, "Delta Radius C(0):")
-#endif // DRIVE_SYSTEM
-#if NONLINEAR_SYSTEM
-#if DRIVE_SYSTEM == TUGA
-FSTRINGVALUE(Com::tInvalidDeltaCoordinate, "Invalid coordinate - move ignored")
-FSTRINGVALUE(Com::tDBGDeltaNoMoveinDSegment, "No move in delta segment with > 1 segment. This should never happen and may cause a problem!")
-#elif DRIVE_SYSTEM == DELTA
 FSTRINGVALUE(Com::tInvalidDeltaCoordinate, "Invalid delta coordinate - move ignored")
 FSTRINGVALUE(Com::tDBGDeltaNoMoveinDSegment, "No move in delta segment with > 1 segment. This should never happen and may cause a problem!")
-#else
-FSTRINGVALUE(Com::tInvalidDeltaCoordinate, "Invalid coordinate - move ignored")
-FSTRINGVALUE(Com::tDBGDeltaNoMoveinDSegment, "No move in segment with > 1 segment. This should never happen and may cause a problem!")
-#endif
-#endif
 
-#if DRIVE_SYSTEM==TUGA
-FSTRINGVALUE(Com::tEPRDiagonalRodLength, "Long arm length [mm]")
-#endif // DRIVE_SYSTEM
 #ifdef DEBUG_GENERIC
 FSTRINGVALUE(Com::tGenTemp, "GenTemp:")
 #endif // DEBUG_GENERICFSTRINGVALUE(Com::,"")
@@ -242,9 +201,11 @@ FSTRINGVALUE(Com::tDBGMoveDistance, "Move distance on the XYZ space:")
 FSTRINGVALUE(Com::tDBGCommandedFeedrate, "Commanded feedrate:")
 FSTRINGVALUE(Com::tDBGConstFullSpeedMoveTime, "Constant full speed move time:")
 #endif // DEBUG_QUEUE_MOVEFSTRINGVALUE(Com::,"")
+
 #ifdef DEBUG_DELTA_OVERFLOW
 FSTRINGVALUE(Com::tDBGDeltaOverflow, "Delta overflow:")
 #endif // DEBUG_DELTA_OVERFLOW
+
 #ifdef DEBUG_SPLIT
 FSTRINGVALUE(Com::tDBGDeltaSeconds, "Seconds:")
 FSTRINGVALUE(Com::tDBGDeltaZDelta, "Z delta:")
@@ -255,9 +216,11 @@ FSTRINGVALUE(Com::tDBGDeltaMaxDS, "Max DS:")
 FSTRINGVALUE(Com::tDBGDeltaStepsPerSegment, "Steps Per Segment:")
 FSTRINGVALUE(Com::tDBGDeltaVirtualAxisSteps, "Virtual axis steps:")
 #endif
+
 #ifdef DEBUG_STEPCOUNT
 FSTRINGVALUE(Com::tDBGMissedSteps, "Missed steps:")
 #endif // DEBUG_STEPCOUNT
+
 #if FEATURE_Z_PROBE
 FSTRINGVALUE(Com::tZProbe, "Z-probe:")
 FSTRINGVALUE(Com::tZProbeAverage, "Z-probe average height:")
@@ -275,12 +238,12 @@ FSTRINGVALUE(Com::tZProbeFailed, "Z-probe failed")
 FSTRINGVALUE(Com::tZProbeMax, "Z-probe max:")
 FSTRINGVALUE(Com::tZProbePrinterHeight, "Printer height:")
 //FSTRINGVALUE(Com::,"")
+
 #ifdef WAITING_IDENTIFIER
 FSTRINGVALUE(Com::tWait, WAITING_IDENTIFIER)
 #endif // WAITING_IDENTIFIER
-#if EEPROM_MODE == 0
-FSTRINGVALUE(Com::tNoEEPROMSupport, "No EEPROM support compiled.\r\n")
-#else
+
+
 FSTRINGVALUE(Com::tZProbeOffsetZ, "Coating thickness [mm]")
 #if FEATURE_Z_PROBE
 FSTRINGVALUE(Com::tZProbeHeight, "Z-probe height [mm]")
@@ -299,15 +262,11 @@ FSTRINGVALUE(Com::zZProbeBendingCorA, "Z-probe bending correction A [mm]")
 FSTRINGVALUE(Com::zZProbeBendingCorB, "Z-probe bending correction B [mm]")
 FSTRINGVALUE(Com::zZProbeBendingCorC, "Z-probe bending correction C [mm]")
 #endif
-#if FEATURE_AXISCOMP
-FSTRINGVALUE(Com::tAxisCompTanXY, "tanXY Axis Compensation")
-FSTRINGVALUE(Com::tAxisCompTanYZ, "tanYZ Axis Compensation")
-FSTRINGVALUE(Com::tAxisCompTanXZ, "tanXZ Axis Compensation")
-#endif
 
 #if FEATURE_AUTOLEVEL
 FSTRINGVALUE(Com::tAutolevelActive, "Autolevel active (1/0)")
 #endif
+
 FSTRINGVALUE(Com::tConfigStoredEEPROM, "Configuration stored to EEPROM.")
 FSTRINGVALUE(Com::tConfigLoadedEEPROM, "Configuration loaded from EEPROM.")
 FSTRINGVALUE(Com::tEPRConfigResetDefaults, "Configuration reset to defaults.")
@@ -333,11 +292,10 @@ FSTRINGVALUE(Com::tEPRYBacklash, "Y backlash [mm]")
 FSTRINGVALUE(Com::tEPRZBacklash, "Z backlash [mm]")
 FSTRINGVALUE(Com::tEPRMaxJerk, "Max. jerk [mm/s]")
 FSTRINGVALUE(Com::tEPRAccelerationFactorAtTop, "Acceleration factor at top [%,100=like bottom]")
-#if NONLINEAR_SYSTEM
+
 FSTRINGVALUE(Com::tEPRSegmentsPerSecondPrint, "Segments/s for printing")
 FSTRINGVALUE(Com::tEPRSegmentsPerSecondTravel, "Segments/s for travel")
-#endif
-#if DRIVE_SYSTEM==DELTA
+
 FSTRINGVALUE(Com::tEPRZAcceleration, "Acceleration [mm/s^2]")
 FSTRINGVALUE(Com::tEPRZTravelAcceleration, "Travel acceleration [mm/s^2]")
 FSTRINGVALUE(Com::tEPRZStepsPerMM, "Steps per mm")
@@ -356,27 +314,6 @@ FSTRINGVALUE(Com::tDeltaDiagonalCorrectionA, "Corr. diagonal A [mm]")
 FSTRINGVALUE(Com::tDeltaDiagonalCorrectionB, "Corr. diagonal B [mm]")
 FSTRINGVALUE(Com::tDeltaDiagonalCorrectionC, "Corr. diagonal C [mm]")
 
-#else
-FSTRINGVALUE(Com::tEPRMaxZJerk, "Max. Z-jerk [mm/s]")
-FSTRINGVALUE(Com::tEPRXStepsPerMM, "X-axis steps per mm")
-#if DUAL_X_RESOLUTION
-FSTRINGVALUE(Com::tEPRX2StepsPerMM, "X2-axis steps per mm")
-#endif
-FSTRINGVALUE(Com::tEPRYStepsPerMM, "Y-axis steps per mm")
-FSTRINGVALUE(Com::tEPRZStepsPerMM, "Z-axis steps per mm")
-FSTRINGVALUE(Com::tEPRXMaxFeedrate, "X-axis max. feedrate [mm/s]")
-FSTRINGVALUE(Com::tEPRYMaxFeedrate, "Y-axis max. feedrate [mm/s]")
-FSTRINGVALUE(Com::tEPRZMaxFeedrate, "Z-axis max. feedrate [mm/s]")
-FSTRINGVALUE(Com::tEPRXHomingFeedrate, "X-axis homing feedrate [mm/s]")
-FSTRINGVALUE(Com::tEPRYHomingFeedrate, "Y-axis homing feedrate [mm/s]")
-FSTRINGVALUE(Com::tEPRZHomingFeedrate, "Z-axis homing feedrate [mm/s]")
-FSTRINGVALUE(Com::tEPRXAcceleration, "X-axis acceleration [mm/s^2]")
-FSTRINGVALUE(Com::tEPRYAcceleration, "Y-axis acceleration [mm/s^2]")
-FSTRINGVALUE(Com::tEPRZAcceleration, "Z-axis acceleration [mm/s^2]")
-FSTRINGVALUE(Com::tEPRXTravelAcceleration, "X-axis travel acceleration [mm/s^2]")
-FSTRINGVALUE(Com::tEPRYTravelAcceleration, "Y-axis travel acceleration [mm/s^2]")
-FSTRINGVALUE(Com::tEPRZTravelAcceleration, "Z-axis travel acceleration [mm/s^2]")
-#endif
 FSTRINGVALUE(Com::tEPROPSMode, "OPS operation mode [0=Off,1=Classic,2=Fast]")
 FSTRINGVALUE(Com::tEPROPSMoveAfter, "OPS move after x% retract [%]")
 FSTRINGVALUE(Com::tEPROPSMinDistance, "OPS min. distance for fil. retraction [mm]")
@@ -414,8 +351,7 @@ FSTRINGVALUE(Com::tEPRAdvanceL, "advance L [0=off]")
 FSTRINGVALUE(Com::tEPRPreheatTemp, "Preheat temp. [°C]")
 FSTRINGVALUE(Com::tEPRPreheatBedTemp, "Bed Preheat temp. [°C]")
 
-#endif
-#if SDSUPPORT
+
 //FSTRINGVALUE(Com::tSDRemoved,UI_TEXT_SD_REMOVED)
 //FSTRINGVALUE(Com::tSDInserted,UI_TEXT_SD_INSERTED)
 FSTRINGVALUE(Com::tSDInitFail, "SD init fail")
@@ -436,15 +372,16 @@ FSTRINGVALUE(Com::tDeletionFailed, "Deletion failed")
 FSTRINGVALUE(Com::tDirectoryCreated, "Directory created")
 FSTRINGVALUE(Com::tCreationFailed, "Creation failed")
 FSTRINGVALUE(Com::tSDErrorCode, "SD errorCode:")
-#endif // SDSUPPORT
+
 FSTRINGVALUE(Com::tHeaterDecoupled, "Heater decoupled")
 FSTRINGVALUE(Com::tHeaterDecoupledWarning, "One heater seems decoupled from thermistor - disabling all for safety!")
+
 #if DISTORTION_CORRECTION
 FSTRINGVALUE(Com::tZCorrectionEnabled, "Z correction enabled")
 FSTRINGVALUE(Com::tZCorrectionDisabled, "Z correction disabled")
 #endif
+
 #if FEATURE_RETRACTION
-FSTRINGVALUE(Com::tEPRAutoretractEnabled, "Enable retraction conversion [0/1]")
 FSTRINGVALUE(Com::tEPRRetractionLength, "Retraction length [mm]")
 FSTRINGVALUE(Com::tEPRRetractionLongLength, "Retraction length extruder switch [mm]")
 FSTRINGVALUE(Com::tEPRRetractionSpeed, "Retraction speed [mm/s]")
@@ -453,23 +390,18 @@ FSTRINGVALUE(Com::tEPRRetractionUndoExtraLength, "Extra extrusion on undo retrac
 FSTRINGVALUE(Com::tEPRRetractionUndoExtraLongLength, "Extra extrusion on undo switch retract [mm]")
 FSTRINGVALUE(Com::tEPRRetractionUndoSpeed, "Retraction undo speed")
 #endif
+
 FSTRINGVALUE(Com::tConfig, "Config:")
 FSTRINGVALUE(Com::tExtrDot, "Extr.")
 
-#if STEPPER_CURRENT_CONTROL == CURRENT_CONTROL_MCP4728
-FSTRINGVALUE(Com::tMCPEpromSettings,  "MCP4728 DAC EEPROM Settings:")
-FSTRINGVALUE(Com::tMCPCurrentSettings, "MCP4728 DAC Current Settings:")
-#endif
 FSTRINGVALUE(Com::tPrinterModeFFF, "PrinterMode:FFF")
-FSTRINGVALUE(Com::tPrinterModeLaser, "PrinterMode:Laser")
-FSTRINGVALUE(Com::tPrinterModeCNC, "PrinterMode:CNC")
+
 #ifdef STARTUP_GCODE
 FSTRINGVALUE(Com::tStartupGCode, STARTUP_GCODE)
 #endif
-#ifdef DRV_TMC2130
-FSTRINGVALUE(Com::tTrinamicMotorCurrent,  "Trinamic motor current:")
-FSTRINGVALUE(Com::tTrinamicMicrostepMode, "Trinamic microstep mode:")
-#endif
+
+
+
 bool Com::writeToAll = true; // transmit start messages to all devices!
 
 void Com::cap(FSTRINGPARAM(text)) {
@@ -549,7 +481,7 @@ void Com::printF(FSTRINGPARAM(text), const char *msg) {
 
 void Com::printF(FSTRINGPARAM(text), int value) {
     printF(text);
-    print(value);
+    print((int32_t)value);
 }
 void Com::printF(FSTRINGPARAM(text), int32_t value) {
     printF(text);
@@ -561,7 +493,7 @@ void Com::printF(FSTRINGPARAM(text), uint32_t value) {
 }
 void Com::printFLN(FSTRINGPARAM(text), int value) {
     printF(text);
-    print(value);
+    print((int32_t)value);
     println();
 }
 void Com::printFLN(FSTRINGPARAM(text), int32_t value) {
@@ -589,14 +521,16 @@ void Com::print(const char *text) {
         GCodeSource::writeToAll(*text++);
     }
 }
-void Com::print(long value) {
+void Com::print(int32_t value) {
     if(value < 0) {
         GCodeSource::writeToAll('-');
         value = -value;
     }
     printNumber(value);
 }
-
+void Com::print(uint32_t value) {
+  printNumber(value);
+}
 void Com::printNumber(uint32_t n) {
     char buf[11]; // Assumes 8-bit chars plus zero byte.
     char *str = &buf[10];

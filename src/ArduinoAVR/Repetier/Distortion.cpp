@@ -78,12 +78,8 @@ void Distortion::init() {
 #if !DISTORTION_PERMANENT
     resetCorrection();
 #endif
-#if EEPROM_MODE != 0
     enabled = EEPROM::isZCorrectionEnabled();
     Com::printFLN(PSTR("zDistortionCorrection:"), (int)enabled);
-#else
-    enabled = false;
-#endif
 }
 
 void Distortion::updateDerived() {
@@ -103,7 +99,7 @@ void Distortion::updateDerived() {
 
 void Distortion::enable(bool permanent) {
     enabled = true;
-#if DISTORTION_PERMANENT && EEPROM_MODE != 0
+#if DISTORTION_PERMANENT
     if(permanent)
         EEPROM::setZCorrectionEnabled(enabled);
 #endif
@@ -112,7 +108,7 @@ void Distortion::enable(bool permanent) {
 
 void Distortion::disable(bool permanent) {
     enabled = false;
-#if DISTORTION_PERMANENT && EEPROM_MODE != 0
+#if DISTORTION_PERMANENT
     if(permanent)
         EEPROM::setZCorrectionEnabled(enabled);
 #endif
@@ -146,9 +142,7 @@ int32_t Distortion::getMatrix(int index) const {
 }
 void Distortion::setMatrix(int32_t val, int index) {
 #if DISTORTION_PERMANENT
-#if EEPROM_MODE != 0
     EEPROM::setZCorrection(val, index);
-#endif
 #else
     matrix[index] = val;
 #endif
@@ -204,9 +198,6 @@ bool Distortion::measure(void) {
     //Com::printFLN(PSTR("radiusCorr:"), radiusCorrectionSteps);
     //Com::printFLN(PSTR("steps:"), step);
     int32_t zCorrection = 0;
-#if Z_PROBE_Z_OFFSET_MODE == 1
-    zCorrection -= Printer::zBedOffset * Printer::axisStepsPerMM[Z_AXIS];
-#endif
 
     Printer::startProbing(true);
     Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, z, IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
@@ -256,9 +247,7 @@ bool Distortion::measure(void) {
         setMatrix(getMatrix(k) - sum, k);
     Printer::zLength -= sum * Printer::invAxisStepsPerMM[Z_AXIS];
     */
-#if EEPROM_MODE
     EEPROM::storeDataIntoEEPROM();
-#endif
 // print matrix
     Com::printInfoFLN(PSTR("Distortion correction matrix:"));
     for (iy = DISTORTION_CORRECTION_POINTS - 1; iy >= 0 ; iy--) {

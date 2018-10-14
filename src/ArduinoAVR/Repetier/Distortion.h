@@ -68,17 +68,14 @@ private:
     void extrapolateCorners();
 
     // attributes
-#if DRIVE_SYSTEM == DELTA
     int32_t step;
     int32_t radiusCorrectionSteps;
-#else
-    int32_t xCorrectionSteps, xOffsetSteps;
-    int32_t yCorrectionSteps, yOffsetSteps;
-#endif
     int32_t zStart, zEnd;
+
 #if !DISTORTION_PERMANENT
     int32_t matrix[DISTORTION_CORRECTION_POINTS * DISTORTION_CORRECTION_POINTS];
 #endif
+
     bool enabled;
 };
 #endif //DISTORTION_CORRECTION

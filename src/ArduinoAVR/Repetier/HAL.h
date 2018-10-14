@@ -36,15 +36,7 @@
 
 #define INLINE __attribute__((always_inline))
 
-#if CPU_ARCH == ARCH_AVR
 #include <avr/io.h>
-#else
-#define PROGMEM
-#define PGM_P const char *
-#define PSTR(s) s
-#define pgm_read_byte_near(x) (*(uint8_t*)x)
-#define pgm_read_byte(x) (*(uint8_t*)x)
-#endif
 
 #define PACK
 
@@ -61,14 +53,6 @@ All known Arduino boards use 64. This value is needed for the extruder timing. *
 
 #define ANALOG_PRESCALER _BV(ADPS0)|_BV(ADPS1)|_BV(ADPS2)
 
-#if MOTHERBOARD==8 || MOTHERBOARD==88 || MOTHERBOARD==9 || MOTHERBOARD==92 || CPU_ARCH!=ARCH_AVR
-#define EXTERNALSERIAL
-#endif
-#if NEW_COMMUNICATION && defined(BLUETOOTH_SERIAL) && BLUETOOTH_SERIAL > 0
-#undef EXTERNALSERIAL
-#define EXTERNALSERIAL
-#endif
-
 //#define EXTERNALSERIAL  // Force using Arduino serial
 #ifndef EXTERNALSERIAL
 #undef HardwareSerial_h
@@ -77,23 +61,18 @@ All known Arduino boards use 64. This value is needed for the extruder timing. *
 #include <inttypes.h>
 #include "Stream.h"
 #ifdef EXTERNALSERIAL
-// Can not change buffer size here, need add build flag -D SERIAL_RX_BUFFER_SIZE=128
 //#define SERIAL_RX_BUFFER_SIZE 128
 #endif
+
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
 #else
 #include "WProgram.h"
 #define COMPAT_PRE1
 #endif
-#if CPU_ARCH==ARCH_AVR
+
 #include "fastio.h"
-#else
-#define	READ(IO)  digitalRead(IO)
-#define	WRITE(IO, v)  digitalWrite(IO, v)
-#define	SET_INPUT(IO)  pinMode(IO, INPUT)
-#define	SET_OUTPUT(IO)  pinMode(IO, OUTPUT)
-#endif
+
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #endif
@@ -141,18 +120,9 @@ public:
 #define bit_clear(x,y) x&= ~(1<<y) //cbi(x,y)
 #define bit_set(x,y)   x|= (1<<y)//sbi(x,y)
 
-/** defines the data direction (reading from I2C device) in i2cStart(),i2cRepStart() */
-#define I2C_READ    1
-/** defines the data direction (writing to I2C device) in i2cStart(),i2cRepStart() */
-#define I2C_WRITE   0
-
-#if NONLINEAR_SYSTEM
 // Maximum speed with 100% interrupt utilization is 27000 Hz at 16MHz cpu
 // leave some margin for all the extra transformations. So we keep inside clean timings.
 #define LIMIT_INTERVAL ((F_CPU/30000)+1)
-#else
-#define LIMIT_INTERVAL ((F_CPU/40000)+1)
-#endif
 
 typedef uint16_t speed_t;
 typedef uint32_t ticks_t;
@@ -164,6 +134,7 @@ typedef uint8_t ufast8_t;
 #define FAST_INTEGER_SQRT
 
 #ifndef EXTERNALSERIAL
+
 // Implement serial communication for one stream only!
 /*
   HardwareSerial.h - Hardware serial library for Wiring
@@ -190,8 +161,10 @@ typedef uint8_t ufast8_t;
 
 #define SERIAL_BUFFER_SIZE 128
 #define SERIAL_BUFFER_MASK 127
+
 #undef SERIAL_TX_BUFFER_SIZE
 #undef SERIAL_TX_BUFFER_MASK
+
 #ifdef BIG_OUTPUT_BUFFER
   #define SERIAL_TX_BUFFER_SIZE 128
   #define SERIAL_TX_BUFFER_MASK 127
@@ -253,22 +226,14 @@ extern RFHardwareSerial RFSerial;
 #define RFSERIAL RFSerial
 //extern ring_buffer tx_buffer;
 #define WAIT_OUT_EMPTY while(tx_buffer.head != tx_buffer.tail) {}
+
 #else
+
+//  EXTERNALSERIAL is defined
 #define RFSERIAL Serial
-#if defined(BLUETOOTH_SERIAL) && BLUETOOTH_SERIAL > 0
-#if BLUETOOTH_SERIAL == 1
-#define RFSERIAL2 Serial1
-#elif BLUETOOTH_SERIAL == 2
-#define RFSERIAL2 Serial2
-#elif BLUETOOTH_SERIAL == 3
-#define RFSERIAL2 Serial3
-#elif BLUETOOTH_SERIAL == 4
-#define RFSERIAL2 Serial4
-#elif BLUETOOTH_SERIAL == 5
-#define RFSERIAL2 Serial5
-#endif
-#endif
-#endif
+
+#endif  //  EXTERNALSERIAL
+
 
 class HAL
 {
@@ -291,7 +256,6 @@ public:
     */
     static inline int32_t Div4U2U(uint32_t a,uint16_t b)
     {
-#if CPU_ARCH==ARCH_AVR
         // r14/r15 remainder
         // r16 counter
         __asm__ __volatile__ (
@@ -370,9 +334,6 @@ public:
             :"r14","r15","r16"
         );
         return a;
-#else
-        return a/b;
-#endif
     }
     static inline unsigned long U16SquaredToU32(unsigned int val)
     {
@@ -398,7 +359,6 @@ public:
     }
     static inline unsigned int ComputeV(long timer,long accel)
     {
-#if CPU_ARCH==ARCH_AVR
         unsigned int res;
         // 38 Ticks
         __asm__ __volatile__ ( // 0 = res, 1 = timer, 2 = accel %D2=0 ,%A1 are unused is free
@@ -438,9 +398,6 @@ public:
             : );
         // unsigned int v = ((timer>>8)*cur->accel)>>10;
         return res;
-#else
-        return ((timer >> 8) * accel) >> 10;
-#endif
     }
 // Multiply two 16 bit values and return 32 bit result
     static inline uint32_t mulu16xu16to32(unsigned int a,unsigned int b)
@@ -472,7 +429,6 @@ public:
 // Multiply two 16 bit values and return 32 bit result
     static inline unsigned int mulu6xu16shift16(unsigned int a,unsigned int b)
     {
-#if CPU_ARCH == ARCH_AVR
         unsigned int res;
         // 18 Ticks = 1.125 us
         __asm__ __volatile__ ( // 0 = res, 1 = timer, 2 = accel %D2=0 ,%A1 are unused is free
@@ -495,9 +451,6 @@ public:
             :"1"(a),"2"(b)
             :"r18","r19" );
         return res;
-#else
-        return ((int32_t)a * b) >> 16;
-#endif
     }
     static inline void digitalWrite(uint8_t pin,uint8_t value)
     {
@@ -709,17 +662,6 @@ public:
         while (!(SPSR & (1 << SPIF))) {}
     }
 
-    // I2C Support
-
-	static void i2cSetClockspeed(uint32_t clockSpeedHz);
-    static void i2cInit(uint32_t clockSpeedHz);
-    static unsigned char i2cStart(uint8_t address);
-    static void i2cStartWait(uint8_t address);
-    static void i2cStop(void);
-    static void i2cWrite( uint8_t data );
-    static uint8_t i2cReadAck(void);
-    static uint8_t i2cReadNak(void);
-
     // Watchdog support
 
     inline static void startWatchdog()
@@ -745,10 +687,6 @@ public:
     {
         return (float)F_CPU/TIMER0_PRESCALE;
     }
-#if FEATURE_SERVO
-    static unsigned int servoTimings[4];
-    static void servoMicroseconds(uint8_t servo,int ms, uint16_t autoOff);
-#endif
     static void analogStart();
 #if USE_ADVANCE
     static void resetExtruderDirection();
@@ -756,21 +694,7 @@ public:
 protected:
 private:
 };
-/*#if MOTHERBOARD==6 || MOTHERBOARD==62 || MOTHERBOARD==7
-#if MOTHERBOARD!=7
-#define SIMULATE_PWM
-#endif
-#define EXTRUDER_TIMER_VECTOR TIMER2_COMPA_vect
-#define EXTRUDER_OCR OCR2A
-#define EXTRUDER_TCCR TCCR2A
-#define EXTRUDER_TIMSK TIMSK2
-#define EXTRUDER_OCIE OCIE2A
-#define PWM_TIMER_VECTOR TIMER2_COMPB_vect
-#define PWM_OCR OCR2B
-#define PWM_TCCR TCCR2B
-#define PWM_TIMSK TIMSK2
-#define PWM_OCIE OCIE2B
-#else*/
+
 #define EXTRUDER_TIMER_VECTOR TIMER0_COMPA_vect
 #define EXTRUDER_OCR OCR0A
 #define EXTRUDER_TCCR TCCR0A
@@ -781,5 +705,5 @@ private:
 #define PWM_TCCR TCCR0A
 #define PWM_TIMSK TIMSK0
 #define PWM_OCIE OCIE0B
-//#endif
+
 #endif // HAL_H

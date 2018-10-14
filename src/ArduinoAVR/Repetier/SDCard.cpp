@@ -21,13 +21,11 @@
 
 #include "Repetier.h"
 
-#if SDSUPPORT
-
 char tempLongFilename[LONG_FILENAME_LENGTH + 1];
 char fullName[LONG_FILENAME_LENGTH * SD_MAX_FOLDER_DEPTH + SD_MAX_FOLDER_DEPTH + 1];
-#if NEW_COMMUNICATION
+
 SDCardGCodeSource sdSource;
-#endif
+
 SDCard sd;
 
 SDCard::SDCard() {
@@ -38,52 +36,40 @@ SDCard::SDCard() {
 }
 
 void SDCard::automount() {
-#if SDCARDDETECT > -1
     if(READ(SDCARDDETECT) != SDCARDDETECTINVERTED) {
         if(sdactive || sdmode == 100) { // Card removed
-            Com::printFLN(PSTR("SD card removed"));
-#if UI_DISPLAY_TYPE != NO_DISPLAY
+            //Com::printFLN(PSTR(PSTR("SD card removed")));
             uid.executeAction(UI_ACTION_TOP_MENU, true);
-#endif
             unmount();
-            UI_STATUS_UPD_F(Com::translatedF(UI_TEXT_SD_REMOVED_ID));
+            UI_STATUS_UPD_F(PSTR("SD card removed"));
         }
     } else {
         if(!sdactive && sdmode != 100) {
-            UI_STATUS_UPD_F(Com::translatedF(UI_TEXT_SD_INSERTED_ID));
+          UI_STATUS_UPD_F(PSTR("SD card inserted"));
             mount();
             if(sdmode != 100) // send message only if we have success
                 Com::printFLN(PSTR("SD card inserted")); // Not translatable or host will not understand signal
-#if UI_DISPLAY_TYPE != NO_DISPLAY
             if(sdactive && !uid.isWizardActive()) { // Wizards have priority
                 Printer::setAutomount(true);
                 uid.executeAction(UI_ACTION_SD_PRINT + UI_ACTION_TOPMENU, true);
             }
-#endif
         }
     }
-#endif
 }
 
 void SDCard::initsd() {
     sdactive = false;
 #if SDSS > -1
-#if SDCARDDETECT > -1
     if(READ(SDCARDDETECT) != SDCARDDETECTINVERTED)
         return;
-#endif
     HAL::pingWatchdog();
     HAL::delayMilliseconds(50); // wait for stabilization of contacts, bootup ...
-#if defined(ENABLE_SOFTWARE_SPI_CLASS) && ENABLE_SOFTWARE_SPI_CLASS
-	fat.begin(SDSS);
-#else
-	fat.begin(SDSS, SD_SCK_MHZ(4)); // dummy init of SD_CARD
-#endif
+    fat.begin(SDSS, SD_SCK_MHZ(50)); // dummy init of SD_CARD
     HAL::delayMilliseconds(50);       // wait for init end
     HAL::pingWatchdog();
     /*if(dir[0].isOpen())
         dir[0].close();*/
-    if (!fat.begin(SDSS, SD_SCK_MHZ(4))) {
+    if (!fat.begin(SDSS, SD_SCK_MHZ(50))) {
         Com::printFLN(Com::tSDInitFail);
         sdmode = 100; // prevent automount loop!
         if (fat.card()->errorCode()) {
@@ -109,7 +95,7 @@ void SDCard::initsd() {
     }
     Com::printFLN(PSTR("Card successfully initialized."));
     sdactive = true;
-    Printer::setMenuMode(MENU_MODE_SD_MOUNTED, true);
+    Printer::setMenuMode(MENU_MODE_MOUNTED, true);
     HAL::pingWatchdog();
 
     fat.chdir();
@@ -133,27 +119,22 @@ void SDCard::unmount() {
     sdactive = false;
     savetosd = false;
     Printer::setAutomount(false);
-    Printer::setMenuMode(MENU_MODE_SD_MOUNTED + MENU_MODE_PAUSED + MENU_MODE_SD_PRINTING, false);
-#if UI_DISPLAY_TYPE != NO_DISPLAY && SDSUPPORT
+    Printer::setMenuMode(MENU_MODE_MOUNTED + MENU_MODE_PAUSED + MENU_MODE_PRINTING, false);
+
     uid.cwd[0] = '/';
     uid.cwd[1] = 0;
-    uid.folderLevel = 0;
-#endif
-	Com::printFLN(PSTR("SD Card unmounted"));
 }
 
 void SDCard::startPrint() {
     if(!sdactive) return;
     sdmode = 1;
-    Printer::setMenuMode(MENU_MODE_SD_PRINTING, true);
+    Printer::setMenuMode(MENU_MODE_PRINTING, true);
     Printer::setMenuMode(MENU_MODE_PAUSED, false);
     Printer::setPrinting(true);
     Printer::maxLayer = 0;
     Printer::currentLayer = 0;
     UI_STATUS_F(PSTR(""));
-#if NEW_COMMUNICATION
     GCodeSource::registerSource(&sdSource);
-#endif
 }
 
 void SDCard::pausePrint(bool intern) {
@@ -163,41 +144,31 @@ void SDCard::pausePrint(bool intern) {
 #if !defined(DISABLE_PRINTMODE_ON_PAUSE) || DISABLE_PRINTMODE_ON_PAUSE==1
     Printer::setPrinting(false);
 #endif
-#if NEW_COMMUNICATION
     GCodeSource::removeSource(&sdSource);
-#endif
-    if(EVENT_SD_PAUSE_START(intern)) {
-        if(intern) {
-            Commands::waitUntilEndOfAllBuffers();
-            //sdmode = 0; // why ?
-            Printer::MemoryPosition();
-            Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, IGNORE_COORDINATE,
-                                Printer::memoryE - RETRACT_ON_PAUSE,
-                                Printer::maxFeedrate[E_AXIS] / 2);
-            Printer::moveToParkPosition();
-            Printer::lastCmdPos[X_AXIS] = Printer::currentPosition[X_AXIS];
-            Printer::lastCmdPos[Y_AXIS] = Printer::currentPosition[Y_AXIS];
-            Printer::lastCmdPos[Z_AXIS] = Printer::currentPosition[Z_AXIS];
-            GCode::executeFString(PSTR(PAUSE_START_COMMANDS));
-        }
+    if(intern) {
+      Commands::waitUntilEndOfAllBuffers();
+      //sdmode = 0; // why ?
+      Printer::MemoryPosition();
+      Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, IGNORE_COORDINATE,
+                          Printer::memoryE - RETRACT_ON_PAUSE,
+                          Printer::maxFeedrate[E_AXIS] / 2);
+      Printer::moveToParkPosition();
+      Printer::lastCmdPos[X_AXIS] = Printer::currentPosition[X_AXIS];
+      Printer::lastCmdPos[Y_AXIS] = Printer::currentPosition[Y_AXIS];
+      Printer::lastCmdPos[Z_AXIS] = Printer::currentPosition[Z_AXIS];
+      GCode::executeFString(PSTR(PAUSE_START_COMMANDS));
     }
-    EVENT_SD_PAUSE_END(intern);
 }
 
 void SDCard::continuePrint(bool intern) {
     if(!sd.sdactive) return;
-    if(EVENT_SD_CONTINUE_START(intern)) {
-        if(intern) {
-            GCode::executeFString(PSTR(PAUSE_END_COMMANDS));
-            Printer::GoToMemoryPosition(true, true, false, false, Printer::maxFeedrate[X_AXIS]);
-            Printer::GoToMemoryPosition(false, false, true, false, Printer::maxFeedrate[Z_AXIS] / 2.0f);
-            Printer::GoToMemoryPosition(false, false, false, true, Printer::maxFeedrate[E_AXIS] / 2.0f);
-        }
+    if(intern) {
+      GCode::executeFString(PSTR(PAUSE_END_COMMANDS));
+      Printer::GoToMemoryPosition(true, true, false, false, Printer::maxFeedrate[X_AXIS]);
+      Printer::GoToMemoryPosition(false, false, true, false, Printer::maxFeedrate[Z_AXIS] / 2.0f);
+      Printer::GoToMemoryPosition(false, false, false, true, Printer::maxFeedrate[E_AXIS] / 2.0f);
     }
-    EVENT_SD_CONTINUE_END(intern);
-#if NEW_COMMUNICATION
     GCodeSource::registerSource(&sdSource);
-#endif
     Printer::setPrinting(true);
     Printer::setMenuMode(MENU_MODE_PAUSED, false);
     sdmode = 1;
@@ -208,20 +179,15 @@ void SDCard::stopPrint() {
     if(sdmode)
         Com::printFLN(PSTR("SD print stopped by user."));
     sdmode = 0;
-    Printer::setMenuMode(MENU_MODE_SD_PRINTING, false);
+    Printer::setMenuMode(MENU_MODE_PRINTING, false);
     Printer::setMenuMode(MENU_MODE_PAUSED, false);
     Printer::setPrinting(0);
-#if NEW_COMMUNICATION
     GCodeSource::removeSource(&sdSource);
-#endif
-    if(EVENT_SD_STOP_START) {
-        GCode::executeFString(PSTR(SD_RUN_ON_STOP));
-        if(SD_STOP_HEATER_AND_MOTORS_ON_STOP) {
-            Commands::waitUntilEndOfAllMoves();
-            Printer::kill(false);
-        }
+    GCode::executeFString(PSTR(SD_RUN_ON_STOP));
+    if(SD_STOP_HEATER_AND_MOTORS_ON_STOP) {
+      Commands::waitUntilEndOfAllMoves();
+      Printer::kill(false);
     }
-    EVENT_SD_STOP_END;
 }
 
 void SDCard::writeCommand(GCode *code) {
@@ -430,91 +396,6 @@ void SDCard::ls() {
     Com::printFLN(Com::tEndFileList);
 }
 
-#if JSON_OUTPUT
-void SDCard::lsJSON(const char *filename) {
-    SdBaseFile dir;
-    fat.chdir();
-    if (*filename == 0) {
-        dir.openRoot(fat.vol());
-    } else {
-        if (!dir.open(fat.vwd(), filename, O_READ) || !dir.isDir()) {
-            Com::printF(Com::tJSONErrorStart);
-            Com::printF(Com::tFileOpenFailed);
-            Com::printFLN(Com::tJSONErrorEnd);
-            return;
-        }
-    }
-
-    Com::printF(Com::tJSONDir);
-    SDCard::printEscapeChars(filename);
-    Com::printF(Com::tJSONFiles);
-    dir.lsJSON();
-    Com::printFLN(Com::tJSONArrayEnd);
-}
-
-void SDCard::printEscapeChars(const char *s) {
-    for (unsigned int i = 0; i < strlen(s); ++i) {
-        switch (s[i]) {
-        case '"':
-        case '/':
-        case '\b':
-        case '\f':
-        case '\n':
-        case '\r':
-        case '\t':
-        case '\\':
-            Com::print('\\');
-            break;
-        }
-        Com::print(s[i]);
-    }
-}
-
-void SDCard::JSONFileInfo(const char* filename) {
-    SdFile targetFile;
-    GCodeFileInfo *info, tmpInfo;
-    if (strlen(filename) == 0)  {
-        targetFile = file;
-        info = &fileInfo;
-    } else {
-        if (!targetFile.open(fat.vwd(), filename, O_READ) || targetFile.isDir()) {
-            Com::printF(Com::tJSONErrorStart);
-            Com::printF(Com::tFileOpenFailed);
-            Com::printFLN(Com::tJSONErrorEnd);
-            return;
-        }
-        info = &tmpInfo;
-        info->init(targetFile);
-    }
-    if (!targetFile.isOpen()) {
-        Com::printF(Com::tJSONErrorStart);
-        Com::printF(Com::tNotSDPrinting);
-        Com::printFLN(Com::tJSONErrorEnd);
-        return;
-    }
-
-    // {"err":0,"size":457574,"height":4.00,"layerHeight":0.25,"filament":[6556.3],"generatedBy":"Slic3r 1.1.7 on 2014-11-09 at 17:11:32"}
-    Com::printF(Com::tJSONFileInfoStart);
-    Com::print(info->fileSize);
-    Com::printF(Com::tJSONFileInfoHeight);
-    Com::print(info->objectHeight);
-    Com::printF(Com::tJSONFileInfoLayerHeight);
-    Com::print(info->layerHeight);
-    Com::printF(Com::tJSONFileInfoFilament);
-    Com::print(info->filamentNeeded);
-    Com::printF(Com::tJSONFileInfoGeneratedBy);
-    Com::print(info->generatedBy);
-    Com::print('"');
-    if (strlen(filename) == 0) {
-        Com::printF(Com::tJSONFileInfoName);
-        file.printName();
-        Com::print('"');
-    }
-    Com::print('}');
-    Com::println();
-};
-
-#endif
 
 bool SDCard::selectFile(const char* filename, bool silent) {
     const char* oldP = filename;
@@ -537,9 +418,6 @@ bool SDCard::selectFile(const char* filename, bool silent) {
             Com::printF(Com::tFileOpened, oldP);
             Com::printFLN(Com::tSpaceSizeColon, file.fileSize());
         }
-#if JSON_OUTPUT
-        fileInfo.init(file);
-#endif
         sdpos = 0;
         filesize = file.fileSize();
         Com::printFLN(Com::tFileSelected);
@@ -568,7 +446,7 @@ void SDCard::startWrite(char *filename) {
     if(!file.open(filename, O_CREAT | O_APPEND | O_WRITE | O_TRUNC)) {
         Com::printFLN(Com::tOpenFailedFile, filename);
     } else {
-        UI_STATUS_F(Com::translatedF(UI_TEXT_UPLOADING_ID));
+        UI_STATUS_F(PSTR("Uploading..."));
         savetosd = true;
         Com::printFLN(Com::tWritingToFile, filename);
     }
@@ -607,209 +485,3 @@ void SDCard::makeDirectory(char *filename) {
         Com::printFLN(Com::tCreationFailed);
     }
 }
-
-#ifdef GLENN_DEBUG
-void SDCard::writeToFile() {
-    size_t nbyte;
-    char szName[10];
-
-    strcpy(szName, "Testing\r\n");
-    nbyte = file.write(szName, strlen(szName));
-    Com::print("L=");
-    Com::print((long)nbyte);
-    Com::println();
-}
-
-#endif
-
-#endif
-
-#if JSON_OUTPUT
-
-// --------------------------------------------------------------- //
-// Code that gets gcode information is adapted from RepRapFirmware //
-// Originally licensed under GPL                                   //
-// Authors: reprappro, dc42, dcnewman, others                      //
-// Source: https://github.com/dcnewman/RepRapFirmware              //
-// Copy date: 15 Nov 2015                                          //
-// --------------------------------------------------------------- //
-
-void GCodeFileInfo::init(SdFile &file) {
-    this->fileSize = file.fileSize();
-    this->filamentNeeded = 0.0;
-    this->objectHeight = 0.0;
-    this->layerHeight = 0.0;
-    if (!file.isOpen()) return;
-    bool genByFound = false, layerHeightFound = false, filamentNeedFound = false;
-#if CPU_ARCH==ARCH_AVR
-#define GCI_BUF_SIZE 120
-#else
-#define GCI_BUF_SIZE 1024
-#endif
-    // READ 4KB FROM THE BEGINNING
-    char buf[GCI_BUF_SIZE];
-    for (int i = 0; i < 4096; i += GCI_BUF_SIZE - 50) {
-        if(!file.seekSet(i)) break;
-        file.read(buf, GCI_BUF_SIZE);
-        if (!genByFound && findGeneratedBy(buf, this->generatedBy)) genByFound = true;
-        if (!layerHeightFound && findLayerHeight(buf, this->layerHeight)) layerHeightFound = true;
-        if (!filamentNeedFound && findFilamentNeed(buf, this->filamentNeeded)) filamentNeedFound = true;
-        if(genByFound && layerHeightFound && filamentNeedFound) goto get_objectHeight;
-    }
-
-    // READ 4KB FROM END
-    for (int i = 0; i < 4096; i += GCI_BUF_SIZE - 50) {
-        if(!file.seekEnd(-4096 + i)) break;
-        file.read(buf, GCI_BUF_SIZE);
-        if (!genByFound && findGeneratedBy(buf, this->generatedBy)) genByFound = true;
-        if (!layerHeightFound && findLayerHeight(buf, this->layerHeight)) layerHeightFound = true;
-        if (!filamentNeedFound && findFilamentNeed(buf, this->filamentNeeded)) filamentNeedFound = true;
-        if(genByFound && layerHeightFound && filamentNeedFound) goto get_objectHeight;
-    }
-
-get_objectHeight:
-    // MOVE FROM END UP IN 1KB BLOCKS UP TO 30KB
-    for (int i = GCI_BUF_SIZE; i < 30000; i += GCI_BUF_SIZE - 50) {
-        if(!file.seekEnd(-i)) break;
-        file.read(buf, GCI_BUF_SIZE);
-        if (findTotalHeight(buf, this->objectHeight)) break;
-    }
-    file.seekSet(0);
-}
-
-bool GCodeFileInfo::findGeneratedBy(char *buf, char *genBy) {
-    // Slic3r & S3D
-    const char* generatedByString = PSTR("generated by ");
-    char* pos = strstr_P(buf, generatedByString);
-    if (pos) {
-        pos += strlen_P(generatedByString);
-        size_t i = 0;
-        while (i < GENBY_SIZE - 1 && *pos >= ' ') {
-            char c = *pos++;
-            if (c == '"' || c == '\\') {
-                // Need to escape the quote-mark for JSON
-                if (i > GENBY_SIZE - 3) break;
-                genBy[i++] = '\\';
-            }
-            genBy[i++] = c;
-        }
-        genBy[i] = 0;
-        return true;
-    }
-
-    // CURA
-    const char* slicedAtString = PSTR(";Sliced at: ");
-    pos = strstr_P(buf, slicedAtString);
-    if (pos) {
-        strcpy_P(genBy, PSTR("Cura"));
-        return true;
-    }
-
-    // UNKNOWN
-    strcpy_P(genBy, PSTR("Unknown"));
-    return false;
-}
-
-bool GCodeFileInfo::findLayerHeight(char *buf, float &layerHeight) {
-    // SLIC3R
-    layerHeight = 0;
-    const char* layerHeightSlic3r = PSTR("; layer_height ");
-    char *pos = strstr_P(buf, layerHeightSlic3r);
-    if (pos) {
-        pos += strlen_P(layerHeightSlic3r);
-        while (*pos == ' ' || *pos == 't' || *pos == '=' || *pos == ':') {
-            ++pos;
-        }
-        layerHeight = strtod(pos, NULL);
-        return true;
-    }
-
-    // CURA
-    const char* layerHeightCura = PSTR("Layer height: ");
-    pos = strstr_P(buf, layerHeightCura);
-    if (pos) {
-        pos += strlen_P(layerHeightCura);
-        while (*pos == ' ' || *pos == 't' || *pos == '=' || *pos == ':') {
-            ++pos;
-        }
-        layerHeight = strtod(pos, NULL);
-        return true;
-    }
-
-    return false;
-}
-
-bool GCodeFileInfo::findFilamentNeed(char *buf, float &filament) {
-    const char* filamentUsedStr = PSTR("filament used");
-    const char* pos = strstr_P(buf, filamentUsedStr);
-    filament = 0;
-    if (pos != NULL) {
-        pos += strlen_P(filamentUsedStr);
-        while (*pos == ' ' || *pos == 't' || *pos == '=' || *pos == ':') {
-            ++pos;    // this allows for " = " from default slic3r comment and ": " from default Cura comment
-        }
-        if (isDigit(*pos)) {
-            char *q;
-            filament += strtod(pos, &q);
-            if (*q == 'm' && *(q + 1) != 'm') {
-                filament *= 1000.0;        // Cura outputs filament used in metres not mm
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-bool GCodeFileInfo::findTotalHeight(char *buf, float &height) {
-    int len = 1024;
-    bool inComment, inRelativeMode = false;
-    unsigned int zPos;
-    for (int i = len - 5; i > 0; i--) {
-        if (inRelativeMode) {
-            inRelativeMode = !(buf[i] == 'G' && buf[i + 1] == '9' && buf[i + 2] == '1' && buf[i + 3] <= ' ');
-        } else if (buf[i] == 'G') {
-            // Ignore G0/G1 codes if absolute mode was switched back using G90 (typical for Cura files)
-            if (buf[i + 1] == '9' && buf[i + 2] == '0' && buf[i + 3] <= ' ') {
-                inRelativeMode = true;
-            } else if ((buf[i + 1] == '0' || buf[i + 1] == '1') && buf[i + 2] == ' ') {
-                // Look for last "G0/G1 ... Z#HEIGHT#" command as generated by common slicers
-                // Looks like we found a controlled move, however it could be in a comment, especially when using slic3r 1.1.1
-                inComment = false;
-                size_t j = i;
-                while (j != 0) {
-                    --j;
-                    char c = buf[j];
-                    if (c == '\n' || c == '\r') break;
-                    if (c == ';') {
-                        // It is in a comment, so give up on this one
-                        inComment = true;
-                        break;
-                    }
-                }
-                if (inComment) continue;
-
-                // Find 'Z' position and grab that value
-                zPos = 0;
-                for (int j = i + 3; j < len - 2; j++) {
-                    char c = buf[j];
-                    if (c < ' ') {
-                        // Skip all white spaces...
-                        while (j < len - 2 && c <= ' ') {
-                            c = buf[++j];
-                        }
-                        // ...to make sure ";End" doesn't follow G0 .. Z#HEIGHT#
-                        if (zPos != 0) {
-                            //debugPrintf("Found at offset %u text: %.100s\n", zPos, &buf[zPos + 1]);
-                            height = strtod(&buf[zPos + 1], NULL);
-                            return true;
-                        }
-                        break;
-                    } else if (c == ';') break;
-                    else if (c == 'Z') zPos = j;
-                }
-            }
-        }
-    }
-    return false;
-}
-#endif // JSON_OUTPUT
