@@ -1,22 +1,22 @@
 /*
-    This file is part of Repetier-Firmware.
+  This file is part of Repetier-Firmware.
 
-    Repetier-Firmware is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  Repetier-Firmware is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    Repetier-Firmware is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  Repetier-Firmware is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with Repetier-Firmware.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License
+  along with Repetier-Firmware.  If not, see <http://www.gnu.org/licenses/>.
 
-    This firmware is a nearly complete rewrite of the sprinter firmware
-    by kliment (https://github.com/kliment/Sprinter)
-    which based on Tonokip RepRap firmware rewrite based off of Hydra-mmm firmware.
+  This firmware is a nearly complete rewrite of the sprinter firmware
+  by kliment (https://github.com/kliment/Sprinter)
+  which based on Tonokip RepRap firmware rewrite based off of Hydra-mmm firmware.
 */
 
 #ifndef _REPETIER_H
@@ -47,19 +47,19 @@ enum debugFlags {
 //#define DEBUG_PLANNER
 
 /** Allows M111 to set bit 5 (16) which disables all commands except M111. This can be used
-to test your data throughput or search for communication problems. */
+    to test your data throughput or search for communication problems. */
 #define INCLUDE_DEBUG_COMMUNICATION 1
 
 // Echo all ascii commands after receiving
 //#define DEBUG_ECHO_ASCII
 
 /** Allows M111 so set bit 6 (32) which disables moves, at the first tried step. In combination
-with a dry run, you can test the speed of path computations, which are still performed. */
+    with a dry run, you can test the speed of path computations, which are still performed. */
 #define INCLUDE_DEBUG_NO_MOVE 1
 
 /** Writes the free RAM to output, if it is less then at the last test. Should always return
-values >500 for safety, since it doesn't catch every function call. Nice to tweak cache
-usage or for searching for memory induced errors. Switch it off for production, it costs execution time. */
+    values >500 for safety, since it doesn't catch every function call. Nice to tweak cache
+    usage or for searching for memory induced errors. Switch it off for production, it costs execution time. */
 //#define DEBUG_FREE_MEMORY
 //#define DEBUG_ADVANCE
 
@@ -252,7 +252,7 @@ inline void memcopy4(void *dest,void *source) {
 
 #define SOFTWARE_LEVELING ((FEATURE_SOFTWARE_LEVELING) && (DRIVE_SYSTEM==DELTA))
 /**  \brief Horizontal distance bridged by the diagonal push rod when the end effector is in the center. It is pretty close to 50% of the push rod length (250 mm).
-*/
+ */
 #if !defined(ROD_RADIUS) && DRIVE_SYSTEM == DELTA
 #define ROD_RADIUS (PRINTER_RADIUS-END_EFFECTOR_HORIZONTAL_OFFSET-CARRIAGE_HORIZONTAL_OFFSET)
 #endif
@@ -342,254 +342,254 @@ inline void memcopy4(void *dest,void *source) {
 class RMath
 {
 public:
-    static inline float min(float a,float b)
-    {
-        if(a < b) return a;
-        return b;
-    }
-    static inline float max(float a,float b)
-    {
-        if(a < b) return b;
-        return a;
-    }
-    static inline int32_t min(int32_t a,int32_t b)
-    {
-        if(a < b) return a;
-        return b;
-    }
-    static inline int32_t min(int32_t a,int32_t b, int32_t c)
-    {
-        if(a < b) return a < c ? a : c;
-        return b<c ? b : c;
-    }
-    static inline float min(float a,float b, float c)
-    {
-        if(a < b) return a < c ? a : c;
-        return b < c ? b : c;
-    }
-    static inline int32_t max(int32_t a,int32_t b)
-    {
-        if(a < b) return b;
-        return a;
-    }
-    static inline int min(int a,int b)
-    {
-        if(a < b) return a;
-        return b;
-    }
-    static inline uint16_t min(uint16_t a,uint16_t b)
-    {
-        if(a < b) return a;
-        return b;
-    }
-    static inline int16_t max(int16_t a,int16_t b)
-    {
-        if(a < b) return b;
-        return a;
-    }
-    static inline uint16_t max(uint16_t a,uint16_t b)
-    {
-        if(a < b) return b;
-        return a;
-    }
-    static inline unsigned long absLong(long a)
-    {
-        return a >= 0 ? a : -a;
-    }
-    static inline int32_t sqr(int32_t a)
-    {
-        return a*a;
-    }
-    static inline uint32_t sqr(uint32_t a)
-    {
-        return a*a;
-    }
+  static inline float min(float a,float b)
+  {
+    if(a < b) return a;
+    return b;
+  }
+  static inline float max(float a,float b)
+  {
+    if(a < b) return b;
+    return a;
+  }
+  static inline int32_t min(int32_t a,int32_t b)
+  {
+    if(a < b) return a;
+    return b;
+  }
+  static inline int32_t min(int32_t a,int32_t b, int32_t c)
+  {
+    if(a < b) return a < c ? a : c;
+    return b<c ? b : c;
+  }
+  static inline float min(float a,float b, float c)
+  {
+    if(a < b) return a < c ? a : c;
+    return b < c ? b : c;
+  }
+  static inline int32_t max(int32_t a,int32_t b)
+  {
+    if(a < b) return b;
+    return a;
+  }
+  static inline int min(int a,int b)
+  {
+    if(a < b) return a;
+    return b;
+  }
+  static inline uint16_t min(uint16_t a,uint16_t b)
+  {
+    if(a < b) return a;
+    return b;
+  }
+  static inline int16_t max(int16_t a,int16_t b)
+  {
+    if(a < b) return b;
+    return a;
+  }
+  static inline uint16_t max(uint16_t a,uint16_t b)
+  {
+    if(a < b) return b;
+    return a;
+  }
+  static inline unsigned long absLong(long a)
+  {
+    return a >= 0 ? a : -a;
+  }
+  static inline int32_t sqr(int32_t a)
+  {
+    return a*a;
+  }
+  static inline uint32_t sqr(uint32_t a)
+  {
+    return a*a;
+  }
 #ifdef SUPPORT_64_BIT_MATH
-    static inline int64_t sqr(int64_t a)
-    {
-        return a*a;
-    }
-    static inline uint64_t sqr(uint64_t a)
-    {
-        return a*a;
-    }
+  static inline int64_t sqr(int64_t a)
+  {
+    return a*a;
+  }
+  static inline uint64_t sqr(uint64_t a)
+  {
+    return a*a;
+  }
 #endif
 
-    static inline float sqr(float a)
-    {
-        return a*a;
-    }
+  static inline float sqr(float a)
+  {
+    return a*a;
+  }
 };
 
 class RVector3
 {
 public:
-    float x, y, z;
-    RVector3(float _x = 0,float _y = 0,float _z = 0):x(_x),y(_y),z(_z) {};
-    RVector3(const RVector3 &a):x(a.x),y(a.y),z(a.z) {};
+  float x, y, z;
+  RVector3(float _x = 0,float _y = 0,float _z = 0):x(_x),y(_y),z(_z) {};
+  RVector3(const RVector3 &a):x(a.x),y(a.y),z(a.z) {};
 
 
-/*    const float &operator[](std::size_t idx) const
-    {
+  /*    const float &operator[](std::size_t idx) const
+        {
         if(idx == 0) return x;
         if(idx == 1) return y;
         return z;
-    };
+        };
 
-    float &operator[](std::size_t idx)
-    {
+        float &operator[](std::size_t idx)
+        {
         switch(idx) {
         case 0: return x;
         case 1: return y;
         case 2: return z;
         }
         return 0;
-    };*/
+        };*/
 
-    inline bool operator==(const RVector3 &rhs)
-    {
-        return x==rhs.x && y==rhs.y && z==rhs.z;
-    }
-    inline bool operator!=(const RVector3 &rhs)
-    {
-        return !(*this==rhs);
-    }
-    inline RVector3& operator=(const RVector3 &rhs)
-    {
-        if(this!=&rhs)
-        {
-            x = rhs.x;
-            y = rhs.y;
-            z = rhs.z;
-        }
-        return *this;
-    }
+  inline bool operator==(const RVector3 &rhs)
+  {
+    return x==rhs.x && y==rhs.y && z==rhs.z;
+  }
+  inline bool operator!=(const RVector3 &rhs)
+  {
+    return !(*this==rhs);
+  }
+  inline RVector3& operator=(const RVector3 &rhs)
+  {
+    if(this!=&rhs)
+      {
+        x = rhs.x;
+        y = rhs.y;
+        z = rhs.z;
+      }
+    return *this;
+  }
 
-    inline RVector3& operator+=(const RVector3 &rhs)
-    {
-        x += rhs.x;
-        y += rhs.y;
-        z += rhs.z;
-        return *this;
-    }
+  inline RVector3& operator+=(const RVector3 &rhs)
+  {
+    x += rhs.x;
+    y += rhs.y;
+    z += rhs.z;
+    return *this;
+  }
 
-    inline RVector3& operator-=(const RVector3 &rhs)
-    {
-        x -= rhs.x;
-        y -= rhs.y;
-        z -= rhs.z;
-        return *this;
-    }
-    inline RVector3 operator-() const
-    {
-        return RVector3(-x,-y,-z);
-    }
+  inline RVector3& operator-=(const RVector3 &rhs)
+  {
+    x -= rhs.x;
+    y -= rhs.y;
+    z -= rhs.z;
+    return *this;
+  }
+  inline RVector3 operator-() const
+  {
+    return RVector3(-x,-y,-z);
+  }
 
-    inline float length() const
-    {
-        return sqrt(x * x + y * y + z * z);
-    }
+  inline float length() const
+  {
+    return sqrt(x * x + y * y + z * z);
+  }
 
-    inline float lengthSquared() const
-    {
-        return (x*x+y*y+z*z);
-    }
+  inline float lengthSquared() const
+  {
+    return (x*x+y*y+z*z);
+  }
 
-    inline RVector3 cross(const RVector3 &b) const
-    {
-        return RVector3(y*b.z-z*b.y,z*b.x-x*b.z,x*b.y-y*b.x);
-    }
-    inline float scalar(const RVector3 &b) const
-    {
-        return (x*b.x+y*b.y+z*b.z);
-    }
-    inline RVector3 scale(float factor) const
-    {
-        return RVector3(x*factor,y*factor,z*factor);
-    }
-    inline void scaleIntern(float factor)
-    {
-        x*=factor;
-        y*=factor;
-        z*=factor;
-    }
-    inline void setMinimum(const RVector3 &b)
-    {
-        x = RMath::min(x,b.x);
-        y = RMath::min(y,b.y);
-        z = RMath::min(z,b.z);
-    }
-    inline void setMaximum(const RVector3 &b)
-    {
-        x = RMath::max(x,b.x);
-        y = RMath::max(y,b.y);
-        z = RMath::max(z,b.z);
-    }
-    inline float distance(const RVector3 &b) const
-    {
-        float dx = b.x-x,dy = b.y-y, dz = b.z-z;
-        return (sqrt(dx*dx+dy*dy+dz*dz));
-    }
-    inline float angle(RVector3 &direction)
-    {
-        return static_cast<float>(acos(scalar(direction)/(length()*direction.length())));
-    }
+  inline RVector3 cross(const RVector3 &b) const
+  {
+    return RVector3(y*b.z-z*b.y,z*b.x-x*b.z,x*b.y-y*b.x);
+  }
+  inline float scalar(const RVector3 &b) const
+  {
+    return (x*b.x+y*b.y+z*b.z);
+  }
+  inline RVector3 scale(float factor) const
+  {
+    return RVector3(x*factor,y*factor,z*factor);
+  }
+  inline void scaleIntern(float factor)
+  {
+    x*=factor;
+    y*=factor;
+    z*=factor;
+  }
+  inline void setMinimum(const RVector3 &b)
+  {
+    x = RMath::min(x,b.x);
+    y = RMath::min(y,b.y);
+    z = RMath::min(z,b.z);
+  }
+  inline void setMaximum(const RVector3 &b)
+  {
+    x = RMath::max(x,b.x);
+    y = RMath::max(y,b.y);
+    z = RMath::max(z,b.z);
+  }
+  inline float distance(const RVector3 &b) const
+  {
+    float dx = b.x-x,dy = b.y-y, dz = b.z-z;
+    return (sqrt(dx*dx+dy*dy+dz*dz));
+  }
+  inline float angle(RVector3 &direction)
+  {
+    return static_cast<float>(acos(scalar(direction)/(length()*direction.length())));
+  }
 
-    inline RVector3 normalize() const
-    {
-        float len = length();
-        if(len != 0) len = static_cast<float>(1.0/len);
-        return RVector3(x*len,y*len,z*len);
-    }
+  inline RVector3 normalize() const
+  {
+    float len = length();
+    if(len != 0) len = static_cast<float>(1.0/len);
+    return RVector3(x*len,y*len,z*len);
+  }
 
-    inline RVector3 interpolatePosition(const RVector3 &b, float pos) const
-    {
-        float pos2 = 1.0f - pos;
-        return RVector3(x * pos2 + b.x * pos, y * pos2 + b.y * pos, z * pos2 + b.z * pos);
-    }
+  inline RVector3 interpolatePosition(const RVector3 &b, float pos) const
+  {
+    float pos2 = 1.0f - pos;
+    return RVector3(x * pos2 + b.x * pos, y * pos2 + b.y * pos, z * pos2 + b.z * pos);
+  }
 
-    inline RVector3 interpolateDirection(const RVector3 &b,float pos) const
-    {
-        //float pos2 = 1.0f - pos;
+  inline RVector3 interpolateDirection(const RVector3 &b,float pos) const
+  {
+    //float pos2 = 1.0f - pos;
 
-        float dot = scalar(b);
-        if (dot > 0.9995 || dot < -0.9995)
-            return interpolatePosition(b,pos); // cases cause trouble, use linear interpolation here
+    float dot = scalar(b);
+    if (dot > 0.9995 || dot < -0.9995)
+      return interpolatePosition(b,pos); // cases cause trouble, use linear interpolation here
 
-        float theta = acos(dot) * pos; // interpolated position
-        float st = sin(theta);
-        RVector3 t(b);
-        t -= scale(dot);
-        float lengthSq = t.lengthSquared();
-        float dl = st * ((lengthSq < 0.0001f) ? 1.0f : 1.0f / sqrt(lengthSq));
-        t.scaleIntern(dl);
-        t += scale(cos(theta));
-        return t.normalize();
-    }
+    float theta = acos(dot) * pos; // interpolated position
+    float st = sin(theta);
+    RVector3 t(b);
+    t -= scale(dot);
+    float lengthSq = t.lengthSquared();
+    float dl = st * ((lengthSq < 0.0001f) ? 1.0f : 1.0f / sqrt(lengthSq));
+    t.scaleIntern(dl);
+    t += scale(cos(theta));
+    return t.normalize();
+  }
 };
-	inline RVector3 operator+(RVector3 lhs, const RVector3& rhs) // first arg by value, second by const ref
-	{
-		lhs.x += rhs.x;
-		lhs.y += rhs.y;
-		lhs.z += rhs.z;
-		return lhs;
-	}
+inline RVector3 operator+(RVector3 lhs, const RVector3& rhs) // first arg by value, second by const ref
+{
+  lhs.x += rhs.x;
+  lhs.y += rhs.y;
+  lhs.z += rhs.z;
+  return lhs;
+}
 
-	inline RVector3 operator-(RVector3 lhs, const RVector3& rhs) // first arg by value, second by const ref
-	{
-		lhs.x -= rhs.x;
-		lhs.y -= rhs.y;
-		lhs.z -= rhs.z;
-		return lhs;
-	}
+inline RVector3 operator-(RVector3 lhs, const RVector3& rhs) // first arg by value, second by const ref
+{
+  lhs.x -= rhs.x;
+  lhs.y -= rhs.y;
+  lhs.z -= rhs.z;
+  return lhs;
+}
 
-    inline RVector3 operator*(const RVector3 &lhs,float rhs) {
-        return lhs.scale(rhs);
-    }
+inline RVector3 operator*(const RVector3 &lhs,float rhs) {
+  return lhs.scale(rhs);
+}
 
-    inline RVector3 operator*(float lhs,const RVector3 &rhs) {
-        return rhs.scale(lhs);
-    }
+inline RVector3 operator*(float lhs,const RVector3 &rhs) {
+  return rhs.scale(lhs);
+}
 
 #if !defined(MAX_FAN_PWM) || MAX_FAN_PWM == 255
 #define TRIM_FAN_PWM(x) x
@@ -679,44 +679,44 @@ enum LsAction {LS_SerialPrint,LS_Count,LS_GetFilename};
 class SDCard
 {
 public:
-    SdFat fat;
-    SdFile file;
-    uint32_t filesize;
-    uint32_t sdpos;
-    char *shortname; // Pointer to start of filename itself
-    char *pathend; // File to char where pathname in fullname ends
-    uint8_t sdmode;  // 1 if we are printing from sd card, 2 = stop accepting new commands
-    bool sdactive;
-    bool savetosd;
-    SdBaseFile parentFound;
+  SdFat fat;
+  SdFile file;
+  uint32_t filesize;
+  uint32_t sdpos;
+  char *shortname; // Pointer to start of filename itself
+  char *pathend; // File to char where pathname in fullname ends
+  uint8_t sdmode;  // 1 if we are printing from sd card, 2 = stop accepting new commands
+  bool sdactive;
+  bool savetosd;
+  SdBaseFile parentFound;
 
-    SDCard();
-    void initsd();
-    void writeCommand(GCode *code);
-    bool selectFile(const char *filename,bool silent=false);
-    void mount();
-    void unmount();
-    void startPrint();
-    void pausePrint(bool intern = false);
-    void continuePrint(bool intern = false);
-    void stopPrint();
-    inline void setIndex(uint32_t  newpos)
-    {
-        if(!sdactive) return;
-        sdpos = newpos;
-        file.seekSet(sdpos);
-    }
-    void printStatus();
-    void ls();
-    void startWrite(char *filename);
-    void deleteFile(char *filename);
-    void finishWrite();
-    char *createFilename(char *buffer,const dir_t &p);
-    void makeDirectory(char *filename);
-    bool showFilename(const uint8_t *name);
-    void automount();
+  SDCard();
+  void initsd();
+  void writeCommand(GCode *code);
+  bool selectFile(const char *filename,bool silent=false);
+  void mount();
+  void unmount();
+  void startPrint();
+  void pausePrint(bool intern = false);
+  void continuePrint(bool intern = false);
+  void stopPrint();
+  inline void setIndex(uint32_t  newpos)
+  {
+    if(!sdactive) return;
+    sdpos = newpos;
+    file.seekSet(sdpos);
+  }
+  void printStatus();
+  void ls();
+  void startWrite(char *filename);
+  void deleteFile(char *filename);
+  void finishWrite();
+  char *createFilename(char *buffer,const dir_t &p);
+  void makeDirectory(char *filename);
+  bool showFilename(const uint8_t *name);
+  void automount();
 private:
-    uint8_t lsRecursive(SdBaseFile *parent,uint8_t level,char *findFilename);
+  uint8_t lsRecursive(SdBaseFile *parent,uint8_t level,char *findFilename);
 };
 
 extern SDCard sd;
@@ -745,7 +745,7 @@ extern int debugWaitLoop;
 
 class PlaneBuilder {
 	float sum_xx,sum_xy,sum_yy,sum_x,sum_y,sum_xz,sum_yz,sum_z,n;
-	public:
+public:
 	PlaneBuilder() {
 		reset();
 	}

@@ -125,7 +125,7 @@ uiAlert(void) {
 
 
 
-  void lcdWriteNibble(uint8_t value) {
+void lcdWriteNibble(uint8_t value) {
 
 WRITE(UI_DISPLAY_D4_PIN, value & 1);
  WRITE(UI_DISPLAY_D5_PIN, value & 2);
@@ -138,7 +138,7 @@ WRITE(UI_DISPLAY_D4_PIN, value & 1);
 
  WRITE(UI_DISPLAY_ENABLE_PIN, LOW);
  HAL::delayMicroseconds(UI_DELAYPERCHAR);
-  }
+}
 
 
 void lcdWriteByte(uint8_t c, uint8_t rs) {

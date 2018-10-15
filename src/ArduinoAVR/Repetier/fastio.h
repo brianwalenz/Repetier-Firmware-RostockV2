@@ -1,7 +1,7 @@
 /*
 	This code contibuted by Triffid_Hunter and modified by Kliment
 	why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
-        2012/3/10 AT90USB128x modified by lincomatic to match Teensyduino
+  2012/3/10 AT90USB128x modified by lincomatic to match Teensyduino
 */
 #ifndef	_ARDUINO_H
 #define	_ARDUINO_H
@@ -10,7 +10,7 @@
 
 #ifndef		MASK
 /// MASKING- returns \f$2^PIN\f$
-	#define		MASK(PIN)				(1 << PIN)
+#define		MASK(PIN)				(1 << PIN)
 #endif
 
 
@@ -82,7 +82,7 @@
 // change for your board
 #define	DEBUG_LED		DIO21
 /*
-pins
+  pins
 */
 #define	DIO0_PIN		PINE0
 #define	DIO0_RPORT	PINE

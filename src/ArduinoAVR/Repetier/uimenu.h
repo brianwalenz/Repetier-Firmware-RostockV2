@@ -66,7 +66,7 @@ UI_MENU_HEADLINE     (ui_menu_empty, "")
 //  MESSAGES
 //
 
-UI_WIZARD4(ui_msg_decoupled,         UI_ACTION_MESSAGE,             "Notification:",        "Heater decoupled",           "",     ">>> OK <<<")
+  UI_WIZARD4(ui_msg_decoupled,         UI_ACTION_MESSAGE,             "Notification:",        "Heater decoupled",           "",     ">>> OK <<<")
 UI_WIZARD4(ui_msg_defectsensor,      UI_ACTION_MESSAGE,             "Notification:",        "Temp. sensor defect",        "",     ">>> OK <<<")
 UI_WIZARD4(ui_msg_slipping,          UI_ACTION_MESSAGE,             "Notification:",        "Filament slipping",          "",     ">>> OK <<<")
 UI_WIZARD4(ui_msg_leveling_error,    UI_ACTION_MESSAGE,             "Notification:",        "Leveling error",             "",     ">>> OK <<<")
@@ -83,11 +83,11 @@ UI_MENU_CHANGEACTION  (ui_menu_mzp_realz,   "Real Z Pos:%W0mm",  UI_ACTION_MEASU
 UI_MENU_ACTIONCOMMAND (ui_menu_mzp_cont,    "Continue",          UI_ACTION_MEASURE_ZPROBE_HEIGHT2)
 UI_MENU_ACTIONCOMMAND (ui_menu_mzp_close,   "Close",             UI_ACTION_BACK)
 
-#define UI_MENU_MZP_ITEMS {\
-    &ui_menu_mzp_head,\
-    &ui_menu_mzp_realz,\
-    &ui_menu_mzp_cont,\
-    &ui_menu_mzp_close}
+#define UI_MENU_MZP_ITEMS {                     \
+    &ui_menu_mzp_head,                          \
+      &ui_menu_mzp_realz,                       \
+      &ui_menu_mzp_cont,                        \
+      &ui_menu_mzp_close}
 
 UI_STICKYMENU(ui_menu_mzp,UI_MENU_MZP_ITEMS,4)
 #endif
@@ -103,15 +103,15 @@ UI_STICKYMENU(ui_menu_mzp,UI_MENU_MZP_ITEMS,4)
 //  Add &ui_menu_autolevelbed and &ui_menu_toggle_autolevel to MENU_GENERAL if enabled (and MENU_SETUP?).
 
 #if SOFTWARE_LEVELING
-#define UI_MENU_LEVEL {          \
-    &ui_menu_back,               \
-    &ui_menu_set_p1,             \
-    &ui_menu_set_p2,             \
-    &ui_menu_set_p3,             \
-    &ui_menu_calculate_leveling, \
-    &ui_menu_go_xpos,            \
-    &ui_menu_go_ypos,            \
-    &ui_menu_go_zpos}
+#define UI_MENU_LEVEL {                         \
+    &ui_menu_back,                              \
+      &ui_menu_set_p1,                          \
+      &ui_menu_set_p2,                          \
+      &ui_menu_set_p3,                          \
+      &ui_menu_calculate_leveling,              \
+      &ui_menu_go_xpos,                         \
+      &ui_menu_go_ypos,                         \
+      &ui_menu_go_zpos}
 
 UI_MENU(ui_menu_level, UI_MENU_LEVEL, 8)
 UI_MENU_SUBMENU(ui_menu_conf_level, "Level delta", ui_menu_level)
@@ -142,11 +142,11 @@ UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_sd_stop,             "Stop print",        U
 
 UI_MENU_FILESELECT(ui_menu_sd_fileselector, {&ui_menu_back}, 1)   //  Used in ui.cpp
 
-#define UI_MENU_PRINTING_SUB {    \
-    &ui_menu_back,                \
-    &ui_menu_sd_pause,            \
-    &ui_menu_sd_continue,         \
-    &ui_menu_sd_stop }
+#define UI_MENU_PRINTING_SUB {                  \
+    &ui_menu_back,                              \
+      &ui_menu_sd_pause,                        \
+      &ui_menu_sd_continue,                     \
+      &ui_menu_sd_stop }
 UI_MENU(ui_menu_printing_sub, UI_MENU_PRINTING_SUB, 4)
 
 
@@ -185,15 +185,15 @@ UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_ext_off, "Stop EXT preheat",      U
 
 UI_MENU_ACTIONCOMMAND(ui_menu_preheat_cooldown,       "Turn Heaters Off",      UI_ACTION_COOLDOWN)
 
-#define UI_MENU_PREHEAT_SUB {  \
-    &ui_menu_preheat_bed,      \
-    &ui_menu_preheat_ext,      \
-    &ui_menu_preheat_bed_on,      \
-    &ui_menu_preheat_bed_off,      \
-    &ui_menu_preheat_ext_on,      \
-    &ui_menu_preheat_ext_off,      \
-    &ui_menu_preheat_cooldown,\
-    &ui_menu_back}
+#define UI_MENU_PREHEAT_SUB {                   \
+    &ui_menu_preheat_bed,                       \
+      &ui_menu_preheat_ext,                     \
+      &ui_menu_preheat_bed_on,                  \
+      &ui_menu_preheat_bed_off,                 \
+      &ui_menu_preheat_ext_on,                  \
+      &ui_menu_preheat_ext_off,                 \
+      &ui_menu_preheat_cooldown,                \
+      &ui_menu_back}
 UI_MENU(ui_menu_preheat_sub, UI_MENU_PREHEAT_SUB, 8)
 
 UI_MENU_CHANGEACTION  (ui_menu_bed_temp,       "BED:%eb/%Eb " cDEG "C", UI_ACTION_BED_TARGET)
@@ -201,21 +201,21 @@ UI_MENU_CHANGEACTION  (ui_menu_ext_temp,       "EXT:%e0/%E0 " cDEG "C", UI_ACTIO
 UI_MENU_CHANGEACTION  (ui_menu_fan_fanspeed,   "LAY fan:%Fs%%",         UI_ACTION_FANSPEED)
 UI_MENU_ACTIONCOMMAND (ui_menu_fan_ignoreM106, "LAY fan forced %Fi",    UI_ACTION_IGNORE_M106)    // %Fi shows a checkbox with status of the flag
 
-#define UI_MENU_TEMPERATURES_SUB { \
-    &ui_menu_back,                 \
-    &ui_menu_bed_temp,             \
-    &ui_menu_ext_temp,             \
-    &ui_menu_fan_fanspeed,         \
-    &ui_menu_fan_ignoreM106}
+#define UI_MENU_TEMPERATURES_SUB {              \
+    &ui_menu_back,                              \
+      &ui_menu_bed_temp,                        \
+      &ui_menu_ext_temp,                        \
+      &ui_menu_fan_fanspeed,                    \
+      &ui_menu_fan_ignoreM106}
 UI_MENU(ui_menu_temperatures_sub, UI_MENU_TEMPERATURES_SUB, 5)
 
 UI_MENU_CHANGEACTION        (ui_menu_quick_speedmultiply, " Speed  %om%%", UI_ACTION_FEEDRATE_MULTIPLY)
 UI_MENU_CHANGEACTION        (ui_menu_quick_flowmultiply,  " Flow   %of%%", UI_ACTION_FLOWRATE_MULTIPLY)
 
-#define UI_MENU_SPEED_SUB {       \
-    &ui_menu_back,                \
-    &ui_menu_quick_speedmultiply, \
-    &ui_menu_quick_flowmultiply }
+#define UI_MENU_SPEED_SUB {                     \
+    &ui_menu_back,                              \
+      &ui_menu_quick_speedmultiply,             \
+      &ui_menu_quick_flowmultiply }
 UI_MENU(ui_menu_speed_sub, UI_MENU_SPEED_SUB, 3)
 
 //  These appear in the main menu.
@@ -246,16 +246,16 @@ UI_MENU_ACTIONCOMMAND(ui_menu_release_stepper, "Release Motors",  UI_ACTION_DISA
 
 UI_MENU_ACTIONCOMMAND(ui_menu_measure_zprobe_height, "Meas. Probe Height", UI_ACTION_MEASURE_ZPROBE_HEIGHT)
 
-#define UI_MENU_POSITION_SUB {    \
-    &ui_menu_back,                \
-    &ui_menu_home_all,            \
-    &ui_menu_go_epos,             \
-    &ui_menu_go_xpos,             \
-    &ui_menu_go_ypos,             \
-    &ui_menu_go_zpos,             \
-    &ui_menu_go_zpos_notest,      \
-    &ui_menu_set_z_origin,        \
-    &ui_menu_release_stepper }
+#define UI_MENU_POSITION_SUB {                  \
+    &ui_menu_back,                              \
+      &ui_menu_home_all,                        \
+      &ui_menu_go_epos,                         \
+      &ui_menu_go_xpos,                         \
+      &ui_menu_go_ypos,                         \
+      &ui_menu_go_zpos,                         \
+      &ui_menu_go_zpos_notest,                  \
+      &ui_menu_set_z_origin,                    \
+      &ui_menu_release_stepper }
 
 UI_MENU               (ui_menu_position_sub, UI_MENU_POSITION_SUB, 9)
 UI_MENU_SUBMENU_FILTER(ui_menu_position, "Position...", ui_menu_position_sub, 0, MENU_MODE_PRINTING)
@@ -290,12 +290,12 @@ UI_MENU_CHANGEACTION(ui_menu_accel_travelz, "Move   %aZ", UI_ACTION_MOVE_ACCEL_Z
 UI_MENU_CHANGEACTION(ui_menu_accel_jerk,    "Jerk   %aj", UI_ACTION_MAX_JERK)
 UI_MENU_CHANGEACTION(ui_menu_accel_z_jerk,  "ZJerk  %aJ", UI_ACTION_MAX_JERK)
 
-#define UI_MENU_SETTINGS_ACCEL_SUB { \
-    &ui_menu_back,                   \
-    &ui_menu_accel_printz,           \
-    &ui_menu_accel_travelz,          \
-    &ui_menu_accel_jerk,             \
-    &ui_menu_accel_z_jerk}
+#define UI_MENU_SETTINGS_ACCEL_SUB {            \
+    &ui_menu_back,                              \
+      &ui_menu_accel_printz,                    \
+      &ui_menu_accel_travelz,                   \
+      &ui_menu_accel_jerk,                      \
+      &ui_menu_accel_z_jerk}
 UI_MENU(ui_menu_settings_accel_sub, UI_MENU_SETTINGS_ACCEL_SUB, 4)
 
 //  FEED RATE
@@ -303,10 +303,10 @@ UI_MENU(ui_menu_settings_accel_sub, UI_MENU_SETTINGS_ACCEL_SUB, 4)
 UI_MENU_CHANGEACTION(ui_menu_feedrate_maxz,  "Max %fz",  UI_ACTION_MAX_FEEDRATE_Z)
 UI_MENU_CHANGEACTION(ui_menu_feedrate_homez, "Home %fZ", UI_ACTION_HOMING_FEEDRATE_Z)
 
-#define UI_MENU_SETTINGS_FEED_SUB {   \
-    &ui_menu_back,           \
-    &ui_menu_feedrate_maxz,  \
-    &ui_menu_feedrate_homez}
+#define UI_MENU_SETTINGS_FEED_SUB {             \
+    &ui_menu_back,                              \
+      &ui_menu_feedrate_maxz,                   \
+      &ui_menu_feedrate_homez}
 UI_MENU(ui_menu_settings_feed_sub, UI_MENU_SETTINGS_FEED_SUB, 3)
 
 //  EXTRUDER SETTINGS
@@ -321,17 +321,17 @@ UI_MENU_CHANGEACTION(ui_menu_ext_wait_temp,       "Wait temp. %XT" cDEG "C",   U
 UI_MENU_CHANGEACTION(ui_menu_cext_advancel,       "Advance lin:%Xl",           UI_ACTION_ADVANCE_L)   //  "Advance method" to decrease blobs at points where acceleartion changes
 UI_MENU_CHANGEACTION(ui_menu_cext_advancek,       "Advance quad:%Xa",          UI_ACTION_ADVANCE_K)
 
-#define UI_MENU_SETTINGS_EXT_SUB { \
-    &ui_menu_back,                 \
-    &ui_menu_cext_steps,           \
-    &ui_menu_cext_start_feedrate,  \
-    &ui_menu_cext_max_feedrate,    \
-    &ui_menu_cext_acceleration,    \
-    &ui_menu_cext_watch_period,    \
-    &ui_menu_ext_wait_units,       \
-    &ui_menu_ext_wait_temp,        \
-    &ui_menu_cext_advancel,        \
-    &ui_menu_cext_advancek }
+#define UI_MENU_SETTINGS_EXT_SUB {              \
+    &ui_menu_back,                              \
+      &ui_menu_cext_steps,                      \
+      &ui_menu_cext_start_feedrate,             \
+      &ui_menu_cext_max_feedrate,               \
+      &ui_menu_cext_acceleration,               \
+      &ui_menu_cext_watch_period,               \
+      &ui_menu_ext_wait_units,                  \
+      &ui_menu_ext_wait_temp,                   \
+      &ui_menu_cext_advancel,                   \
+      &ui_menu_cext_advancek }
 UI_MENU(ui_menu_settings_ext_sub, UI_MENU_SETTINGS_EXT_SUB, 10)
 
 
@@ -347,31 +347,31 @@ UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_dmax_dt,  "Control DPWM:%XM",  UI_ACTIO
 UI_MENU_CHANGEACTION       (ui_menu_cext_pmax,     "PID PMax:%XD",      UI_ACTION_PID_MAX)
 
 //  EXT TEMP SETTINGS
-#define UI_MENU_SETTINGS_EXT_TEMP_SUB { \
-    &ui_menu_back,                 \
-    &ui_menu_cext_manager,         \
-    &ui_menu_cext_pgain,           \
-    &ui_menu_cext_igain,           \
-    &ui_menu_cext_dgain,           \
-    &ui_menu_cext_dmin,            \
-    &ui_menu_cext_dmax,            \
-    &ui_menu_cext_pgain_dt,        \
-    &ui_menu_cext_dmax_dt,         \
-    &ui_menu_cext_pmax}
+#define UI_MENU_SETTINGS_EXT_TEMP_SUB {         \
+    &ui_menu_back,                              \
+      &ui_menu_cext_manager,                    \
+      &ui_menu_cext_pgain,                      \
+      &ui_menu_cext_igain,                      \
+      &ui_menu_cext_dgain,                      \
+      &ui_menu_cext_dmin,                       \
+      &ui_menu_cext_dmax,                       \
+      &ui_menu_cext_pgain_dt,                   \
+      &ui_menu_cext_dmax_dt,                    \
+      &ui_menu_cext_pmax}
 UI_MENU(ui_menu_settings_ext_temp_sub, UI_MENU_SETTINGS_EXT_TEMP_SUB, 10)
 
 //  BED TEMP SETTINGS
-#define UI_MENU_SETTINGS_BED_TEMP_SUB { \
-    &ui_menu_back,                 \
-    &ui_menu_cext_manager,         \
-    &ui_menu_cext_pgain,           \
-    &ui_menu_cext_igain,           \
-    &ui_menu_cext_dgain,           \
-    &ui_menu_cext_dmin,            \
-    &ui_menu_cext_dmax,            \
-    &ui_menu_cext_pgain_dt,        \
-    &ui_menu_cext_dmax_dt,         \
-    &ui_menu_cext_pmax}
+#define UI_MENU_SETTINGS_BED_TEMP_SUB {         \
+    &ui_menu_back,                              \
+      &ui_menu_cext_manager,                    \
+      &ui_menu_cext_pgain,                      \
+      &ui_menu_cext_igain,                      \
+      &ui_menu_cext_dgain,                      \
+      &ui_menu_cext_dmin,                       \
+      &ui_menu_cext_dmax,                       \
+      &ui_menu_cext_pgain_dt,                   \
+      &ui_menu_cext_dmax_dt,                    \
+      &ui_menu_cext_pmax}
 UI_MENU(ui_menu_settings_bed_temp_sub, UI_MENU_SETTINGS_BED_TEMP_SUB, 10)
 
 
@@ -383,16 +383,16 @@ UI_MENU_SUBMENU     (ui_menu_settings_ext,        "Extruder...",     ui_menu_set
 UI_MENU_SUBMENU     (ui_menu_settings_ext_temp,   "EXT Temp Sens...",   ui_menu_settings_ext_temp_sub)
 UI_MENU_SUBMENU     (ui_menu_settings_bed_temp,   "BED Temp Sens...",   ui_menu_settings_bed_temp_sub)
 
-#define UI_MENU_SETTINGS_SUB { \
-    &ui_menu_back,             \
-    &ui_menu_general_baud,     \
-    &ui_menu_settings_accel,   \
-    &ui_menu_settings_feed,    \
-    &ui_menu_settings_ext,     \
-    &ui_menu_settings_ext_temp,     \
-    &ui_menu_settings_bed_temp,     \
-    &ui_menu_conf_to_eeprom,   \
-    &ui_menu_conf_from_eeprom}
+#define UI_MENU_SETTINGS_SUB {                  \
+    &ui_menu_back,                              \
+      &ui_menu_general_baud,                    \
+      &ui_menu_settings_accel,                  \
+      &ui_menu_settings_feed,                   \
+      &ui_menu_settings_ext,                    \
+      &ui_menu_settings_ext_temp,               \
+      &ui_menu_settings_bed_temp,               \
+      &ui_menu_conf_to_eeprom,                  \
+      &ui_menu_conf_from_eeprom}
 UI_MENU(ui_menu_settings_sub, UI_MENU_SETTINGS_SUB, 9)
 UI_MENU_SUBMENU_FILTER(ui_menu_settings, "Settings...", ui_menu_settings_sub, 0, MENU_MODE_PRINTING)
 
@@ -409,13 +409,13 @@ UI_MENU_ACTIONCOMMAND(ui_menu_debug_error,   "Errors  %de", UI_ACTION_DEBUG_ERRO
 UI_MENU_ACTIONCOMMAND(ui_menu_debug_dryrun,  "Dry run %dd", UI_ACTION_DEBUG_DRYRUN)
 UI_MENU_ACTIONCOMMAND(ui_menu_debug_endstop, "EndStop %dp", UI_ACTION_DEBUG_ENDSTOP)
 
-#define UI_MENU_DEBUGGING_SUB {  \
-    &ui_menu_back,           \
-    &ui_menu_debug_echo,     \
-    &ui_menu_debug_info,     \
-    &ui_menu_debug_error,    \
-    &ui_menu_debug_dryrun,   \
-    &ui_menu_debug_endstop}
+#define UI_MENU_DEBUGGING_SUB {                 \
+    &ui_menu_back,                              \
+      &ui_menu_debug_echo,                      \
+      &ui_menu_debug_info,                      \
+      &ui_menu_debug_error,                     \
+      &ui_menu_debug_dryrun,                    \
+      &ui_menu_debug_endstop}
 
 UI_MENU(ui_menu_debugging_sub, UI_MENU_DEBUGGING_SUB, 6)
 UI_MENU_SUBMENU(ui_menu_debugging, "Debugging...", ui_menu_debugging_sub)
@@ -423,21 +423,21 @@ UI_MENU_SUBMENU(ui_menu_debugging, "Debugging...", ui_menu_debugging_sub)
 
 
 
-#define UI_MENU_MAIN {       \
-    &ui_menu_back,           \
-    \
-    &ui_menu_sd_printfile,   \
-    &ui_menu_sd_insert,      \
-    &ui_menu_printing,       \
-    \
-    &ui_menu_preheat,        \
-    &ui_menu_temperatures,   \
-    &ui_menu_speed,          \
-    \
-    &ui_menu_position,       \
-    \
-    &ui_menu_settings,       \
-    &ui_menu_debugging  }
+#define UI_MENU_MAIN {                          \
+    &ui_menu_back,                              \
+                                                \
+      &ui_menu_sd_printfile,                    \
+      &ui_menu_sd_insert,                       \
+      &ui_menu_printing,                        \
+                                                \
+      &ui_menu_preheat,                         \
+      &ui_menu_temperatures,                    \
+      &ui_menu_speed,                           \
+                                                \
+      &ui_menu_position,                        \
+                                                \
+      &ui_menu_settings,                        \
+      &ui_menu_debugging  }
 
 UI_MENU(ui_menu_main, UI_MENU_MAIN, 10)
 

@@ -305,11 +305,11 @@ typedef const UIMenu_t UIMenu;
 
 #define UI_STRING(name,text) const char PROGMEM name[] = text
 
-#define UI_PAGE4(name,row1,row2,row3,row4) \
-  UI_STRING(name ## _1txt,row1);\
-  UI_STRING(name ## _2txt,row2);\
-  UI_STRING(name ## _3txt,row3);\
-  UI_STRING(name ## _4txt,row4); \
+#define UI_PAGE4(name,row1,row2,row3,row4)                              \
+  UI_STRING(name ## _1txt,row1);                                        \
+  UI_STRING(name ## _2txt,row2);                                        \
+  UI_STRING(name ## _3txt,row3);                                        \
+  UI_STRING(name ## _4txt,row4);                                        \
   UIMenuEntry name ## _1 PROGMEM ={name ## _1txt,0,0,0,0};              \
   UIMenuEntry name ## _2 PROGMEM ={name ## _2txt,0,0,0,0};              \
   UIMenuEntry name ## _3 PROGMEM ={name ## _3txt,0,0,0,0};              \
@@ -317,11 +317,11 @@ typedef const UIMenu_t UIMenu;
   const UIMenuEntry * const name ## _entries [] PROGMEM = {&name ## _1,&name ## _2,&name ## _3,&name ## _4}; \
   const UIMenu name PROGMEM = {UI_MENU_TYPE_INFO, 0, 4, name ## _entries};
 
-#define UI_WIZARD4(name,action,row1,row2,row3,row4) \
-  UI_STRING(name ## _1txt,row1);\
-  UI_STRING(name ## _2txt,row2);\
-  UI_STRING(name ## _3txt,row3);\
-  UI_STRING(name ## _4txt,row4); \
+#define UI_WIZARD4(name,action,row1,row2,row3,row4)                     \
+  UI_STRING(name ## _1txt,row1);                                        \
+  UI_STRING(name ## _2txt,row2);                                        \
+  UI_STRING(name ## _3txt,row3);                                        \
+  UI_STRING(name ## _4txt,row4);                                        \
   UIMenuEntry name ## _1 PROGMEM ={name ## _1txt,0,0,0,0};              \
   UIMenuEntry name ## _2 PROGMEM ={name ## _2txt,0,0,0,0};              \
   UIMenuEntry name ## _3 PROGMEM ={name ## _3txt,0,0,0,0};              \
@@ -329,11 +329,11 @@ typedef const UIMenu_t UIMenu;
   const UIMenuEntry * const name ## _entries [] PROGMEM = {&name ## _1,&name ## _2,&name ## _3,&name ## _4}; \
   const UIMenu name PROGMEM = {UI_MENU_TYPE_WIZARD, action, 4, name ## _entries};
 
-#define UI_MENU_ACTION4(name,action,row1,row2,row3,row4) \
-  UI_STRING(name ## _1txt,row1);\
-  UI_STRING(name ## _2txt,row2);\
-  UI_STRING(name ## _3txt,row3);\
-  UI_STRING(name ## _4txt,row4); \
+#define UI_MENU_ACTION4(name,action,row1,row2,row3,row4)                \
+  UI_STRING(name ## _1txt,row1);                                        \
+  UI_STRING(name ## _2txt,row2);                                        \
+  UI_STRING(name ## _3txt,row3);                                        \
+  UI_STRING(name ## _4txt,row4);                                        \
   UIMenuEntry name ## _1 PROGMEM ={name ## _1txt,0,0,0,0};              \
   UIMenuEntry name ## _2 PROGMEM ={name ## _2txt,0,0,0,0};              \
   UIMenuEntry name ## _3 PROGMEM ={name ## _3txt,0,0,0,0};              \

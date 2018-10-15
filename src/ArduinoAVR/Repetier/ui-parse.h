@@ -240,46 +240,46 @@ UIDisplay::parse(const char *txt, bool ram) {
     //  Status messages
 
     else if ((c1 == 'o') && (c2 == 's')) {
-          if(sd.sdactive && sd.sdmode && !statusMsg[0]) {
-            addStringP(PSTR("SD_Printed: "));
-            float percent;
-            if(sd.filesize < 2000000) percent = sd.sdpos * 100.0 / sd.filesize;
-            else percent = (sd.sdpos >> 8) * 100.0 / (sd.filesize >> 8);
-            addFloat(percent, 3, 1);
-            if(col < MAX_COLS)
-              printCols[col++] = '%';
-          } else
-            {
-              parse(statusMsg, true);
-            }
+      if(sd.sdactive && sd.sdmode && !statusMsg[0]) {
+        addStringP(PSTR("SD_Printed: "));
+        float percent;
+        if(sd.filesize < 2000000) percent = sd.sdpos * 100.0 / sd.filesize;
+        else percent = (sd.sdpos >> 8) * 100.0 / (sd.filesize >> 8);
+        addFloat(percent, 3, 1);
+        if(col < MAX_COLS)
+          printCols[col++] = '%';
+      } else
+        {
+          parse(statusMsg, true);
+        }
     }
 
     else if ((c1 == 'o') && (c2 == 'c')) {
-          addNumber(baudrate, 6);
+      addNumber(baudrate, 6);
     }
 
     else if ((c1 == 'o') && (c2 == 'e')) {
-          if(errorMsg != 0) addStringP((char PROGMEM *)errorMsg);
+      if(errorMsg != 0) addStringP((char PROGMEM *)errorMsg);
     }
 
     else if ((c1 == 'o') && (c2 == 'B')) {
-          addNumber((int)PrintLine::linesCount, 2);
+      addNumber((int)PrintLine::linesCount, 2);
     }
 
     else if ((c1 == 'o') && (c2 == 'f')) {
-          addNumber(Printer::extrudeMultiply, 3);
+      addNumber(Printer::extrudeMultiply, 3);
     }
 
     else if ((c1 == 'o') && (c2 == 'm')) {
-          addNumber(Printer::feedrateMultiply, 3);
+      addNumber(Printer::feedrateMultiply, 3);
     }
 
     else if ((c1 == 'o') && (c2 == 'n')) {
-          addNumber(Extruder::current->id + 1, 1);
+      addNumber(Extruder::current->id + 1, 1);
     }
 
     else if ((c1 == 'o') && (c2 == 'Y')) {
-          addFloat(static_cast<float>(Printer::zBabysteps) * Printer::invAxisStepsPerMM[Z_AXIS], 2, 2);
+      addFloat(static_cast<float>(Printer::zBabysteps) * Printer::invAxisStepsPerMM[Z_AXIS], 2, 2);
     }
 
     else if ((c1 == 'o') && (c2 == 'p')) {
@@ -362,217 +362,217 @@ UIDisplay::parse(const char *txt, bool ram) {
 
 #if 0
 
-      case 'S':
-        if(c2 >= 'x' && c2 <= 'z') addFloat(Printer::axisStepsPerMM[c2 - 'x'], 3, 1);
-        if(c2 == 'e') addFloat(Extruder::current->stepsPerMM, 3, 1);
+case 'S':
+if(c2 >= 'x' && c2 <= 'z') addFloat(Printer::axisStepsPerMM[c2 - 'x'], 3, 1);
+if(c2 == 'e') addFloat(Extruder::current->stepsPerMM, 3, 1);
+break;
+
+
+case 'T': // Print offsets
+if(c2 == '2')
+  addFloat(-Printer::coordinateOffset[Z_AXIS], 2, 2);
+ else
+   addFloat(-Printer::coordinateOffset[c2 - '0'], 4, 0);
+break;
+
+
+
+
+
+case 'x':
+if(c2 >= '0' && c2 <= '7') {
+  if(c2 == '4') { // this sequence save 14 bytes of flash
+    addFloat(Printer::filamentPrinted * 0.001, 3, 2);
+    break;
+  }
+
+  if((c2 >= '0' && c2 <= '2') || (c2 >= '5' && c2 <= '7')) {
+    if(Printer::isHoming()) {
+      addStringP(PSTR(" Homing"));
+      break;
+    } else {
+      if (Printer::isAnimation() &&
+          ((c2 == '0' && !Printer::isXHomed()) ||
+           (c2 == '1' && !Printer::isYHomed()) ||
+           (c2 == '2' && !Printer::isZHomed()))) {
+        addStringP(PSTR("   z.??"));
         break;
-
-
-      case 'T': // Print offsets
-        if(c2 == '2')
-          addFloat(-Printer::coordinateOffset[Z_AXIS], 2, 2);
-        else
-          addFloat(-Printer::coordinateOffset[c2 - '0'], 4, 0);
-        break;
-
-
-
-
-
-      case 'x':
-        if(c2 >= '0' && c2 <= '7') {
-          if(c2 == '4') { // this sequence save 14 bytes of flash
-            addFloat(Printer::filamentPrinted * 0.001, 3, 2);
-            break;
-          }
-
-          if((c2 >= '0' && c2 <= '2') || (c2 >= '5' && c2 <= '7')) {
-            if(Printer::isHoming()) {
-              addStringP(PSTR(" Homing"));
-              break;
-            } else {
-              if (Printer::isAnimation() &&
-                  ((c2 == '0' && !Printer::isXHomed()) ||
-                   (c2 == '1' && !Printer::isYHomed()) ||
-                   (c2 == '2' && !Printer::isZHomed()))) {
-                addStringP(PSTR("   z.??"));
-                break;
-              }
-            }
-          }
-          if(c2 == '0')
-            fvalue = Printer::realXPosition();
-          else if(c2 == '1')
-            fvalue = Printer::realYPosition();
-          else if(c2 == '2')
-            fvalue = Printer::realZPosition();
-
-          //################ Workpiece Coordinates#########################################################
-
-          else if(c2 == '5')
-            fvalue = Printer::currentPosition[X_AXIS] + Printer::coordinateOffset[X_AXIS];
-          else if(c2 == '6')
-            fvalue = Printer::currentPosition[Y_AXIS] + Printer::coordinateOffset[Y_AXIS];
-          else if(c2 == '7')
-            fvalue = Printer::currentPosition[Z_AXIS] + Printer::coordinateOffset[Z_AXIS];
-
-          //############ End Workpiece Coordinates #########################################################
-
-          else
-            fvalue = (float)Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS];
-
-          addFloat(fvalue, 4, 2);
-        }
-
-        else if(c2 >= 'a' && c2 <= 'f') {
-          //  %xa-%xf : Extruder state icon 0x08 or 0x09 or 0x0a (off) - works only with graphic displays!
-          fast8_t exid = c2 - 'a';
-          TemperatureController &t = extruder[exid].tempControl;
-          if(t.targetTemperatureC < 30)
-            addChar(0x0a);
-          else
-            addChar((t.currentTemperatureC + 4 < t.targetTemperatureC) && Printer::isAnimation() ? 0x08 : 0x09);
-          break;
-        }
-        else if(c2 == 'B') {
-          //  %xB : Bed icon state 0x0c or 0x0d or 0x0b (off) Bed state - works only with graphic displays!
-          if(heatedBedController.targetTemperatureC < 30)
-            addChar(0x0b);
-          else
-            addChar((heatedBedController.currentTemperatureC + 2 < heatedBedController.targetTemperatureC) && Printer::isAnimation() ? 0x0c : 0x0d);
-        }
-        break;
-
-
-
-
-
-
-
-
-
-
-      case 'X': // Extruder related
-        if(c2 >= '0' && c2 <= '9') {
-          addStringP(Extruder::current->id == c2 - '0' ? ui_selected : ui_unselected);
-        } else if(c2 == 'i') {
-          addFloat(currHeaterForSetup->pidIGain, 4, 2);
-        } else if(c2 == 'p') {
-          addFloat(currHeaterForSetup->pidPGain, 4, 2);
-        } else if(c2 == 'd') {
-          addFloat(currHeaterForSetup->pidDGain, 4, 2);
-        } else if(c2 == 'm') {
-          addNumber(currHeaterForSetup->pidDriveMin, 3);
-        } else if(c2 == 'M') {
-          addNumber(currHeaterForSetup->pidDriveMax, 3);
-        } else if(c2 == 'D') {
-          addNumber(currHeaterForSetup->pidMax, 3);
-        } else if(c2 == 'w') {
-          addNumber(Extruder::current->watchPeriod, 4);
-        }
-#if RETRACT_DURING_HEATUP
-        else if(c2 == 'T') {
-          addNumber(Extruder::current->waitRetractTemperature, 4);
-        } else if(c2 == 'U') {
-          addNumber(Extruder::current->waitRetractUnits, 2);
-        }
-#endif
-        else if(c2 == 'h') {
-          uint8_t hm = currHeaterForSetup->heatManager;
-          if(hm == HTR_PID)
-            addStringP(PSTR("PID"));
-          else if(hm == HTR_DEADTIME)
-            addStringP(PSTR("Dead time"));
-          else if(hm == HTR_SLOWBANG)
-            addStringP(PSTR("Slow bang"));
-          else
-            addStringP(PSTR("Bang bang"));
-        }
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
-        else if(c2 == 'a') {
-          addFloat(Extruder::current->advanceK, 3, 0);
-        }
-#endif
-        else if(c2 == 'l') {
-          addFloat(Extruder::current->advanceL, 3, 0);
-        }
-#endif
-        else if(c2 == 'x') {
-          addFloat(Extruder::current->xOffset * Printer::invAxisStepsPerMM[X_AXIS], 3, 2);
-        } else if(c2 == 'y') {
-          addFloat(Extruder::current->yOffset * Printer::invAxisStepsPerMM[Y_AXIS], 3, 2);
-        } else if(c2 == 'z') {
-          addFloat(Extruder::current->zOffset * Printer::invAxisStepsPerMM[Z_AXIS], 3, 2);
-        } else if(c2 == 'f') {
-          addFloat(Extruder::current->maxStartFeedrate, 5, 0);
-        } else if(c2 == 'F') {
-          addFloat(Extruder::current->maxFeedrate, 5, 0);
-        } else if(c2 == 'A') {
-          addFloat(Extruder::current->maxAcceleration, 5, 0);
-        }
-        break;
-
-
-
-
-
-
-
-
-
-
-      case 'y':
-        if(c2 >= '0' && c2 <= '3') fvalue = (float)Printer::currentNonlinearPositionSteps[c2 - '0'] * Printer::invAxisStepsPerMM[c2 - '0'];
-        addFloat(fvalue, 3, 2);
-        break;
-
-
-
-
-
-
-
-
-      case 'z':
-#if FEATURE_Z_PROBE
-        if(c2 == 'h') { // write z probe height
-          addFloat(EEPROM::zProbeHeight(), 3, 2);
-          break;
-        }
-#endif
-        if(c2 == '2')
-          addFloat(-Printer::coordinateOffset[Z_AXIS], 2, 2);
-        else
-          addFloat(-Printer::coordinateOffset[c2 - '0'], 4, 0);
-        break;
-
-
-
-
-
-
-      case 'w':
-        if(c2 >= '0' && c2 <= '7') {
-          addNumber(Printer::wizardStack[c2 - '0'].l, 2);
-        }
-        break;
-
-
-
-
-
-      case 'W':
-        if(c2 >= '0' && c2 <= '7') {
-          addFloat(Printer::wizardStack[c2 - '0'].f, 0, 2);
-        } else if(c2 == 'A') {
-          addFloat(Printer::wizardStack[0].f, 0, 1);
-        } else if(c2 == 'B') {
-          addFloat(Printer::wizardStack[1].f, 0, 1);
-        }
-        break;
+      }
     }
   }
+  if(c2 == '0')
+    fvalue = Printer::realXPosition();
+  else if(c2 == '1')
+    fvalue = Printer::realYPosition();
+  else if(c2 == '2')
+    fvalue = Printer::realZPosition();
+
+  //################ Workpiece Coordinates#########################################################
+
+  else if(c2 == '5')
+    fvalue = Printer::currentPosition[X_AXIS] + Printer::coordinateOffset[X_AXIS];
+  else if(c2 == '6')
+    fvalue = Printer::currentPosition[Y_AXIS] + Printer::coordinateOffset[Y_AXIS];
+  else if(c2 == '7')
+    fvalue = Printer::currentPosition[Z_AXIS] + Printer::coordinateOffset[Z_AXIS];
+
+  //############ End Workpiece Coordinates #########################################################
+
+  else
+    fvalue = (float)Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS];
+
+  addFloat(fvalue, 4, 2);
+ }
+
+ else if(c2 >= 'a' && c2 <= 'f') {
+   //  %xa-%xf : Extruder state icon 0x08 or 0x09 or 0x0a (off) - works only with graphic displays!
+   fast8_t exid = c2 - 'a';
+   TemperatureController &t = extruder[exid].tempControl;
+   if(t.targetTemperatureC < 30)
+     addChar(0x0a);
+   else
+     addChar((t.currentTemperatureC + 4 < t.targetTemperatureC) && Printer::isAnimation() ? 0x08 : 0x09);
+   break;
+ }
+ else if(c2 == 'B') {
+   //  %xB : Bed icon state 0x0c or 0x0d or 0x0b (off) Bed state - works only with graphic displays!
+   if(heatedBedController.targetTemperatureC < 30)
+     addChar(0x0b);
+   else
+     addChar((heatedBedController.currentTemperatureC + 2 < heatedBedController.targetTemperatureC) && Printer::isAnimation() ? 0x0c : 0x0d);
+ }
+break;
+
+
+
+
+
+
+
+
+
+
+case 'X': // Extruder related
+if(c2 >= '0' && c2 <= '9') {
+  addStringP(Extruder::current->id == c2 - '0' ? ui_selected : ui_unselected);
+ } else if(c2 == 'i') {
+  addFloat(currHeaterForSetup->pidIGain, 4, 2);
+ } else if(c2 == 'p') {
+  addFloat(currHeaterForSetup->pidPGain, 4, 2);
+ } else if(c2 == 'd') {
+  addFloat(currHeaterForSetup->pidDGain, 4, 2);
+ } else if(c2 == 'm') {
+  addNumber(currHeaterForSetup->pidDriveMin, 3);
+ } else if(c2 == 'M') {
+  addNumber(currHeaterForSetup->pidDriveMax, 3);
+ } else if(c2 == 'D') {
+  addNumber(currHeaterForSetup->pidMax, 3);
+ } else if(c2 == 'w') {
+  addNumber(Extruder::current->watchPeriod, 4);
+ }
+#if RETRACT_DURING_HEATUP
+ else if(c2 == 'T') {
+   addNumber(Extruder::current->waitRetractTemperature, 4);
+ } else if(c2 == 'U') {
+   addNumber(Extruder::current->waitRetractUnits, 2);
+ }
+#endif
+ else if(c2 == 'h') {
+   uint8_t hm = currHeaterForSetup->heatManager;
+   if(hm == HTR_PID)
+     addStringP(PSTR("PID"));
+   else if(hm == HTR_DEADTIME)
+     addStringP(PSTR("Dead time"));
+   else if(hm == HTR_SLOWBANG)
+     addStringP(PSTR("Slow bang"));
+   else
+     addStringP(PSTR("Bang bang"));
+ }
+#if USE_ADVANCE
+#if ENABLE_QUADRATIC_ADVANCE
+ else if(c2 == 'a') {
+   addFloat(Extruder::current->advanceK, 3, 0);
+ }
+#endif
+ else if(c2 == 'l') {
+   addFloat(Extruder::current->advanceL, 3, 0);
+ }
+#endif
+ else if(c2 == 'x') {
+   addFloat(Extruder::current->xOffset * Printer::invAxisStepsPerMM[X_AXIS], 3, 2);
+ } else if(c2 == 'y') {
+   addFloat(Extruder::current->yOffset * Printer::invAxisStepsPerMM[Y_AXIS], 3, 2);
+ } else if(c2 == 'z') {
+   addFloat(Extruder::current->zOffset * Printer::invAxisStepsPerMM[Z_AXIS], 3, 2);
+ } else if(c2 == 'f') {
+   addFloat(Extruder::current->maxStartFeedrate, 5, 0);
+ } else if(c2 == 'F') {
+   addFloat(Extruder::current->maxFeedrate, 5, 0);
+ } else if(c2 == 'A') {
+   addFloat(Extruder::current->maxAcceleration, 5, 0);
+ }
+break;
+
+
+
+
+
+
+
+
+
+
+case 'y':
+if(c2 >= '0' && c2 <= '3') fvalue = (float)Printer::currentNonlinearPositionSteps[c2 - '0'] * Printer::invAxisStepsPerMM[c2 - '0'];
+addFloat(fvalue, 3, 2);
+break;
+
+
+
+
+
+
+
+
+case 'z':
+#if FEATURE_Z_PROBE
+if(c2 == 'h') { // write z probe height
+  addFloat(EEPROM::zProbeHeight(), 3, 2);
+  break;
+ }
+#endif
+if(c2 == '2')
+  addFloat(-Printer::coordinateOffset[Z_AXIS], 2, 2);
+ else
+   addFloat(-Printer::coordinateOffset[c2 - '0'], 4, 0);
+break;
+
+
+
+
+
+
+case 'w':
+if(c2 >= '0' && c2 <= '7') {
+  addNumber(Printer::wizardStack[c2 - '0'].l, 2);
+ }
+break;
+
+
+
+
+
+case 'W':
+if(c2 >= '0' && c2 <= '7') {
+  addFloat(Printer::wizardStack[c2 - '0'].f, 0, 2);
+ } else if(c2 == 'A') {
+  addFloat(Printer::wizardStack[0].f, 0, 1);
+ } else if(c2 == 'B') {
+  addFloat(Printer::wizardStack[1].f, 0, 1);
+ }
+break;
+}
+}
 
 
 
@@ -587,68 +587,68 @@ UIDisplay::parse(const char *txt, bool ram) {
 #if 0
 
 
-      case 'd':  // debug boolean
-        if (c2 == 'o') addStringOnOff(Printer::debugEcho());
-        if (c2 == 'i') addStringOnOff(Printer::debugInfo());
-        if (c2 == 'e') addStringOnOff(Printer::debugErrors());
-        if (c2 == 'd') addStringOnOff(Printer::debugDryrun());
-        if (c2 == 'p') addStringOnOff(Printer::debugEndStop());
-        if (c2 == 'x')
+case 'd':  // debug boolean
+if (c2 == 'o') addStringOnOff(Printer::debugEcho());
+if (c2 == 'i') addStringOnOff(Printer::debugInfo());
+if (c2 == 'e') addStringOnOff(Printer::debugErrors());
+if (c2 == 'd') addStringOnOff(Printer::debugDryrun());
+if (c2 == 'p') addStringOnOff(Printer::debugEndStop());
+if (c2 == 'x')
 #if MIN_HARDWARE_ENDSTOP_X
-          addStringP(Endstops::xMin() ? ui_selected : ui_unselected);
+  addStringP(Endstops::xMin() ? ui_selected : ui_unselected);
 #else
-        addChar(' ');
+addChar(' ');
 #endif
-        if (c2 == 'X')
+if (c2 == 'X')
 #if MAX_HARDWARE_ENDSTOP_X
-          addStringP(Endstops::xMax() ? ui_selected : ui_unselected);
+  addStringP(Endstops::xMax() ? ui_selected : ui_unselected);
 #else
-        addChar(' ');
+addChar(' ');
 #endif
-        if (c2 == 'y')
+if (c2 == 'y')
 #if MIN_HARDWARE_ENDSTOP_Y
-          addStringP(Endstops::yMin() ? ui_selected : ui_unselected);
+  addStringP(Endstops::yMin() ? ui_selected : ui_unselected);
 #else
-        addChar(' ');
+addChar(' ');
 #endif
-        if (c2 == 'Y')
+if (c2 == 'Y')
 #if MAX_HARDWARE_ENDSTOP_Y
-          addStringP(Endstops::yMax() ? ui_selected : ui_unselected);
+  addStringP(Endstops::yMax() ? ui_selected : ui_unselected);
 #else
-        addChar(' ');
+addChar(' ');
 #endif
-        if (c2 == 'z')
+if (c2 == 'z')
 #if MIN_HARDWARE_ENDSTOP_Z
-          addStringP(Endstops::zMin() ? ui_selected : ui_unselected);
+  addStringP(Endstops::zMin() ? ui_selected : ui_unselected);
 #else
-        addChar(' ');
+addChar(' ');
 #endif
-        if (c2 == 'Z')
+if (c2 == 'Z')
 #if MAX_HARDWARE_ENDSTOP_Z
-          addStringP(Endstops::zMax() ? ui_selected : ui_unselected);
+  addStringP(Endstops::zMax() ? ui_selected : ui_unselected);
 #else
-        addChar(' ');
+addChar(' ');
 #endif
-        break;
-      case 'D':
+break;
+case 'D':
 #if DISTORTION_CORRECTION
-        if(c2 == 'e') {
-          addStringOnOff((Printer::distortion.isEnabled()));        // Autolevel on/off
-        }
+if(c2 == 'e') {
+  addStringOnOff((Printer::distortion.isEnabled()));        // Autolevel on/off
+ }
 #endif
-        break;
+break;
 
 
 
 
 
 
-      case 'l':
-        if(c2 == 'a') addNumber(lastAction, 4);
+case 'l':
+if(c2 == 'a') addNumber(lastAction, 4);
 #if FEATURE_AUTOLEVEL
-        else if(c2 == 'l') addStringOnOff((Printer::isAutolevelActive()));        // Autolevel on/off
+ else if(c2 == 'l') addStringOnOff((Printer::isAutolevelActive()));        // Autolevel on/off
 #endif
-        break;
+break;
 
 
 
