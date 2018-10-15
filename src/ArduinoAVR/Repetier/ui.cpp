@@ -189,7 +189,7 @@ UIMenuEntry::showEntry(void) const {
 
   //  Get the value of 'filter', store in f.
   uint16_t  ft = pgm_read_word(&filter);
-  uint16_t  nf = pgm_read_word(&nofilter);  //HAL::readFlashWord((PGM_P) &nofilter);
+  uint16_t  nf = pgm_read_word(&nofilter);
 
   //  Do not show if all of the 'do-show' filter bits are missing in the mode menu.
   if ((ft != 0) && ((ft & Printer::menuMode) == 0))
@@ -512,7 +512,7 @@ UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
 void
 UIDisplay::addStringP(FSTRINGPARAM(text)) {
   while (col < MAX_COLS) {
-    uint8_t c = HAL::readFlashByte(text++);
+    uint8_t c = pgm_read_byte(text++);
     
     if(c == 0)
       return;

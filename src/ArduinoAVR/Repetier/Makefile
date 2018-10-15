@@ -33,19 +33,18 @@
 # $Id$
 
 ARDUINO_TAG?=1.0.5
-#TARGET = $(notdir $(CURDIR))
 FORMAT:=ihex
 TARGET = Repetier
 PDEFILE=$(TARGET).ino
-#INSTALL_DIR = D:/arduino/arduino-0022
-#UPLOAD_RATE = 38400
 AVRDUDE_PROGRAMMER = stk500v2
 #AVRDUDE_PROGRAMMER = 2232HIO
 #PORT = COM10
 PORT?=/dev/ttyUSB4
 MCU = atmega2560
+
 #For "old" Arduino Mega
 #MCU = atmega1280
+
 #For Sanguinololu
 #MCU = atmega644p 
 F_CPU = 16000000
@@ -72,7 +71,7 @@ HW_SER1_SRC:=$(ARDUINO)/HardwareSerial1.cpp $(ARDUINO)/HardwareSerial0.cpp
 HW_C_SRC:=$(ARDUINO)/hooks.c
 endif
 
-AVR_TOOLS_PATH = /usr/bin
+AVR_TOOLS_PATH = /usr/local/bin
 #AVR_TOOLS_PATH = d:/WinAVR/bin
 SRC =  $(ARDUINO)/pins_arduino.c $(ARDUINO)/wiring.c \
 $(ARDUINO)/wiring_analog.c $(ARDUINO)/wiring_digital.c \
@@ -136,7 +135,6 @@ NM = $(AVR_TOOLS_PATH)/avr-nm
 #AVRDUDE = $(INSTALL_DIR)/hardware/tools/avrdude
 AVRDUDE = /usr/bin/avrdude
 AVRDUDE_CONF = /etc/avrdude.conf
-REMOVE = rm -f
 MV = mv -f
 
 VPATH=.
@@ -159,12 +157,9 @@ ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
 ALL_CXXFLAGS = -mmcu=$(MCU) -I. $(CXXFLAGS)
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 RELIB?=0
-help:
-	@echo "Targets are build, clean, cleanall, sizeafter, and upload"
-	@echo "for upload, set PORT for the serial terminal"
-	@echo " ex: make PORT=$(PORT) upload"
-	@echo " to use a different ARDUINO tag, set ARDUINO_TAG to tag, i.e. ARDUINO_TAG=$(ARDUINO_TAG)"
-	@echo " Set RELIB to just check out a differene ARDUINO tag and rebuild"
+
+
+
 
 # Default target.
 all:  build sizeafter
@@ -183,20 +178,17 @@ else
 	./get_arduino_libs.sh $(ARDUINO_TAG) 
 endif
 
-fake_new_delete.c fake_new_delete.h:
-	./build_fake_cplus.sh 
-
 applet/core.a applet/$(TARGET).cpp (OBJ): | $(ARDUINO)
 
+# Here is the "preprocessing".
+# It creates a .cpp file based with the same name as the .pde file.
+# On top of the new .cpp file comes the WProgram.h header.
+# At the end there is a generic main() function attached.
+# Then the .cpp file will be compiled. Errors during compile will
+# refer to this new, automatically generated, file. 
+# Not the original .pde file you actually edit...
+#echo '#include "WProgram.h"' > applet/$(TARGET).cpp
 applet/$(TARGET).cpp: $(PDEFILE) | applet
-	# Here is the "preprocessing".
-	# It creates a .cpp file based with the same name as the .pde file.
-	# On top of the new .cpp file comes the WProgram.h header.
-	# At the end there is a generic main() function attached.
-	# Then the .cpp file will be compiled. Errors during compile will
-	# refer to this new, automatically generated, file. 
-	# Not the original .pde file you actually edit...
-	#echo '#include "WProgram.h"' > applet/$(TARGET).cpp
 	cat $(PDEFILE) >> applet/$(TARGET).cpp
 	cat $(ARDUINO)/main.cpp >> applet/$(TARGET).cpp
 
@@ -211,7 +203,7 @@ upload: applet/$(TARGET).hex
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
 
 
-	# Display size of file.
+# Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) applet/$(TARGET).hex
 ELFSIZE = $(SIZE) -C applet/$(TARGET).elf
 sizebefore:
@@ -254,13 +246,11 @@ extcoff: $(TARGET).elf
 %.sym:%.elf
 	$(NM) -n $< > $@
 
-fake_new_delete.o: fake_new_delete.c
-	$(CXX) -c -mmcu=$(MCU) -Wall --pedantic  -fno-exceptions  -Wl,--gc-sections -ffunction-sections -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -ansi -o $@ $<
 
-	# Link: create ELF output file from library.
-applet/$(TARGET).elf: $(PDEFILE) applet/core.a fake_new_delete.o
+# Link: create ELF output file from library.
+applet/$(TARGET).elf: $(PDEFILE) applet/core.a
 	@echo "GCC_VER=$(GCC_VER) GCC_W=$(GCC_WORKAROUND)"
-	$(CXX) $(ALL_CXXFLAGS) -o $@ applet/$(TARGET).cpp -L. applet/core.a fake_new_delete.o $(LDFLAGS) 
+	$(CXX) $(ALL_CXXFLAGS) -o $@ applet/$(TARGET).cpp -L. applet/core.a $(LDFLAGS) 
 	$(ELFSIZE)
 
 applet/core.a: $(OBJ) | applet
@@ -290,24 +280,23 @@ applet/core.a: $(OBJ) | applet
 
 # Target: clean project.
 clean:
-	$(REMOVE) -r applet $(OBJ) $(LST) $(SRC:.c=.s) $(SRC:.c=.d) $(CXXSRC:.cpp=.s) $(CXXSRC:.cpp=.d) 
-	$(REMOVE) fake_new_delete*
+	rm -r applet $(OBJ) $(LST) $(SRC:.c=.s) $(SRC:.c=.d) $(CXXSRC:.cpp=.s) $(CXXSRC:.cpp=.d) 
 
 cleanlib: clean
-	$(REMOVE) -r arduino.lib
+	rm -r arduino.lib
 
 cleanall: clean cleanlib
-	$(REMOVE) -r   ard.all
+	rm -r   ard.all
 
-depend:
-	if grep '^# DO NOT DELETE' $(MAKEFILE) >/dev/null; \
-	then \
-		sed -e '/^# DO NOT DELETE/,$$d' $(MAKEFILE) > \
-			$(MAKEFILE).$$$$ && \
-		$(MV) $(MAKEFILE).$$$$ $(MAKEFILE); \
-	fi
-	echo '# DO NOT DELETE THIS LINE -- make depend depends on it.' \
-		>> $(MAKEFILE); \
-	$(CC) -M -mmcu=$(MCU) $(CDEFS) $(CINCS) $(SRC) $(ASRC) >> $(MAKEFILE)
+#depend:
+#	if grep '^# DO NOT DELETE' $(MAKEFILE) >/dev/null; \
+#	then \
+#		sed -e '/^# DO NOT DELETE/,$$d' $(MAKEFILE) > \
+#			$(MAKEFILE).$$$$ && \
+#		mv $(MAKEFILE).$$$$ $(MAKEFILE); \
+#	fi
+#	echo '# DO NOT DELETE THIS LINE -- make depend depends on it.' \
+#		>> $(MAKEFILE); \
+#	$(CC) -M -mmcu=$(MCU) $(CDEFS) $(CINCS) $(SRC) $(ASRC) >> $(MAKEFILE)
 
 .PHONY:	all build elf hex eep lss sym program coff extcoff clean cleanlib cleanall depend applet_files sizebefore sizeafter

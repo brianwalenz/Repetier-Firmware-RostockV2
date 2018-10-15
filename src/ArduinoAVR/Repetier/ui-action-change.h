@@ -76,12 +76,13 @@ bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
   }
   UIMenu *men = (UIMenu*)menu[menuLevel];
   uint8_t nr = pgm_read_byte(&(men->numEntries));
-  uint8_t mtype = HAL::readFlashByte((PGM_P) & (men->menuType)) & 127;
+  uint8_t mtype = pgm_read_byte(&(men->menuType)) & 127;
   UIMenuEntry **entries = (UIMenuEntry**)pgm_read_word(&(men->entries));
   UIMenuEntry *ent = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
   UIMenuEntry *testEnt;
   // 0 = Info, 1 = Headline, 2 = sub menu ref, 3 = direct action command
-  //uint8_t entType = HAL::readFlashByte((PGM_P)&(ent->entryType));
+  //uint8_t entType = pgm_read_byte(&(ent->entryType));
+
   unsigned int action = pgm_read_word(&(ent->entryAction));
   if(mtype == UI_MENU_TYPE_SUBMENU && activeAction == 0) { // browse through menu items
     if((UI_INVERT_MENU_DIRECTION && next < 0) || (!UI_INVERT_MENU_DIRECTION && next > 0)) {

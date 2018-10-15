@@ -340,7 +340,7 @@ void GCode::executeFString(FSTRINGPARAM(cmd))
         buflen = 0;
         do
         {
-            c = HAL::readFlashByte(cmd++);
+            c = pgm_read_byte(cmd++);
             if(c == 0 || c == '\n') break;
             if(c == ';') comment = 1;
             if(comment) continue;

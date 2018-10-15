@@ -452,12 +452,12 @@ public:
   bool isWizardActive(void) {
     UIMenu *men = (UIMenu*)menu[menuLevel];
 
-    return(HAL::readFlashByte((PGM_P) & (men->menuType)) & 127) == 5;
+    return((pgm_read_byte(&(men->menuType)) & 127) == 5);
   }
 
   bool isSticky(void) {
     UIMenu *men = (UIMenu*)menu[menuLevel];
-    uint8_t mt = HAL::readFlashByte((PGM_P) & (men->menuType));
+    uint8_t mt = pgm_read_byte(&(men->menuType));
     return ((mt & 128) == 128) || mt == 5;
   }
 
