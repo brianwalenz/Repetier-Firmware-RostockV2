@@ -257,7 +257,7 @@ bool runBedLeveling(int s) {
 #endif
     Printer::coordinateOffset[X_AXIS] = Printer::coordinateOffset[Y_AXIS] = Printer::coordinateOffset[Z_AXIS] = 0;
     Printer::startProbing(true);
-    //GCode::executeFString(Com::tZProbeStartScript);
+    //GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
     Plane plane;
         if(!measureAutolevelPlane(plane)) {
             Com::printErrorFLN(PSTR("Probing had returned errors - autoleveling canceled."));
@@ -280,7 +280,7 @@ bool runBedLeveling(int s) {
             // at origin rotations have no influence so use values there to update
             Printer::zLength += currentZ - Printer::currentPosition[Z_AXIS];
             //Printer::zLength += /*currentZ*/ plane.z((float)Printer::currentPositionSteps[X_AXIS] * Printer::invAxisStepsPerMM[X_AXIS],(float)Printer::currentPositionSteps[Y_AXIS] * Printer::invAxisStepsPerMM[Y_AXIS]) - zRot;
-            Com::printFLN(Com::tZProbePrinterHeight, Printer::zLength);
+            Com::printFLN(PSTR("Printer height:"), Printer::zLength);
         }
 #endif
         Com::printF(PSTR("CurrentZ:"), currentZ);
@@ -333,9 +333,9 @@ void Printer::setAutolevelActive(bool on) {
     if(on == isAutolevelActive()) return;
     flag0 = (on ? flag0 | PRINTER_FLAG0_AUTOLEVEL_ACTIVE : flag0 & ~PRINTER_FLAG0_AUTOLEVEL_ACTIVE);
     if(on)
-        Com::printInfoFLN(Com::tAutolevelEnabled);
+        Com::printInfoFLN(PSTR("Autoleveling enabled"));
     else
-        Com::printInfoFLN(Com::tAutolevelDisabled);
+        Com::printInfoFLN(PSTR("Autoleveling disabled"));
     updateCurrentPosition(false);
 #endif // FEATURE_AUTOLEVEL
 }
@@ -359,9 +359,9 @@ float Printer::runZMaxProbe() {
     transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
     probeDepth = (realDeltaPositionSteps[Z_AXIS] - startZ);
     float distance = (float)probeDepth * invAxisStepsPerMM[Z_AXIS];
-    Com::printF(Com::tZProbeMax, distance);
-    Com::printF(Com::tSpaceXColon, realXPosition());
-    Com::printFLN(Com::tSpaceYColon, realYPosition());
+    Com::printF(PSTR("Z-probe max:"), distance);
+    Com::printF(PSTR(" X:"), realXPosition());
+    Com::printFLN(PSTR(" Y:"), realYPosition());
     PrintLine::moveRelativeDistanceInSteps(0, 0, -probeDepth, 0, homingFeedrate[Z_AXIS], true, true);
     return distance;
 }
@@ -402,7 +402,7 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
         return false;
     } else {
 	    if(runScript) {
-			GCode::executeFString(Com::tZProbeStartScript);
+			GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
 		}
 	    float maxStartHeight = EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0) + 0.1;
 	    if(currentPosition[Z_AXIS] > maxStartHeight && enforceStartHeight) {
@@ -423,7 +423,7 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
     }
 #else
     if(runScript) {
-	    GCode::executeFString(Com::tZProbeStartScript);
+	    GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
     }
 #endif
     Printer::moveToReal(cx, cy, cz, IGNORE_COORDINATE, EXTRUDER_SWITCH_XY_SPEED);
@@ -435,7 +435,7 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
 void Printer::finishProbing() {
     float cx, cy, cz;
     realPosition(cx, cy, cz);
-    GCode::executeFString(Com::tZProbeEndScript);
+    GCode::executeFString(PSTR(Z_PROBE_FINISHED_SCRIPT));
     if(Extruder::current) {
         offsetX = -Extruder::current->xOffset * invAxisStepsPerMM[X_AXIS];
         offsetY = -Extruder::current->yOffset * invAxisStepsPerMM[Y_AXIS];
@@ -508,7 +508,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
         PrintLine::moveRelativeDistanceInSteps(0, 0, -probeDepth, 0, EEPROM::zProbeSpeed(), true, true);
         setZProbingActive(false);
         if(stepsRemainingAtZHit < 0) {
-            Com::printErrorFLN(Com::tZProbeFailed);
+            Com::printErrorFLN(PSTR("Z-probe failed"));
             return ILLEGAL_Z_PROBE;
         }
         stepsRemainingAtZHit = realDeltaPositionSteps[C_TOWER] - currentNonlinearPositionSteps[C_TOWER]; // nonlinear moves may split z so stepsRemainingAtZHit is only what is left from last segment not total move. This corrects the problem.
@@ -569,17 +569,17 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
 
     distance += bendingCorrectionAt(currentPosition[X_AXIS], currentPosition[Y_AXIS]);
 
-    Com::printF(Com::tZProbe, distance, 3);
-    Com::printF(Com::tSpaceXColon, realXPosition());
+    Com::printF(PSTR("Z-probe:"), distance, 3);
+    Com::printF(PSTR(" X:"), realXPosition());
 #if DISTORTION_CORRECTION
     if(Printer::distortion.isEnabled()) {
-        Com::printF(Com::tSpaceYColon, realYPosition());
+        Com::printF(PSTR(" Y:"), realYPosition());
         Com::printFLN(PSTR(" zCorr:"), zCorr, 3);
     } else {
-        Com::printFLN(Com::tSpaceYColon, realYPosition());
+        Com::printFLN(PSTR(" Y:"), realYPosition());
     }
 #else
-    Com::printFLN(Com::tSpaceYColon, realYPosition());
+    Com::printFLN(PSTR(" Y:"), realYPosition());
 #endif
     if(Endstops::zProbe()) {
         Com::printErrorFLN(PSTR("z-probe did not untrigger after going back to start position."));
@@ -630,7 +630,7 @@ void Printer::waitForZProbeStart() {
     Endstops::update();
     Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
     if(Endstops::zProbe()) return;
-    uid.setStatusP(Com::tHitZProbe);
+    uid.setStatusP(PSTR("Hit z-probe"));
     uid.refreshPage();
 #ifdef DEBUG_PRINT
     debugWaitLoop = 3;
@@ -705,7 +705,7 @@ void Printer::resetTransformationMatrix(bool silent) {
     autolevelTransformation[1] = autolevelTransformation[2] = autolevelTransformation[3] =
                                      autolevelTransformation[5] = autolevelTransformation[6] = autolevelTransformation[7] = 0;
     if(!silent)
-        Com::printInfoFLN(Com::tAutolevelReset);
+        Com::printInfoFLN(PSTR("Autolevel matrix reset"));
 }
 
 void Printer::buildTransformationMatrix(Plane &plane) {
@@ -736,7 +736,7 @@ void Printer::buildTransformationMatrix(Plane &plane) {
     autolevelTransformation[4] /= len;
     autolevelTransformation[5] /= len;
 
-    Com::printArrayFLN(Com::tTransformationMatrix, autolevelTransformation, 9, 6);
+    Com::printArrayFLN(PSTR("Transformation matrix:"), autolevelTransformation, 9, 6);
 }
 /*
 void Printer::buildTransformationMatrix(float h1,float h2,float h3) {
@@ -769,7 +769,7 @@ void Printer::buildTransformationMatrix(float h1,float h2,float h3) {
     len = sqrt(autolevelTransformation[4] * autolevelTransformation[4] + autolevelTransformation[5] * autolevelTransformation[5]);
     autolevelTransformation[4] /= len;
     autolevelTransformation[5] /= len;
-    Com::printArrayFLN(Com::tTransformationMatrix,autolevelTransformation, 9, 6);
+    Com::printArrayFLN(PSTR("Transformation matrix:"),autolevelTransformation, 9, 6);
 }
 */
 #endif

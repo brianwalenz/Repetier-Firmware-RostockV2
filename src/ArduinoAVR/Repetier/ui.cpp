@@ -1129,13 +1129,13 @@ UIDisplay::okAction(bool allowMoves) {
           sd.sdmode = 0;
           sd.file.close();
           if(sd.fat.remove(filename)) {
-            Com::printFLN(Com::tFileDeleted);
+            Com::printFLN(PSTR("File deleted"));
             uiAlert();
             if(menuPos[menuLevel] > 0)
               menuPos[menuLevel]--;
             updateSDFileCount();
           } else {
-            Com::printFLN(Com::tDeletionFailed);
+            Com::printFLN(PSTR("Deletion failed"));
           }
         }
         break;

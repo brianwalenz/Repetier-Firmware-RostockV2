@@ -606,7 +606,7 @@ public:
 
   static INLINE void setBlockingReceive(uint8_t b) {
     flag2 = (b ? flag2 | PRINTER_FLAG2_BLOCK_RECEIVING : flag2 & ~PRINTER_FLAG2_BLOCK_RECEIVING);
-    Com::printFLN(b ? Com::tPauseCommunication : Com::tContinueCommunication);
+    Com::printFLN(b ? PSTR("// action:pause") : PSTR("// action:resume"));
   }
 
   static INLINE uint8_t isPrinting() {

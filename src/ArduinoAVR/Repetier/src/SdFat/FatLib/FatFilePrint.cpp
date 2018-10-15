@@ -134,9 +134,6 @@ extern int8_t RFstrnicmp(const char* s1, const char* s2, size_t n);
 void FatFile::lsRecursive(uint8_t level, bool isJson)
 {
   FatFile file;
-#if JSON_OUTPUT
-  bool firstFile = true;
-#endif
   rewind();
 
   while (file.openNext(this, O_READ)) {
@@ -162,23 +159,10 @@ void FatFile::lsRecursive(uint8_t level, bool isJson)
       }
       if (level && !isJson) {
         Com::print(fullName);
-        Com::printF(Com::tSlash);
+        Com::print('/');
       }
-#if JSON_OUTPUT
-      if (isJson) {
-        if (!firstFile) Com::print(',');
-	      Com::print('"');Com::print('*');
-        SDCard::printEscapeChars(tempLongFilename);
-	      Com::print('"');
-        firstFile = false;
-      } else {
-        Com::print(tempLongFilename);
-        Com::printFLN(Com::tSlash); // End with / to mark it as directory entry, so we can see empty directories.
-      }
-#else
       Com::print(tempLongFilename);
-      Com::printFLN(Com::tSlash); // End with / to mark it as directory entry, so we can see empty directories.
-#endif
+      Com::printFLN(PSTR("/")); // End with / to mark it as directory entry, so we can see empty directories.
       char *tmp;
       // Add directory name
       if(level) strcat(fullName, "/");
@@ -194,21 +178,12 @@ void FatFile::lsRecursive(uint8_t level, bool isJson)
     } else { // is filename
       if(level && !isJson) {
         Com::print(fullName);
-        Com::printF(Com::tSlash);
+        Com::printF(PSTR("/"));
       }
-#if JSON_OUTPUT
-      if (isJson) {
-        if (!firstFile) Com::printF(Com::tComma);
-		    Com::print('"');
-        SDCard::printEscapeChars(tempLongFilename);
-		    Com::print('"');
-        firstFile = false;
-      } else
-#endif
       {
         Com::print(tempLongFilename);
 #if SD_EXTENDED_DIR
-        Com::printF(Com::tSpace, (long) file.fileSize());
+        Com::printF(PSTR(" "), (long) file.fileSize());
 #endif
         Com::println();
       }
@@ -238,12 +213,6 @@ void FatFile::ls(uint8_t flags, uint8_t indent) {
   lsRecursive(0, false);
 }
 
-#if JSON_OUTPUT
-void FatFile::lsJSON() {
-  *fullName = 0;
-  lsRecursive(0, true);
-}
-#endif
 
 
 //------------------------------------------------------------------------------

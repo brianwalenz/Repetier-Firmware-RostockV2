@@ -93,38 +93,38 @@ void Endstops::report() {
     Com::printF(PSTR("endstops hit: "));
 
 #if (X_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_X
-    Com::printF(Com::tXMinColon);
-    Com::printF(xMin() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("x_min:"));
+    Com::printF(xMin() ? PSTR("H ") : PSTR("L "));
 #endif
 
 #if (X_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_X
-    Com::printF(Com::tXMaxColon);
-    Com::printF(xMax() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("x_max:"));
+    Com::printF(xMax() ? PSTR("H ") : PSTR("L "));
 #endif
 
 #if (Y_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Y
-    Com::printF(Com::tYMinColon);
-    Com::printF(yMin() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("y_min:"));
+    Com::printF(yMin() ? PSTR("H ") : PSTR("L "));
 #endif
 
 #if (Y_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Y
-    Com::printF(Com::tYMaxColon);
-    Com::printF(yMax() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("y_max:"));
+    Com::printF(yMax() ? PSTR("H ") : PSTR("L "));
 #endif
 
 #if (Z_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Z
-    Com::printF(Com::tZMinColon);
-    Com::printF(zMin() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("z_min:"));
+    Com::printF(zMin() ? PSTR("H ") : PSTR("L "));
 #endif
 
 #if (Z_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Z
-    Com::printF(Com::tZMaxColon);
-    Com::printF(zMax() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("z_max:"));
+    Com::printF(zMax() ? PSTR("H ") : PSTR("L "));
 #endif
 
 #if FEATURE_Z_PROBE
-    Com::printF(Com::tZProbeState);
-    Com::printF(zProbe() ? Com::tHSpace : Com::tLSpace);
+    Com::printF(PSTR("Z-probe state:"));
+    Com::printF(zProbe() ? PSTR("H ") : PSTR("L "));
 #endif
     Com::println();
 }

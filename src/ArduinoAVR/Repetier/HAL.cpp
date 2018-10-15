@@ -238,11 +238,11 @@ void HAL::setupTimer() {
 void HAL::showStartReason() {
     // Check startup - does nothing if bootloader sets MCUSR to 0
     uint8_t mcu = MCUSR;
-    if(mcu & 1) Com::printInfoFLN(Com::tPowerUp);
-    if(mcu & 2) Com::printInfoFLN(Com::tExternalReset);
-    if(mcu & 4) Com::printInfoFLN(Com::tBrownOut);
-    if(mcu & 8) Com::printInfoFLN(Com::tWatchdog);
-    if(mcu & 32) Com::printInfoFLN(Com::tSoftwareReset);
+    if(mcu & 1) Com::printInfoFLN(PSTR("PowerUp"));
+    if(mcu & 2) Com::printInfoFLN(PSTR("External Reset"));
+    if(mcu & 4) Com::printInfoFLN(PSTR("Brown out Reset"));
+    if(mcu & 8) Com::printInfoFLN(PSTR("Watchdog Reset"));
+    if(mcu & 32) Com::printInfoFLN(PSTR("Software Reset"));
     MCUSR = 0;
 }
 int HAL::getFreeRam() {

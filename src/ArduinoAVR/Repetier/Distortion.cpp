@@ -103,7 +103,7 @@ void Distortion::enable(bool permanent) {
     if(permanent)
         EEPROM::setZCorrectionEnabled(enabled);
 #endif
-    Com::printFLN(Com::tZCorrectionEnabled);
+    Com::printFLN(PSTR("Z correction enabled"));
 }
 
 void Distortion::disable(bool permanent) {
@@ -116,11 +116,11 @@ void Distortion::disable(bool permanent) {
     Printer::zCorrectionStepsIncluded = 0;
 #endif
     Printer::updateCurrentPosition(false);
-    Com::printFLN(Com::tZCorrectionDisabled);
+    Com::printFLN(PSTR("Z correction disabled"));
 }
 
 void Distortion::reportStatus() {
-    Com::printFLN(enabled ? Com::tZCorrectionEnabled : Com::tZCorrectionDisabled);
+    Com::printFLN(enabled ? PSTR("Z correction enabled") : PSTR("Z correction disabled"));
 }
 
 void Distortion::resetCorrection(void) {

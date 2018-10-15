@@ -597,37 +597,37 @@ UIDisplay::parse(const char *txt, bool ram) {
 #if MIN_HARDWARE_ENDSTOP_X
           addStringP(Endstops::xMin() ? ui_selected : ui_unselected);
 #else
-        addStringP(Com::tSpace);
+        addChar(' ');
 #endif
         if (c2 == 'X')
 #if MAX_HARDWARE_ENDSTOP_X
           addStringP(Endstops::xMax() ? ui_selected : ui_unselected);
 #else
-        addStringP(Com::tSpace);
+        addChar(' ');
 #endif
         if (c2 == 'y')
 #if MIN_HARDWARE_ENDSTOP_Y
           addStringP(Endstops::yMin() ? ui_selected : ui_unselected);
 #else
-        addStringP(Com::tSpace);
+        addChar(' ');
 #endif
         if (c2 == 'Y')
 #if MAX_HARDWARE_ENDSTOP_Y
           addStringP(Endstops::yMax() ? ui_selected : ui_unselected);
 #else
-        addStringP(Com::tSpace);
+        addChar(' ');
 #endif
         if (c2 == 'z')
 #if MIN_HARDWARE_ENDSTOP_Z
           addStringP(Endstops::zMin() ? ui_selected : ui_unselected);
 #else
-        addStringP(Com::tSpace);
+        addChar(' ');
 #endif
         if (c2 == 'Z')
 #if MAX_HARDWARE_ENDSTOP_Z
           addStringP(Endstops::zMax() ? ui_selected : ui_unselected);
 #else
-        addStringP(Com::tSpace);
+        addChar(' ');
 #endif
         break;
       case 'D':

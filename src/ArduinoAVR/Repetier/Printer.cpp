@@ -247,7 +247,7 @@ bool Printer::updateDoorOpen() {
 void Printer::reportPrinterMode() {
     Printer::setMenuMode(MENU_MODE_FDM, false);
     Printer::setMenuMode(MENU_MODE_FDM, true);
-    Com::printFLN(Com::tPrinterModeFFF);
+    Com::printFLN(PSTR("PrinterMode:FFF"));
 }
 void Printer::updateDerivedParameter() {
     travelMovesPerSecond = EEPROM::deltaSegmentsPerSecondMove();
@@ -733,7 +733,7 @@ void Printer::setup() {
 #endif
     EEPROM::initBaudrate();
     HAL::serialSetBaudrate(baudrate);
-    Com::printFLN(Com::tStart);
+    Com::printFLN(PSTR("start"));
     HAL::showStartReason();
     Extruder::initExtruder();
     // sets auto leveling in eeprom init
@@ -768,7 +768,7 @@ void Printer::setup() {
     Extruder::selectExtruderById(0);
 
 #ifdef STARTUP_GCODE
-    GCode::executeFString(Com::tStartupGCode);
+    GCode::executeFString(PSTR(STARTUP_GCODE));
 #endif
 }
 
@@ -899,9 +899,9 @@ void Printer::homeZAxis() { // Delta z homing
     long dy = -yMinSteps - EEPROM::deltaTowerYOffsetSteps();
     long dz = -zMinSteps - EEPROM::deltaTowerZOffsetSteps();
     long dm = RMath::min(dx, dy, dz);
-    //Com::printFLN(Com::tTower1,dx);
-    //Com::printFLN(Com::tTower2,dy);
-    //Com::printFLN(Com::tTower3,dz);
+    //Com::printFLN(PSTR("Tower 1:"),dx);
+    //Com::printFLN(PSTR("Tower 2:"),dy);
+    //Com::printFLN(PSTR("Tower 3:"),dz);
     dx -= dm; // now all dxyz are positive
     dy -= dm;
     dz -= dm;
@@ -1014,7 +1014,7 @@ void Printer::handleInterruptEvent() {
     }
 }
 
-#define START_EXTRUDER_CONFIG(i)     Com::printF(Com::tConfig);Com::printF(Com::tExtrDot,i+1);Com::print(':');
+#define START_EXTRUDER_CONFIG(i)     Com::printF(PSTR("Config:"));Com::printF(PSTR("Extr."),i+1);Com::print(':');
 void Printer::showConfiguration() {
     Com::config(PSTR("Baudrate:"), baudrate);
 #ifndef EXTERNALSERIAL

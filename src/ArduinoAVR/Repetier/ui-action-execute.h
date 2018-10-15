@@ -311,9 +311,9 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
       Printer::updateDerivedParameter();
       transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
       Printer::updateCurrentPosition(true);
-      Com::printFLN(Com::tZProbePrinterHeight, Printer::zLength);
+      Com::printFLN(PSTR("Printer height:"), Printer::zLength);
       EEPROM::storeDataIntoEEPROM(false);
-      Com::printFLN(Com::tEEPROMUpdated);
+      Com::printFLN(PSTR("EEPROM updated"));
       Commands::printCurrentPosition();
     }
       break;
@@ -343,10 +343,10 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
 #if SOFTWARE_LEVELING
       int32_t factors[4];
       PrintLine::calculatePlane(factors, Printer::levelingP1, Printer::levelingP2, Printer::levelingP3);
-      Com::printFLN(Com::tLevelingCalc);
-      Com::printFLN(Com::tTower1, PrintLine::calcZOffset(factors, Printer::deltaAPosXSteps, Printer::deltaAPosYSteps) * Printer::invAxisStepsPerMM[Z_AXIS]);
-      Com::printFLN(Com::tTower2, PrintLine::calcZOffset(factors, Printer::deltaBPosXSteps, Printer::deltaBPosYSteps) * Printer::invAxisStepsPerMM[Z_AXIS]);
-      Com::printFLN(Com::tTower3, PrintLine::calcZOffset(factors, Printer::deltaCPosXSteps, Printer::deltaCPosYSteps) * Printer::invAxisStepsPerMM[Z_AXIS]);
+      Com::printFLN(PSTR("Leveling calc:"));
+      Com::printFLN(PSTR("Tower 1:"), PrintLine::calcZOffset(factors, Printer::deltaAPosXSteps, Printer::deltaAPosYSteps) * Printer::invAxisStepsPerMM[Z_AXIS]);
+      Com::printFLN(PSTR("Tower 2:"), PrintLine::calcZOffset(factors, Printer::deltaBPosXSteps, Printer::deltaBPosYSteps) * Printer::invAxisStepsPerMM[Z_AXIS]);
+      Com::printFLN(PSTR("Tower 3:"), PrintLine::calcZOffset(factors, Printer::deltaCPosXSteps, Printer::deltaCPosYSteps) * Printer::invAxisStepsPerMM[Z_AXIS]);
 #endif
       break;
 

@@ -70,7 +70,7 @@ void SDCard::initsd() {
     /*if(dir[0].isOpen())
         dir[0].close();*/
     if (!fat.begin(SDSS, SD_SCK_MHZ(50))) {
-        Com::printFLN(Com::tSDInitFail);
+        Com::printFLN(PSTR("SD init fail"));
         sdmode = 100; // prevent automount loop!
         if (fat.card()->errorCode()) {
             Com::printFLN(PSTR(
@@ -344,11 +344,11 @@ void SDCard::writeCommand(GCode *code) {
     Com::printF(PSTR(" "),(int)buf[i]);
     Com::println();*/
     if(params == 128) {
-        Com::printErrorFLN(Com::tAPIDFinished);
+        Com::printErrorFLN(PSTR("PID Autotune finished ! Place the Kp, Ki and Kd constants in the Configuration.h or EEPROM"));
     } else
         file.write(buf, p);
     if (file.getWriteError()) {
-        Com::printFLN(Com::tErrorWritingToFile);
+        Com::printFLN(PSTR("error writing to file"));
     }
 }
 
@@ -388,12 +388,12 @@ int8_t RFstrnicmp(const char* s1, const char* s2, size_t n) {
 void SDCard::ls() {
     SdBaseFile file;
 
-    Com::printFLN(Com::tBeginFileList);
+    Com::printFLN(PSTR("Begin file list"));
     fat.chdir();
 
     file.openRoot(fat.vol());
     file.ls(0, 0);
-    Com::printFLN(Com::tEndFileList);
+    Com::printFLN(PSTR("End file list"));
 }
 
 
@@ -415,26 +415,26 @@ bool SDCard::selectFile(const char* filename, bool silent) {
             oldP = filename;
 
         if (!silent) {
-            Com::printF(Com::tFileOpened, oldP);
-            Com::printFLN(Com::tSpaceSizeColon, file.fileSize());
+            Com::printF(PSTR("File opened:"), oldP);
+            Com::printFLN(PSTR(" Size:"), file.fileSize());
         }
         sdpos = 0;
         filesize = file.fileSize();
-        Com::printFLN(Com::tFileSelected);
+        Com::printFLN(PSTR("File selected"));
         return true;
     } else {
         if (!silent)
-            Com::printFLN(Com::tFileOpenFailed);
+            Com::printFLN(PSTR("file.open failed"));
         return false;
     }
 }
 
 void SDCard::printStatus() {
     if(sdactive) {
-        Com::printF(Com::tSDPrintingByte, sdpos);
-        Com::printFLN(Com::tSlash, filesize);
+        Com::printF(PSTR("SD printing byte "), sdpos);
+        Com::printFLN(PSTR("/"), filesize);
     } else {
-        Com::printFLN(Com::tNotSDPrinting);
+        Com::printFLN(PSTR("Not SD printing"));
     }
 }
 
@@ -444,11 +444,11 @@ void SDCard::startWrite(char *filename) {
     sdmode = 0;
     fat.chdir();
     if(!file.open(filename, O_CREAT | O_APPEND | O_WRITE | O_TRUNC)) {
-        Com::printFLN(Com::tOpenFailedFile, filename);
+        Com::printFLN(PSTR("open failed, File: "), filename);
     } else {
         UI_STATUS_F(PSTR("Uploading..."));
         savetosd = true;
-        Com::printFLN(Com::tWritingToFile, filename);
+        Com::printFLN(PSTR("Writing to file: "), filename);
     }
 }
 
@@ -457,7 +457,7 @@ void SDCard::finishWrite() {
     file.sync();
     file.close();
     savetosd = false;
-    Com::printFLN(Com::tDoneSavingFile);
+    Com::printFLN(PSTR("Done saving file."));
     UI_CLEAR_STATUS;
 }
 
@@ -466,12 +466,12 @@ void SDCard::deleteFile(char *filename) {
     sdmode = 0;
     file.close();
     if(fat.remove(filename)) {
-        Com::printFLN(Com::tFileDeleted);
+        Com::printFLN(PSTR("File deleted"));
     } else {
         if(fat.rmdir(filename))
-            Com::printFLN(Com::tFileDeleted);
+            Com::printFLN(PSTR("File deleted"));
         else
-            Com::printFLN(Com::tDeletionFailed);
+            Com::printFLN(PSTR("Deletion failed"));
     }
 }
 
@@ -480,8 +480,8 @@ void SDCard::makeDirectory(char *filename) {
     sdmode = 0;
     file.close();
     if(fat.mkdir(filename)) {
-        Com::printFLN(Com::tDirectoryCreated);
+        Com::printFLN(PSTR("Directory created"));
     } else {
-        Com::printFLN(Com::tCreationFailed);
+        Com::printFLN(PSTR("Creation failed"));
     }
 }

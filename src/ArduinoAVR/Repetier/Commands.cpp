@@ -128,10 +128,10 @@ void Commands::printCurrentPosition() {
     x += Printer::coordinateOffset[X_AXIS];
     y += Printer::coordinateOffset[Y_AXIS];
     z += Printer::coordinateOffset[Z_AXIS];
-    Com::printF(Com::tXColon, x * (Printer::unitIsInches ? 0.03937 : 1), 2);
-    Com::printF(Com::tSpaceYColon, y * (Printer::unitIsInches ? 0.03937 : 1), 2);
-    Com::printF(Com::tSpaceZColon, z * (Printer::unitIsInches ? 0.03937 : 1), 3);
-    Com::printFLN(Com::tSpaceEColon, Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS] * (Printer::unitIsInches ? 0.03937 : 1), 4);
+    Com::printF(PSTR("X:"), x * (Printer::unitIsInches ? 0.03937 : 1), 2);
+    Com::printF(PSTR(" Y:"), y * (Printer::unitIsInches ? 0.03937 : 1), 2);
+    Com::printF(PSTR(" Z:"), z * (Printer::unitIsInches ? 0.03937 : 1), 3);
+    Com::printFLN(PSTR(" E:"), Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS] * (Printer::unitIsInches ? 0.03937 : 1), 4);
 #ifdef DEBUG_POS
     Com::printF(PSTR("OffX:"), Printer::offsetX); // to debug offset handling
     Com::printF(PSTR(" OffY:"), Printer::offsetY);
@@ -148,29 +148,29 @@ void Commands::printTemperatures(bool showRaw) {
     int error;
     float temp = Extruder::current->tempControl.currentTemperatureC;
 #if HEATED_BED_SENSOR_TYPE == 0
-    Com::printF(Com::tTColon, temp);
-    Com::printF(Com::tSpaceSlash, Extruder::current->tempControl.targetTemperatureC, 0);
+    Com::printF(PSTR("T:"), temp);
+    Com::printF(PSTR(" /"), Extruder::current->tempControl.targetTemperatureC, 0);
 #else
-    Com::printF(Com::tTColon, temp);
-    Com::printF(Com::tSpaceSlash, Extruder::current->tempControl.targetTemperatureC, 0);
-    Com::printF(Com::tSpaceBColon, Extruder::getHeatedBedTemperature());
-    Com::printF(Com::tSpaceSlash, heatedBedController.targetTemperatureC, 0);
+    Com::printF(PSTR("T:"), temp);
+    Com::printF(PSTR(" /"), Extruder::current->tempControl.targetTemperatureC, 0);
+    Com::printF(PSTR(" B:"), Extruder::getHeatedBedTemperature());
+    Com::printF(PSTR(" /"), heatedBedController.targetTemperatureC, 0);
     if((error = heatedBedController.errorState()) > 0) {
         Com::printF(PSTR(" DB:"), error);
     }
     if(showRaw) {
-        Com::printF(Com::tSpaceRaw, (int)NUM_EXTRUDER);
-        Com::printF(Com::tColon, (1023 << (2 - ANALOG_REDUCE_BITS)) - heatedBedController.currentTemperature);
+        Com::printF(PSTR(" RAW"), (int)NUM_EXTRUDER);
+        Com::printF(PSTR(":"), (1023 << (2 - ANALOG_REDUCE_BITS)) - heatedBedController.currentTemperature);
     }
-    Com::printF(Com::tSpaceBAtColon, (pwm_pos[heatedBedController.pwmIndex])); // Show output of auto tune when tuning!
+    Com::printF(PSTR(" B@:"), (pwm_pos[heatedBedController.pwmIndex])); // Show output of auto tune when tuning!
 #endif
-    Com::printF(Com::tSpaceAtColon, (autotuneIndex == 255 ? pwm_pos[Extruder::current->id] : pwm_pos[autotuneIndex])); // Show output of auto tune when tuning!
+    Com::printF(PSTR(" @:"), (autotuneIndex == 255 ? pwm_pos[Extruder::current->id] : pwm_pos[autotuneIndex])); // Show output of auto tune when tuning!
     if((error = extruder[0].tempControl.errorState()) > 0) {
         Com::printF(PSTR(" D0:"), error);
     }
     if(showRaw) {
-        Com::printF(Com::tSpaceRaw, (int)0);
-        Com::printF(Com::tColon, (1023 << (2 - ANALOG_REDUCE_BITS)) - extruder[0].tempControl.currentTemperature);
+        Com::printF(PSTR(" RAW"), (int)0);
+        Com::printF(PSTR(":"), (1023 << (2 - ANALOG_REDUCE_BITS)) - extruder[0].tempControl.currentTemperature);
     }
     Com::println();
 }
@@ -179,7 +179,7 @@ void Commands::changeFeedrateMultiply(int factor) {
     if(factor > 500) factor = 500;
     Printer::feedrate *= (float)factor / (float)Printer::feedrateMultiply;
     Printer::feedrateMultiply = factor;
-    Com::printFLN(Com::tSpeedMultiply, factor);
+    Com::printFLN(PSTR("SpeedMultiply:"), factor);
 }
 
 void Commands::changeFlowrateMultiply(int factor) {
@@ -190,7 +190,7 @@ void Commands::changeFlowrateMultiply(int factor) {
         Printer::extrusionFactor = 0.01f * static_cast<float>(factor);
     else
         Printer::extrusionFactor = 0.01f * static_cast<float>(factor) * 4.0f / (Extruder::current->diameter * Extruder::current->diameter * 3.141592654f);
-    Com::printFLN(Com::tFlowMultiply, factor);
+    Com::printFLN(PSTR("FlowMultiply:"), factor);
 }
 
 #if FEATURE_FAN_CONTROL
@@ -214,34 +214,34 @@ void Commands::setFanSpeed(int speed, bool immediately) {
         }
         Printer::setFanSpeedDirectly(speed);
     }
-    Com::printFLN(Com::tFanspeed, speed); // send only new values to break update loops!
+    Com::printFLN(PSTR("Fanspeed:"), speed); // send only new values to break update loops!
 #endif
 }
 void Commands::setFan2Speed(int speed) {
 #if FAN2_PIN >- 1 && FEATURE_FAN2_CONTROL
     speed = constrain(speed, 0, 255);
     Printer::setFan2SpeedDirectly(speed);
-    Com::printFLN(Com::tFan2speed, speed); // send only new values to break update loops!
+    Com::printFLN(PSTR("Fanspeed2:"), speed); // send only new values to break update loops!
 #endif
 }
 
 void Commands::reportPrinterUsage() {
     float dist = Printer::filamentPrinted * 0.001 + HAL::eprGetFloat(EPR_PRINTING_DISTANCE);
-    Com::printF(Com::tPrintedFilament, dist, 2);
-    Com::printF(Com::tSpacem);
+    Com::printF(PSTR("Printed filament:"), dist, 2);
+    Com::printF(PSTR("m "));
     bool alloff = true;
     for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
         if(tempController[i]->targetTemperatureC > 15) alloff = false;
     int32_t seconds = (alloff ? 0 : (HAL::timeInMilliseconds() - Printer::msecondsPrinting) / 1000) + HAL::eprGetInt32(EPR_PRINTING_TIME);
     int32_t tmp = seconds / 86400;
     seconds -= tmp * 86400;
-    Com::printF(Com::tPrintingTime, tmp);
+    Com::printF(PSTR("Printing time:"), tmp);
     tmp = seconds / 3600;
-    Com::printF(Com::tSpaceDaysSpace, tmp);
+    Com::printF(PSTR(" days "), tmp);
     seconds -= tmp * 3600;
     tmp = seconds / 60;
-    Com::printF(Com::tSpaceHoursSpace, tmp);
-    Com::printFLN(Com::tSpaceMin);
+    Com::printF(PSTR(" hours "), tmp);
+    Com::printFLN(PSTR(" min"));
 }
 
 
@@ -316,22 +316,22 @@ void microstepMode(uint8_t driver, uint8_t stepping_mode) {
 }
 
 void microstepReadings() {
-    Com::printFLN(Com::tMS1MS2Pins);
+    Com::printFLN(PSTR("MS1,MS2 Pins"));
 
-    Com::printF(Com::tXColon, READ(X_MS1_PIN));
-    Com::printFLN(Com::tComma, READ(X_MS2_PIN));
+    Com::printF(PSTR("X:"), READ(X_MS1_PIN));
+    Com::printFLN(PSTR(","), READ(X_MS2_PIN));
 
-    Com::printF(Com::tYColon, READ(Y_MS1_PIN));
-    Com::printFLN(Com::tComma, READ(Y_MS2_PIN));
+    Com::printF(PSTR("Y:"), READ(Y_MS1_PIN));
+    Com::printFLN(PSTR(","), READ(Y_MS2_PIN));
 
-    Com::printF(Com::tZColon, READ(Z_MS1_PIN));
-    Com::printFLN(Com::tComma, READ(Z_MS2_PIN));
+    Com::printF(PSTR("Z:"), READ(Z_MS1_PIN));
+    Com::printFLN(PSTR(","), READ(Z_MS2_PIN));
 
-    Com::printF(Com::tE0Colon, READ(E0_MS1_PIN));
-    Com::printFLN(Com::tComma, READ(E0_MS2_PIN));
+    Com::printF(PSTR("E0:"), READ(E0_MS1_PIN));
+    Com::printFLN(PSTR(","), READ(E0_MS2_PIN));
 
-    Com::printF(Com::tE1Colon, READ(E1_MS1_PIN));
-    Com::printFLN(Com::tComma, READ(E1_MS2_PIN));
+    Com::printF(PSTR("E1:"), READ(E1_MS1_PIN));
+    Com::printFLN(PSTR(","), READ(E1_MS2_PIN));
 }
 
 
@@ -469,7 +469,7 @@ void Commands::processGCode(GCode *com) {
         }
         if(ok) {
             sum *= 0.33333333333333;
-            Com::printFLN(Com::tZProbeAverage, sum);
+            Com::printFLN(PSTR("Z-probe average height:"), sum);
             if(com->hasS() && com->S) {
 #if MAX_HARDWARE_ENDSTOP_Z
 #if DRIVE_SYSTEM == DELTA
@@ -485,8 +485,8 @@ void Commands::processGCode(GCode *com) {
                 } else
                     Printer::zLength = zup + sum - ENDSTOP_Z_BACK_ON_HOME;
 #endif // DELTA
-                Com::printInfoFLN(Com::tZProbeZReset);
-                Com::printFLN(Com::tZProbePrinterHeight, Printer::zLength);
+                Com::printInfoFLN(PSTR("Reset Z height"));
+                Com::printFLN(PSTR("Printer height:"), Printer::zLength);
 #else
                 Printer::currentPositionSteps[Z_AXIS] = sum * Printer::axisStepsPerMM[Z_AXIS];
                 Com::printFLN(PSTR("Adjusted z origin"));
@@ -560,8 +560,8 @@ void Commands::processGCode(GCode *com) {
     case 31:  // G31 display hall sensor output
         Endstops::update();
         Endstops::update();
-        Com::printF(Com::tZProbeState);
-        Com::printF(Endstops::zProbe() ? Com::tHSpace : Com::tLSpace);
+        Com::printF(PSTR("Z-probe state:"));
+        Com::printF(Endstops::zProbe() ? PSTR("H ") : PSTR("L "));
         Com::println();
         break;
 #if FEATURE_AUTOLEVEL
@@ -727,9 +727,9 @@ void Commands::processGCode(GCode *com) {
         int32_t offx = m - Printer::stepsRemainingAtXHit;
         int32_t offy = m - Printer::stepsRemainingAtYHit;
         int32_t offz = m - Printer::stepsRemainingAtZHit;
-        Com::printFLN(Com::tTower1, offx);
-        Com::printFLN(Com::tTower2, offy);
-        Com::printFLN(Com::tTower3, offz);
+        Com::printFLN(PSTR("Tower 1:"), offx);
+        Com::printFLN(PSTR("Tower 2:"), offy);
+        Com::printFLN(PSTR("Tower 3:"), offz);
         if(com->hasS() && com->S > 0) {
             EEPROM::setDeltaTowerXOffsetSteps(offx);
             EEPROM::setDeltaTowerYOffsetSteps(offy);
@@ -757,9 +757,9 @@ void Commands::processGCode(GCode *com) {
         int32_t offx = HOME_DISTANCE_STEPS - Printer::stepsRemainingAtXHit;
         int32_t offy = HOME_DISTANCE_STEPS - Printer::stepsRemainingAtYHit;
         int32_t offz = HOME_DISTANCE_STEPS - Printer::stepsRemainingAtZHit;
-        Com::printFLN(Com::tTower1, offx);
-        Com::printFLN(Com::tTower2, offy);
-        Com::printFLN(Com::tTower3, offz);
+        Com::printFLN(PSTR("Tower 1:"), offx);
+        Com::printFLN(PSTR("Tower 2:"), offy);
+        Com::printFLN(PSTR("Tower 3:"), offz);
         Printer::setAutolevelActive(oldAuto);
         PrintLine::moveRelativeDistanceInSteps(0, 0, Printer::axisStepsPerMM[Z_AXIS] * -ENDSTOP_Z_BACK_MOVE, 0, Printer::homingFeedrate[Z_AXIS] / ENDSTOP_X_RETEST_REDUCTION_FACTOR, true, false);
         Printer::homeAxis(true, true, true);
@@ -767,12 +767,12 @@ void Commands::processGCode(GCode *com) {
     break;
     case 135: // G135
         Com::printF(PSTR("CompDelta:"), Printer::currentNonlinearPositionSteps[A_TOWER]);
-        Com::printF(Com::tComma, Printer::currentNonlinearPositionSteps[B_TOWER]);
-        Com::printFLN(Com::tComma, Printer::currentNonlinearPositionSteps[C_TOWER]);
+        Com::printF(PSTR(","), Printer::currentNonlinearPositionSteps[B_TOWER]);
+        Com::printFLN(PSTR(","), Printer::currentNonlinearPositionSteps[C_TOWER]);
 #ifdef DEBUG_REAL_POSITION
         Com::printF(PSTR("RealDelta:"), Printer::realDeltaPositionSteps[A_TOWER]);
-        Com::printF(Com::tComma, Printer::realDeltaPositionSteps[B_TOWER]);
-        Com::printFLN(Com::tComma, Printer::realDeltaPositionSteps[C_TOWER]);
+        Com::printF(PSTR(","), Printer::realDeltaPositionSteps[B_TOWER]);
+        Com::printFLN(PSTR(","), Printer::realDeltaPositionSteps[C_TOWER]);
 #endif
         Printer::updateCurrentPosition();
         Com::printF(PSTR("PosFromSteps:"));
@@ -782,7 +782,7 @@ void Commands::processGCode(GCode *com) {
 #endif // DRIVE_SYSTEM
     default:
         if(Printer::debugErrors()) {
-            Com::printF(Com::tUnknownCommand);
+            Com::printF(PSTR("Unknown command:"));
             com->printCommand();
         }
     }
@@ -863,14 +863,14 @@ void Commands::processMCode(GCode *com) {
                         pinMode(pin_number, OUTPUT);
                         digitalWrite(pin_number, com->S);
                         analogWrite(pin_number, com->S);
-                        Com::printF(Com::tSetOutputSpace, pin_number);
-                        Com::printFLN(Com::tSpaceToSpace, (int)com->S);
+                        Com::printF(PSTR("Set output: "), pin_number);
+                        Com::printFLN(PSTR(" to "), (int)com->S);
                     } else
                         Com::printErrorFLN(PSTR("Illegal S value for M42"));
                 } else {
                     pinMode(pin_number, INPUT_PULLUP);
-                    Com::printF(Com::tSpaceToSpace, pin_number);
-                    Com::printFLN(Com::tSpaceIsSpace, digitalRead(pin_number));
+                    Com::printF(PSTR(" to "), pin_number);
+                    Com::printFLN(PSTR(" is "), digitalRead(pin_number));
                 }
             } else {
                 Com::printErrorFLN(PSTR("Pin can not be set by M42, is in sensitive pins! "));
@@ -1086,7 +1086,7 @@ void Commands::processMCode(GCode *com) {
         break;
     case 115: // M115
         Com::writeToAll = false;
-        Com::printFLN(Com::tFirmware);
+        Com::printFLN(PSTR("Repetier_1.0.2(bri)"));
         Com::cap(PSTR("AUTOREPORT_TEMP:1"));
         Com::cap(PSTR("EEPROM:1"));
 #if FEATURE_AUTOLEVEL && FEATURE_Z_PROBE
@@ -1148,7 +1148,7 @@ void Commands::processMCode(GCode *com) {
             Com::printF(PSTR("PREHEAT_BED:"), heatedBedController.preheatTemperature);
             for(int i = 0; i < NUM_EXTRUDER; i++) {
                 Com::printF(PSTR(" PREHEAT"), i);
-                Com::printF(Com::tColon, extruder[i].tempControl.preheatTemperature);
+                Com::printF(PSTR(":"), extruder[i].tempControl.preheatTemperature);
             }
             Com::println();
         }
@@ -1236,10 +1236,10 @@ void Commands::processMCode(GCode *com) {
 #if DRIVE_SYSTEM != DELTA
         if(com->hasZ())
             Printer::maxZJerk = com->Z;
-        Com::printF(Com::tJerkColon, Printer::maxJerk);
-        Com::printFLN(Com::tZJerkColon, Printer::maxZJerk);
+        Com::printF(PSTR("Jerk:"), Printer::maxJerk);
+        Com::printFLN(PSTR(" ZJerk:"), Printer::maxZJerk);
 #else
-        Com::printFLN(Com::tJerkColon, Printer::maxJerk);
+        Com::printFLN(PSTR("Jerk:"), Printer::maxJerk);
 #endif
         break;
     case 220: // M220 S<Feedrate multiplier in percent>
@@ -1273,11 +1273,11 @@ void Commands::processMCode(GCode *com) {
         }
         break;
     case 232: // M232
-        Com::printF(Com::tLinearStepsColon, maxadv2);
+        Com::printF(PSTR(" linear steps:"), maxadv2);
 #if ENABLE_QUADRATIC_ADVANCE
-        Com::printF(Com::tQuadraticStepsColon, maxadv);
+        Com::printF(PSTR(" quadratic steps:"), maxadv);
 #endif
-        Com::printFLN(Com::tCommaSpeedEqual, maxadvspeed);
+        Com::printFLN(PSTR(", speed="), maxadvspeed);
 #if ENABLE_QUADRATIC_ADVANCE
         maxadv = 0;
 #endif
@@ -1289,11 +1289,11 @@ void Commands::processMCode(GCode *com) {
     case 233: // M233
         if(com->hasY())
             Extruder::current->advanceL = com->Y;
-        Com::printF(Com::tLinearLColon, Extruder::current->advanceL);
+        Com::printF(PSTR("linear L:"), Extruder::current->advanceL);
 #if ENABLE_QUADRATIC_ADVANCE
         if(com->hasX())
             Extruder::current->advanceK = com->X;
-        Com::printF(Com::tQuadraticKColon, Extruder::current->advanceK);
+        Com::printF(PSTR(" quadratic K:"), Extruder::current->advanceK);
 #endif
         Com::println();
         Printer::updateAdvanceFlags();
@@ -1306,9 +1306,9 @@ void Commands::processMCode(GCode *com) {
         Printer::updateDerivedParameter();
         transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
         Printer::updateCurrentPosition();
-        Com::printFLN(Com::tZProbePrinterHeight, Printer::zLength);
+        Com::printFLN(PSTR("Printer height:"), Printer::zLength);
         EEPROM::storeDataIntoEEPROM(false);
-        Com::printFLN(Com::tEEPROMUpdated);
+        Com::printFLN(PSTR("EEPROM updated"));
         Commands::printCurrentPosition();
         break;
 #endif
@@ -1436,13 +1436,13 @@ void Commands::processMCode(GCode *com) {
         break;
     case 500: { // M500
         EEPROM::storeDataIntoEEPROM(false);
-        Com::printInfoFLN(Com::tConfigStoredEEPROM);
+        Com::printInfoFLN(PSTR("Configuration stored to EEPROM."));
     }
     break;
     case 501: { // M501
         EEPROM::readDataFromEEPROM(true);
         Extruder::selectExtruderById(Extruder::current->id);
-        Com::printInfoFLN(Com::tConfigLoadedEEPROM);
+        Com::printInfoFLN(PSTR("Configuration loaded from EEPROM."));
     }
     break;
     case 502: // M502
@@ -1594,7 +1594,7 @@ void Commands::processMCode(GCode *com) {
     default:
         if(Printer::debugErrors()) {
             Com::writeToAll = false;
-            Com::printF(Com::tUnknownCommand);
+            Com::printF(PSTR("Unknown command:"));
             com->printCommand();
         }
     }
@@ -1626,7 +1626,7 @@ void Commands::executeGCode(GCode *com) {
         Extruder::selectExtruderById(com->T);
     } else {
         if(Printer::debugErrors()) {
-            Com::printF(Com::tUnknownCommand);
+            Com::printF(PSTR("Unknown command:"));
             com->printCommand();
         }
     }
@@ -1676,6 +1676,6 @@ void Commands::checkFreeMemory() {
 void Commands::writeLowestFreeRAM() {
     if(lowestRAMValueSend > lowestRAMValue) {
         lowestRAMValueSend = lowestRAMValue;
-        Com::printFLN(Com::tFreeRAM, lowestRAMValue);
+        Com::printFLN(PSTR("Free RAM:"), lowestRAMValue);
     }
 }

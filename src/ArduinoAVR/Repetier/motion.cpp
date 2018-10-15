@@ -326,10 +326,10 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
 #ifdef DEBUG_QUEUE_MOVE
     if(Printer::debugEcho()) {
         logLine();
-        Com::printFLN(Com::tDBGLimitInterval, limitInterval);
-        Com::printFLN(Com::tDBGMoveDistance, distance);
-        Com::printFLN(Com::tDBGCommandedFeedrate, Printer::feedrate);
-        Com::printFLN(Com::tDBGConstFullSpeedMoveTime, timeForMove);
+        Com::printFLN(PSTR("LimitInterval:"), limitInterval);
+        Com::printFLN(PSTR("Move distance on the XYZ space:"), distance);
+        Com::printFLN(PSTR("Commanded feedrate:"), Printer::feedrate);
+        Com::printFLN(PSTR("Constant full speed move time:"), timeForMove);
     }
 #endif
     // Make result permanent
@@ -566,16 +566,16 @@ void PrintLine::updateStepsParameter() {
     setParameterUpToDate();
 #ifdef DEBUG_QUEUE_MOVE
     if(Printer::debugEcho()) {
-        Com::printFLN(Com::tDBGId, (int)this);
-        Com::printF(Com::tDBGVStartEnd, (long)vStart);
-        Com::printFLN(Com::tSlash, (long)vEnd);
-        Com::printF(Com::tDBAccelSteps, (long)accelSteps);
-        Com::printF(Com::tSlash, (long)decelSteps);
-        Com::printFLN(Com::tSlash, (long)stepsRemaining);
-        Com::printF(Com::tDBGStartEndSpeed, startSpeed, 1);
-        Com::printFLN(Com::tSlash, endSpeed, 1);
-        Com::printFLN(Com::tDBGFlags, (uint32_t)flags);
-        Com::printFLN(Com::tDBGJoinFlags, (uint32_t)joinFlags);
+        Com::printFLN(PSTR("ID:"), (int)this);
+        Com::printF(PSTR("vStart/End:"), (long)vStart);
+        Com::printFLN(PSTR("/"), (long)vEnd);
+        Com::printF(PSTR("accel/decel steps:"), (long)accelSteps);
+        Com::printF(PSTR("/"), (long)decelSteps);
+        Com::printFLN(PSTR("/"), (long)stepsRemaining);
+        Com::printF(PSTR("st./end speed:"), startSpeed, 1);
+        Com::printFLN(PSTR("/"), endSpeed, 1);
+        Com::printFLN(PSTR("Flags:"), (uint32_t)flags);
+        Com::printFLN(PSTR("joinFlags:"), (uint32_t)joinFlags);
     }
 #endif
 }
@@ -717,19 +717,19 @@ void PrintLine::LaserWarmUp( uint32_t wait) {
 
 void PrintLine::logLine() {
 #ifdef DEBUG_QUEUE_MOVE
-    Com::printFLN(Com::tDBGId, (int)this);
-    Com::printArrayFLN(Com::tDBGDelta, delta);
-    Com::printFLN(Com::tDBGDir, (uint32_t)dir);
-    Com::printFLN(Com::tDBGFlags, (uint32_t)flags);
-    Com::printFLN(Com::tDBGFullSpeed, fullSpeed);
-    Com::printFLN(Com::tDBGVMax, (int32_t)vMax);
-    Com::printFLN(Com::tDBGAcceleration, accelerationDistance2);
-    Com::printFLN(Com::tDBGAccelerationPrim, (int32_t)accelerationPrim);
-    Com::printFLN(Com::tDBGRemainingSteps, stepsRemaining);
+    Com::printFLN(PSTR("ID:"), (int)this);
+    Com::printArrayFLN(PSTR("Delta"), delta);
+    Com::printFLN(PSTR("Dir:"), (uint32_t)dir);
+    Com::printFLN(PSTR("Flags:"), (uint32_t)flags);
+    Com::printFLN(PSTR("fullSpeed:"), fullSpeed);
+    Com::printFLN(PSTR("vMax:"), (int32_t)vMax);
+    Com::printFLN(PSTR("Acceleration:"), accelerationDistance2);
+    Com::printFLN(PSTR("Acceleration Prim:"), (int32_t)accelerationPrim);
+    Com::printFLN(PSTR("Remaining steps:"), stepsRemaining);
 #if USE_ADVANCE
 #if ENABLE_QUADRATIC_ADVANCE
-    Com::printFLN(Com::tDBGAdvanceFull, advanceFull >> 16);
-    Com::printFLN(Com::tDBGAdvanceRate, advanceRate);
+    Com::printFLN(PSTR("advanceFull:"), advanceFull >> 16);
+    Com::printFLN(PSTR("advanceRate:"), advanceRate);
 #endif
 #endif
 #endif // DEBUG_QUEUE_MOVE
@@ -1161,14 +1161,14 @@ inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
                     d->setPositiveMoveOfAxis(i);
 #ifdef DEBUG_DELTA_OVERFLOW
                     if (delta > 65535)
-                        Com::printFLN(Com::tDBGDeltaOverflow, delta);
+                        Com::printFLN(PSTR("Delta overflow:"), delta);
 #endif
                     d->deltaSteps[i] = static_cast<uint16_t>(delta);
                 } else {
                     d->setMoveOfAxis(i);
 #ifdef DEBUG_DELTA_OVERFLOW
                     if (-delta > 65535)
-                        Com::printFLN(Com::tDBGDeltaOverflow, delta);
+                        Com::printFLN(PSTR("Delta overflow:"), delta);
 #endif
                     d->deltaSteps[i] = static_cast<uint16_t>(-delta);
                 }
@@ -1181,7 +1181,7 @@ inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
             }
         } else {
             // Illegal position - ignore move
-            Com::printWarningF(Com::tInvalidDeltaCoordinate);
+            Com::printWarningF(PSTR("Invalid delta coordinate - move ignored"));
             Com::printF(PSTR(" x:"), destinationSteps[X_AXIS]);
             Com::printF(PSTR(" y:"), destinationSteps[Y_AXIS]);
             Com::printFLN(PSTR(" z:"), destinationSteps[Z_AXIS]);
@@ -1314,7 +1314,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
         //float seconds = 100 * cartesianDistance / (Printer::feedrate * Printer::feedrateMultiply); multiply in feedrate included
         float seconds = cartesianDistance / feedrate;
 #ifdef DEBUG_SPLIT
-        Com::printFLN(Com::tDBGDeltaSeconds, seconds);
+        Com::printFLN(PSTR("Seconds:"), seconds);
 #endif
         float sps = static_cast<float>((cartesianDir & ESTEP) == ESTEP ? Printer::printMovesPerSecond : Printer::travelMovesPerSecond);
         segmentCount = RMath::max(1, static_cast<int16_t>(sps * seconds));
@@ -1331,7 +1331,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
         // Optimize pure Z axis move. Since a pure Z axis move is linear all we have to watch out for is unsigned integer overruns in
         // the queued moves;
 #ifdef DEBUG_SPLIT
-        Com::printFLN(Com::tDBGDeltaZDelta, cartesianDeltaSteps[Z_AXIS]);
+        Com::printFLN(PSTR("Z delta:"), cartesianDeltaSteps[Z_AXIS]);
 #endif
         segmentCount = (cartesianDeltaSteps[Z_AXIS] + (uint32_t)43680) / (uint32_t)43679; // can not go to 65535 for rounding issues causing overflow later in some cases!
     }
@@ -1349,9 +1349,9 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
     }
 
 #ifdef DEBUG_SPLIT
-    Com::printFLN(Com::tDBGDeltaSegments, segmentCount);
-    Com::printFLN(Com::tDBGDeltaNumLines, numLines);
-    Com::printFLN(Com::tDBGDeltaSegmentsPerLine, segmentsPerLine);
+    Com::printFLN(PSTR("Segments:"), segmentCount);
+    Com::printFLN(PSTR("Num lines:"), numLines);
+    Com::printFLN(PSTR("segments_per_line:"), segmentsPerLine);
 #endif
     Printer::unsetAllSteppersDisabled(); // Motor is enabled now
     waitForXFreeLines(1);
@@ -1401,12 +1401,12 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
             return false;
         }
 #ifdef DEBUG_SPLIT
-        Com::printFLN(Com::tDBGDeltaMaxDS, (int32_t)maxStepsPerSegment);
+        Com::printFLN(PSTR("Max DS:"), (int32_t)maxStepsPerSegment);
 #endif
         int32_t virtualAxisSteps = static_cast<int32_t>(maxStepsPerSegment) * segmentsPerLine;
         if (virtualAxisSteps == 0 && p->delta[E_AXIS] == 0) {
             if (numLines != 1) {
-                Com::printErrorFLN(Com::tDBGDeltaNoMoveinDSegment);
+                Com::printErrorFLN(PSTR("No move in delta segment with > 1 segment. This should never happen and may cause a problem!"));
                 return false;  // Line too short in low precision area
             }
         }
@@ -1425,8 +1425,8 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
             drivingAxis = E_AXIS;
         }
 #ifdef DEBUG_SPLIT
-        Com::printFLN(Com::tDBGDeltaStepsPerSegment, p->numPrimaryStepPerSegment);
-        Com::printFLN(Com::tDBGDeltaVirtualAxisSteps, p->stepsRemaining);
+        Com::printFLN(PSTR("Steps Per Segment:"), p->numPrimaryStepPerSegment);
+        Com::printFLN(PSTR("Virtual axis steps:"), p->stepsRemaining);
 #endif
         p->calculateMove(axisDistanceMM, pathOptimize, drivingAxis);
         for (fast8_t i = 0; i < E_AXIS_ARRAY; i++) {
@@ -1463,7 +1463,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
             if(lastblk != (int)cur) {
                 HAL::allowInterrupts();
                 lastblk = (int)cur;
-                Com::printFLN(Com::tBLK, (int32_t)linesCount);
+                Com::printFLN(PSTR("BLK "), (int32_t)linesCount);
             }
             cur = NULL;
             return 2000;

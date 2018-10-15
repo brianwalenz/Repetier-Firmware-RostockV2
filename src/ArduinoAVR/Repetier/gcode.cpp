@@ -160,7 +160,7 @@ void GCode::keepAlive(enum FirmwareState state) {
 			GCodeSource::printAllFLN(PSTR("busy:heating"));	
 		} else if(state == DoorOpen) {
 			GCodeSource::printAllFLN(PSTR("busy:door open"));
-            UI_STATUS_F(Com::tDoorOpen);
+            UI_STATUS_F(PSTR("Door open"));
 		} else { // processing and uncaught cases
 			GCodeSource::printAllFLN(PSTR("busy:processing"));
 		}
@@ -177,8 +177,8 @@ void GCode::requestResend()
     else
     GCodeSource::activeSource->waitingForResend = 14;
     Com::println();
-    Com::printFLN(Com::tResend,GCodeSource::activeSource->lastLineNumber + 1);
-    Com::printFLN(Com::tOk);
+    Com::printFLN(PSTR("Resend:"),GCodeSource::activeSource->lastLineNumber + 1);
+    Com::printFLN(PSTR("ok"));
 }
 
 /**
@@ -192,7 +192,7 @@ void GCode::checkAndPushCommand()
         if(M == 110)   // Reset line number
         {
             GCodeSource::activeSource->lastLineNumber = actLineNumber;
-            Com::printFLN(Com::tOk);
+            Com::printFLN(PSTR("ok"));
             GCodeSource::activeSource->waitingForResend = -1;
             return;
         }
@@ -218,15 +218,15 @@ void GCode::checkAndPushCommand()
             {
                 // we have seen that line already. So we assume it is a repeated resend and we ignore it
                 commandsReceivingWritePosition = 0;
-                Com::printFLN(Com::tSkip,actLineNumber);
-                Com::printFLN(Com::tOk);
+                Com::printFLN(PSTR("skip "),actLineNumber);
+                Com::printFLN(PSTR("ok"));
             }
             else if(GCodeSource::activeSource->waitingForResend < 0)  // after a resend, we have to skip the garbage in buffers, no message for this
             {
                 if(Printer::debugErrors())
                 {
-                    Com::printF(Com::tExpectedLine, GCodeSource::activeSource->lastLineNumber + 1);
-                    Com::printFLN(Com::tGot, actLineNumber);
+                    Com::printF(PSTR("Error:expected line "), GCodeSource::activeSource->lastLineNumber + 1);
+                    Com::printFLN(PSTR(" got "), actLineNumber);
                 }
                 requestResend(); // Line missing, force resend
             }
@@ -234,8 +234,8 @@ void GCode::checkAndPushCommand()
             {
                 --GCodeSource::activeSource->waitingForResend;
                 commandsReceivingWritePosition = 0;
-                Com::printFLN(Com::tSkip, actLineNumber);
-                Com::printFLN(Com::tOk);
+                Com::printFLN(PSTR("skip "), actLineNumber);
+                Com::printFLN(PSTR("ok"));
             }
             return;
         }
@@ -260,9 +260,9 @@ void GCode::checkAndPushCommand()
         return; // omit ok
 #endif
 #if ACK_WITH_LINENUMBER
-    Com::printFLN(Com::tOkSpace, actLineNumber);
+    Com::printFLN(PSTR("ok "), actLineNumber);
 #else
-    Com::printFLN(Com::tOk);
+    Com::printFLN(PSTR("ok"));
 #endif
     GCodeSource::activeSource->wasLastCommandReceivedAsBinary = sendAsBinary;
 	keepAlive(NotBusy);
@@ -303,7 +303,7 @@ void GCode::echoCommand()
 {
     if(Printer::debugEcho())
     {
-        Com::printF(Com::tEcho);
+        Com::printF(PSTR("Echo:"));
         printCommand();
     }
 }
@@ -312,7 +312,7 @@ void GCode::debugCommandBuffer()
 {
     Com::printF(PSTR("CommandBuffer"));
     for(int i = 0; i < commandsReceivingWritePosition; i++)
-        Com::printF(Com::tColon,(int)commandReceiving[i]);
+        Com::printF(PSTR(":"),(int)commandReceiving[i]);
     Com::println();
     Com::printFLN(PSTR("Binary:"), (int)sendAsBinary);
     if(!sendAsBinary)
@@ -401,7 +401,7 @@ void GCode::readFromSerial()
         #ifdef WAITING_IDENTIFIER
           else if(bufferLength == 0 && time - GCodeSource::activeSource->timeOfLastDataPacket > 1000)   // Don't do it if buffer is not empty. It may be a slow executing command.
           {
-            Com::printFLN(Com::tWait); // Unblock communication in case the last ok was not received correct.
+            Com::printFLN(PSTR(WAITING_IDENTIFIER)); // Unblock communication in case the last ok was not received correct.
             GCodeSource::activeSource->timeOfLastDataPacket = time;
           }
         #endif
@@ -538,7 +538,7 @@ bool GCode::parseBinary(uint8_t *buffer,bool fromSerial)
     {
         if(Printer::debugErrors())
         {
-            Com::printErrorFLN(Com::tWrongChecksum);
+            Com::printErrorFLN(PSTR("Wrong checksum"));
         }
         return false;
     }
@@ -910,7 +910,7 @@ bool GCode::parseAscii(char *line,bool fromSerial)
             {
                 if(Printer::debugErrors())
                 {
-                    Com::printErrorFLN(Com::tWrongChecksum);
+                    Com::printErrorFLN(PSTR("Wrong checksum"));
                 }
                 return false; // mismatch
             }
@@ -929,7 +929,7 @@ bool GCode::parseAscii(char *line,bool fromSerial)
     {
         formatErrors++;
         if(Printer::debugErrors())
-            Com::printErrorFLN(Com::tFormatError);
+            Com::printErrorFLN(PSTR("Format error"));
         if(formatErrors < 3) return false;
     }
     else formatErrors = 0;
@@ -964,75 +964,75 @@ void GCode::printCommand()
     }
     if(hasX())
     {
-        Com::printF(Com::tX,X);
+        Com::printF(PSTR(" X"),X);
     }
     if(hasY())
     {
-        Com::printF(Com::tY,Y);
+        Com::printF(PSTR(" Y"),Y);
     }
     if(hasZ())
     {
-        Com::printF(Com::tZ,Z);
+        Com::printF(PSTR(" Z"),Z);
     }
     if(hasE())
     {
-        Com::printF(Com::tE,E,4);
+        Com::printF(PSTR(" E"),E,4);
     }
     if(hasF())
     {
-        Com::printF(Com::tF,F);
+        Com::printF(PSTR(" F"),F);
     }
     if(hasS())
     {
-        Com::printF(Com::tS,S);
+        Com::printF(PSTR(" S"),S);
     }
     if(hasP())
     {
-        Com::printF(Com::tP,P);
+        Com::printF(PSTR(" P"),P);
     }
     if(hasI())
     {
-        Com::printF(Com::tI,I);
+        Com::printF(PSTR(" I"),I);
     }
     if(hasJ())
     {
-        Com::printF(Com::tJ,J);
+        Com::printF(PSTR(" J"),J);
     }
     if(hasR())
     {
-        Com::printF(Com::tR,R);
+        Com::printF(PSTR(" R"),R);
     }
     if(hasD())
     {
-        Com::printF(Com::tD,D);
+        Com::printF(PSTR(" D"),D);
     }
     if(hasC())
     {
-        Com::printF(Com::tC,C);
+        Com::printF(PSTR(" C"),C);
     }
     if(hasH())
     {
-        Com::printF(Com::tH,H);
+        Com::printF(PSTR(" H"),H);
     }
     if(hasA())
     {
-        Com::printF(Com::tA,A);
+        Com::printF(PSTR(" A"),A);
     }
     if(hasB())
     {
-        Com::printF(Com::tB,B);
+        Com::printF(PSTR(" B"),B);
     }
     if(hasK())
     {
-        Com::printF(Com::tK,K);
+        Com::printF(PSTR(" K"),K);
     }
     if(hasL())
     {
-        Com::printF(Com::tL,L);
+        Com::printF(PSTR(" L"),L);
     }
     if(hasO())
     {
-        Com::printF(Com::tO,O);
+        Com::printF(PSTR(" O"),O);
     }
     if(hasString())
     {
@@ -1053,7 +1053,7 @@ void GCode::fatalError(FSTRINGPARAM(message)) {
 
 void GCode::reportFatalError() {
     Com::writeToAll = true;
-	Com::printF(Com::tFatal);
+	Com::printF(PSTR("fatal:"));
 	Com::printF(fatalErrorMsg);
 	Com::printFLN(PSTR(" - Printer stopped and heaters disabled due to this error. Fix error and restart with M999."));
 	UI_ERROR_P(fatalErrorMsg)
@@ -1210,7 +1210,7 @@ bool SDCardGCodeSource::dataAvailable() { // would read return a new byte?
 int SDCardGCodeSource::readByte() {
     int n = sd.file.read();
     if(n == -1) {
-        Com::printFLN(Com::tSDReadError);
+        Com::printFLN(PSTR("SD read error"));
         UI_ERROR_P(PSTR("SD Read Error"));
 
         // Second try in case of recoverable errors
@@ -1235,6 +1235,6 @@ void SDCardGCodeSource::close() {
     Printer::setPrinting(false);
     Printer::setMenuMode(MENU_MODE_PRINTING,false);
     Printer::setMenuMode(MENU_MODE_PAUSED,false);
-    Com::printFLN(Com::tDonePrinting);
+    Com::printFLN(PSTR("Done printing file"));
 }
 
