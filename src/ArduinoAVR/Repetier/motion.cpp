@@ -747,14 +747,6 @@ void PrintLine::waitForXFreeLines(uint8_t b, bool allowMoves) {
 
 // pick one for verbose the other silent
 #define RETURN_0(s) { Com::printErrorFLN(PSTR(s)); return 0; }
-/*#define RETURN_0(s) { Com::print(s " "); SHOWS(temp); SHOWS(opt);\
-  SHOWS(cartesianPosSteps[Z_AXIS]);\
-  SHOWS(towerAMinSteps); ;\
-  SHOWS(deltaPosSteps[A_TOWER]); \
-  SHOWS(Printer::deltaAPosYSteps);\
-  SHOWS(cartesianPosSteps[Y_AXIS]); \
-  SHOW(Printer::deltaDiagonalStepsSquaredA.l);  return 0; }
-*/
 /**
    Calculate the delta tower position from a Cartesian position
    @param cartesianPosSteps Array containing Cartesian coordinates.

@@ -179,7 +179,6 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
   HAL::eprSetFloat(EPR_BED_PID_DGAIN,heatedBedController.pidDGain);
   HAL::eprSetByte(EPR_BED_PID_MAX,heatedBedController.pidMax);
 
-  //SHOT("storeDataIntoEEPROM"); SHOWM(Printer::xMin);SHOWM(Printer::yMin);SHOWM(Printer::zMin);
   HAL::eprSetFloat(EPR_X_HOME_OFFSET,Printer::xMin);
   HAL::eprSetFloat(EPR_Y_HOME_OFFSET,Printer::yMin);
   HAL::eprSetFloat(EPR_Z_HOME_OFFSET,Printer::zMin);

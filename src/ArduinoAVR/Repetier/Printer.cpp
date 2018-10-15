@@ -446,9 +446,13 @@ uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pa
 
   if (!PrintLine::queueNonlinearMove(ALWAYS_CHECK_ENDSTOPS, pathOptimize, true)) {
     Com::printWarningFLN(PSTR("moveToReal / queueDeltaMove returns error"));
-    SHOWM(x);
-    SHOWM(y);
-    SHOWM(z);
+
+#ifdef DEBUG
+    Com::printF(PSTR(" x=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printFLN(PSTR(" mm"));
+    Com::printF(PSTR(" y=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printFLN(PSTR(" mm"));
+    Com::printF(PSTR(" z=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printFLN(PSTR(" mm"));
+#endif
+
     return 0;
   }
   return 1;
