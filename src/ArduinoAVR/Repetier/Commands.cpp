@@ -1453,20 +1453,7 @@ void Commands::processMCode(GCode *com) {
     case 453:
       Printer::reportPrinterMode();
       break;
-    case 500: { // M500
-      EEPROM::storeDataIntoEEPROM(false);
-      Com::printInfoFLN(PSTR("Configuration stored to EEPROM."));
-    }
-      break;
-    case 501: { // M501
-      EEPROM::readDataFromEEPROM(true);
-      Extruder::selectExtruderById(Extruder::current->id);
-      Com::printInfoFLN(PSTR("Configuration loaded from EEPROM."));
-    }
-      break;
-    case 502: // M502
-      EEPROM::restoreEEPROMSettingsFromConfiguration();
-      break;
+
       //- M530 S<printing> L<layer> - Enables explicit printing mode (S1) or disables it (S0). L can set layer count
     case 530:
       if(com->hasL())

@@ -399,18 +399,6 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
       INCREMENT_MIN_MAX(Printer::maxJerk, 0.1, 1, 99.9);
       break;
 
-    case UI_ACTION_HOMING_FEEDRATE_X:
-    case UI_ACTION_HOMING_FEEDRATE_Y:
-    case UI_ACTION_HOMING_FEEDRATE_Z:
-      INCREMENT_MIN_MAX(Printer::homingFeedrate[action - UI_ACTION_HOMING_FEEDRATE_X], 1, 1, 1000);
-      break;
-
-    case UI_ACTION_MAX_FEEDRATE_X:
-    case UI_ACTION_MAX_FEEDRATE_Y:
-    case UI_ACTION_MAX_FEEDRATE_Z:
-      INCREMENT_MIN_MAX(Printer::maxFeedrate[action - UI_ACTION_MAX_FEEDRATE_X], 1, 1, 1000);
-      break;
-
     case UI_ACTION_STEPS_X:
     case UI_ACTION_STEPS_Y:
     case UI_ACTION_STEPS_Z:

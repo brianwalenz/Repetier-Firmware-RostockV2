@@ -30,12 +30,6 @@
 #define EPR_XAXIS_STEPS_PER_MM      3
 #define EPR_YAXIS_STEPS_PER_MM      7
 #define EPR_ZAXIS_STEPS_PER_MM     11
-#define EPR_X_MAX_FEEDRATE         15
-#define EPR_Y_MAX_FEEDRATE         19
-#define EPR_Z_MAX_FEEDRATE         23
-#define EPR_X_HOMING_FEEDRATE      27
-#define EPR_Y_HOMING_FEEDRATE      31
-#define EPR_Z_HOMING_FEEDRATE      35
 #define EPR_MAX_JERK               39
 //#define EPR_OPS_MIN_DISTANCE       43
 #define EPR_MAX_ZJERK              47
@@ -176,9 +170,10 @@ public:
 public:
   static void init();
   static void initBaudrate();
+
   static void storeDataIntoEEPROM(uint8_t corrupted = 0);
   static void readDataFromEEPROM(bool includeExtruder);
-  static void restoreEEPROMSettingsFromConfiguration();
+
   static void writeSettings();
   static void update(GCode *com);
   static void updatePrinterUsage();

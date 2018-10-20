@@ -522,7 +522,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
     //Com::printFLN(PSTR("ZHSteps:"),lastCorrection - currentPositionSteps[Z_AXIS]);
     if(r + 1 < repeat) {
       // go only shortest possible move up for repetitions
-      PrintLine::moveRelativeDistanceInSteps(0, 0, shortMove, 0, HOMING_FEEDRATE_Z, true, true);
+      PrintLine::moveRelativeDistanceInSteps(0, 0, shortMove, 0, 80, true, true);
       if(Endstops::zProbe()) {
         Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!"));
   Printer::setUIErrorMessage(true);
@@ -540,7 +540,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
 #endif
 
   // Go back to start position
-  PrintLine::moveRelativeDistanceInSteps(0, 0, lastCorrection - currentPositionSteps[Z_AXIS], 0, HOMING_FEEDRATE_Z, true, true);
+  PrintLine::moveRelativeDistanceInSteps(0, 0, lastCorrection - currentPositionSteps[Z_AXIS], 0, 80, true, true);
   if(Endstops::zProbe()) { // did we untrigger? If not don't trust result!
     Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!")); 
   Printer::setUIErrorMessage(true);

@@ -91,12 +91,6 @@
 #define UI_ACTION_MAX_JERK              1038
 #define UI_ACTION_MAX_ZJERK             1039
 #define UI_ACTION_BAUDRATE              1040
-#define UI_ACTION_HOMING_FEEDRATE_X     1041
-#define UI_ACTION_HOMING_FEEDRATE_Y     1042
-#define UI_ACTION_HOMING_FEEDRATE_Z     1043
-#define UI_ACTION_MAX_FEEDRATE_X        1044
-#define UI_ACTION_MAX_FEEDRATE_Y        1045
-#define UI_ACTION_MAX_FEEDRATE_Z        1046
 #define UI_ACTION_STEPS_X               1047
 #define UI_ACTION_STEPS_Y               1048
 #define UI_ACTION_STEPS_Z               1049

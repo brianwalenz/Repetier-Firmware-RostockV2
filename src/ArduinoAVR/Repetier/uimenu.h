@@ -293,17 +293,6 @@ UI_MENU_CHANGEACTION(ui_menu_accel_z_jerk,  "ZJerk  %aJ", UI_ACTION_MAX_JERK)
       &ui_menu_accel_z_jerk}
 UI_MENU(ui_menu_settings_accel_sub, UI_MENU_SETTINGS_ACCEL_SUB, 4)
 
-//  FEED RATE
-
-UI_MENU_CHANGEACTION(ui_menu_feedrate_maxz,  "Max %fz",  UI_ACTION_MAX_FEEDRATE_Z)
-UI_MENU_CHANGEACTION(ui_menu_feedrate_homez, "Home %fZ", UI_ACTION_HOMING_FEEDRATE_Z)
-
-#define UI_MENU_SETTINGS_FEED_SUB {             \
-    &ui_menu_back,                              \
-      &ui_menu_feedrate_maxz,                   \
-      &ui_menu_feedrate_homez}
-UI_MENU(ui_menu_settings_feed_sub, UI_MENU_SETTINGS_FEED_SUB, 3)
-
 //  EXTRUDER SETTINGS
 
 UI_MENU_CHANGEACTION(ui_menu_cext_steps,          "Steps/MM:%Se",              UI_ACTION_EXTR_STEPS)
@@ -373,7 +362,6 @@ UI_MENU(ui_menu_settings_bed_temp_sub, UI_MENU_SETTINGS_BED_TEMP_SUB, 10)
 
 UI_MENU_CHANGEACTION(ui_menu_general_baud,        "Baud: %oc",       UI_ACTION_BAUDRATE)
 UI_MENU_SUBMENU     (ui_menu_settings_accel,      "Acceleration...", ui_menu_settings_accel_sub)
-UI_MENU_SUBMENU     (ui_menu_settings_feed,       "Feedrate...",     ui_menu_settings_feed_sub)
 UI_MENU_SUBMENU     (ui_menu_settings_ext,        "Extruder...",     ui_menu_settings_ext_sub)
 UI_MENU_SUBMENU     (ui_menu_settings_ext_temp,   "EXT Temp Sens...",   ui_menu_settings_ext_temp_sub)
 UI_MENU_SUBMENU     (ui_menu_settings_bed_temp,   "BED Temp Sens...",   ui_menu_settings_bed_temp_sub)
@@ -382,7 +370,6 @@ UI_MENU_SUBMENU     (ui_menu_settings_bed_temp,   "BED Temp Sens...",   ui_menu_
     &ui_menu_back,                              \
       &ui_menu_general_baud,                    \
       &ui_menu_settings_accel,                  \
-      &ui_menu_settings_feed,                   \
       &ui_menu_settings_ext,                    \
       &ui_menu_settings_ext_temp,               \
       &ui_menu_settings_bed_temp,               \

@@ -53,97 +53,6 @@ void EEPROM::update(GCode *com)
   Extruder::selectExtruderById(Extruder::current->id);
 }
 
-void EEPROM::restoreEEPROMSettingsFromConfiguration()
-{
-	// can only be done right if we also update permanent values not cached!
-	EEPROM::initalizeUncached();
-  uint8_t newcheck = computeChecksum();
-  if(newcheck != HAL::eprGetByte(EPR_INTEGRITY_BYTE))
-		HAL::eprSetByte(EPR_INTEGRITY_BYTE, newcheck);	
-  baudrate = BAUDRATE;
-  maxInactiveTime = MAX_INACTIVE_TIME * 1000L;
-  stepperInactiveTime = STEPPER_INACTIVE_TIME * 1000L;
-  Printer::axisStepsPerMM[X_AXIS] = XAXIS_STEPS_PER_MM;
-  Printer::axisStepsPerMM[Y_AXIS] = YAXIS_STEPS_PER_MM;
-  Printer::axisStepsPerMM[Z_AXIS] = ZAXIS_STEPS_PER_MM;
-  Printer::axisStepsPerMM[E_AXIS] = 1;
-  Printer::maxFeedrate[X_AXIS] = MAX_FEEDRATE_X;
-  Printer::maxFeedrate[Y_AXIS] = MAX_FEEDRATE_Y;
-  Printer::maxFeedrate[Z_AXIS] = MAX_FEEDRATE_Z;
-  Printer::homingFeedrate[X_AXIS] = HOMING_FEEDRATE_X;
-  Printer::homingFeedrate[Y_AXIS] = HOMING_FEEDRATE_Y;
-  Printer::homingFeedrate[Z_AXIS] = HOMING_FEEDRATE_Z;
-  Printer::maxJerk = MAX_JERK;
-#if RAMP_ACCELERATION
-  Printer::maxAccelerationMMPerSquareSecond[X_AXIS] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_X;
-  Printer::maxAccelerationMMPerSquareSecond[Y_AXIS] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Y;
-  Printer::maxAccelerationMMPerSquareSecond[Z_AXIS] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Z;
-  Printer::maxTravelAccelerationMMPerSquareSecond[X_AXIS] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_X;
-  Printer::maxTravelAccelerationMMPerSquareSecond[Y_AXIS] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Y;
-  Printer::maxTravelAccelerationMMPerSquareSecond[Z_AXIS] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Z;
-#endif
-
-  heatedBedController.heatManager= HEATED_BED_HEAT_MANAGER;
-  heatedBedController.preheatTemperature = HEATED_BED_PREHEAT_TEMP;
-  heatedBedController.pidDriveMax = HEATED_BED_PID_INTEGRAL_DRIVE_MAX;
-  heatedBedController.pidDriveMin = HEATED_BED_PID_INTEGRAL_DRIVE_MIN;
-  heatedBedController.pidPGain = HEATED_BED_PID_PGAIN_OR_DEAD_TIME;
-  heatedBedController.pidIGain = HEATED_BED_PID_IGAIN;
-  heatedBedController.pidDGain = HEATED_BED_PID_DGAIN;
-  heatedBedController.pidMax = HEATED_BED_PID_MAX;
-
-  Printer::xLength = X_MAX_LENGTH;
-  Printer::yLength = Y_MAX_LENGTH;
-  Printer::zLength = Z_MAX_LENGTH;
-  Printer::xMin = X_MIN_POS;
-  Printer::yMin = Y_MIN_POS;
-  Printer::zMin = Z_MIN_POS;
-#ifdef ROD_RADIUS
-	Printer::radius0 = ROD_RADIUS;
-#else
-	Printer::radius0 = 0;
-#endif
-  Extruder *e;
-
-  e = &extruder[0];
-  e->stepsPerMM = EXT0_STEPS_PER_MM;
-  e->maxFeedrate = EXT0_MAX_FEEDRATE;
-  e->maxStartFeedrate = EXT0_MAX_START_FEEDRATE;
-  e->maxAcceleration = EXT0_MAX_ACCELERATION;
-  e->tempControl.heatManager = EXT0_HEAT_MANAGER;
-  e->tempControl.preheatTemperature = EXT0_PREHEAT_TEMP;
-  e->tempControl.pidDriveMax = EXT0_PID_INTEGRAL_DRIVE_MAX;
-  e->tempControl.pidDriveMin = EXT0_PID_INTEGRAL_DRIVE_MIN;
-  e->tempControl.pidPGain = EXT0_PID_PGAIN_OR_DEAD_TIME;
-  e->tempControl.pidIGain = EXT0_PID_I;
-  e->tempControl.pidDGain = EXT0_PID_D;
-  e->tempControl.pidMax = EXT0_PID_MAX;
-  e->yOffset = EXT0_Y_OFFSET;
-  e->xOffset = EXT0_X_OFFSET;
-  e->watchPeriod = EXT0_WATCHPERIOD;
-#if RETRACT_DURING_HEATUP
-  e->waitRetractTemperature = EXT0_WAIT_RETRACT_TEMP;
-  e->waitRetractUnits = EXT0_WAIT_RETRACT_UNITS;
-#endif
-  e->coolerSpeed = EXT0_EXTRUDER_COOLER_SPEED;
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
-  e->advanceK = EXT0_ADVANCE_K;
-#endif
-  e->advanceL = EXT0_ADVANCE_L;
-#endif
-
-#if FEATURE_AUTOLEVEL
-  Printer::setAutolevelActive(false);
-  Printer::resetTransformationMatrix(true);
-#endif
-  initalizeUncached();
-  Printer::updateDerivedParameter();
-  Extruder::selectExtruderById(Extruder::current->id);
-  Extruder::initHeatedBed();
-  Com::printInfoFLN(PSTR("Configuration reset to defaults."));
-}
-
 void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 {
   HAL::eprSetInt32(EPR_BAUDRATE,baudrate);
@@ -153,12 +62,7 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
   HAL::eprSetFloat(EPR_XAXIS_STEPS_PER_MM,Printer::axisStepsPerMM[X_AXIS]);
   HAL::eprSetFloat(EPR_YAXIS_STEPS_PER_MM,Printer::axisStepsPerMM[Y_AXIS]);
   HAL::eprSetFloat(EPR_ZAXIS_STEPS_PER_MM,Printer::axisStepsPerMM[Z_AXIS]);
-  HAL::eprSetFloat(EPR_X_MAX_FEEDRATE,Printer::maxFeedrate[X_AXIS]);
-  HAL::eprSetFloat(EPR_Y_MAX_FEEDRATE,Printer::maxFeedrate[Y_AXIS]);
-  HAL::eprSetFloat(EPR_Z_MAX_FEEDRATE,Printer::maxFeedrate[Z_AXIS]);
-  HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE,Printer::homingFeedrate[X_AXIS]);
-  HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE,Printer::homingFeedrate[Y_AXIS]);
-  HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE,Printer::homingFeedrate[Z_AXIS]);
+
   HAL::eprSetFloat(EPR_MAX_JERK,Printer::maxJerk);
 #if RAMP_ACCELERATION
   HAL::eprSetFloat(EPR_X_MAX_ACCEL,Printer::maxAccelerationMMPerSquareSecond[X_AXIS]);
@@ -308,12 +212,7 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
   Printer::axisStepsPerMM[X_AXIS] = HAL::eprGetFloat(EPR_XAXIS_STEPS_PER_MM);
   Printer::axisStepsPerMM[Y_AXIS] = HAL::eprGetFloat(EPR_YAXIS_STEPS_PER_MM);
   Printer::axisStepsPerMM[Z_AXIS] = HAL::eprGetFloat(EPR_ZAXIS_STEPS_PER_MM);
-  Printer::maxFeedrate[X_AXIS] = HAL::eprGetFloat(EPR_X_MAX_FEEDRATE);
-  Printer::maxFeedrate[Y_AXIS] = HAL::eprGetFloat(EPR_Y_MAX_FEEDRATE);
-  Printer::maxFeedrate[Z_AXIS] = HAL::eprGetFloat(EPR_Z_MAX_FEEDRATE);
-  Printer::homingFeedrate[X_AXIS] = HAL::eprGetFloat(EPR_X_HOMING_FEEDRATE);
-  Printer::homingFeedrate[Y_AXIS] = HAL::eprGetFloat(EPR_Y_HOMING_FEEDRATE);
-  Printer::homingFeedrate[Z_AXIS] = HAL::eprGetFloat(EPR_Z_HOMING_FEEDRATE);
+
   Printer::maxJerk = HAL::eprGetFloat(EPR_MAX_JERK);
 #if RAMP_ACCELERATION
   Printer::maxAccelerationMMPerSquareSecond[X_AXIS] = HAL::eprGetFloat(EPR_X_MAX_ACCEL);
@@ -573,8 +472,6 @@ void EEPROM::writeSettings()
   writeLong(EPR_STEPPER_INACTIVE_TIME, PSTR("Stop stepper after inactivity [ms,0=off]"));
   //#define EPR_ACCELERATION_TYPE 1
   writeFloat(EPR_ZAXIS_STEPS_PER_MM, PSTR("Steps per mm"), 4);
-  writeFloat(EPR_Z_MAX_FEEDRATE, PSTR("Max. feedrate [mm/s]"));
-  writeFloat(EPR_Z_HOMING_FEEDRATE, PSTR("Homing feedrate [mm/s]"));
   writeFloat(EPR_MAX_JERK, PSTR("Max. jerk [mm/s]"));
   writeFloat(EPR_X_HOME_OFFSET, PSTR("X min pos [mm]"));
   writeFloat(EPR_Y_HOME_OFFSET, PSTR("Y min pos [mm]"));

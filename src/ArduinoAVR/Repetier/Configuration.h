@@ -790,23 +790,6 @@
     Overridden if EEPROM activated.
 */
 #define MAX_INACTIVE_TIME 1800
-/** Maximum feedrate, the system allows. Higher feedrates are reduced to these values.
-    The axis order in all axis related arrays is X, Y, Z
-    Overridden if EEPROM activated.
-*/
-#define MAX_FEEDRATE_X 300
-#define MAX_FEEDRATE_Y 300
-#define MAX_FEEDRATE_Z 300
-
-/** Home position speed in mm/s. Overridden if EEPROM activated. */
-#define HOMING_FEEDRATE_X 120
-#define HOMING_FEEDRATE_Y 120
-#define HOMING_FEEDRATE_Z 120
-
-
-
-
-
 
 
 #define ZHOME_MIN_TEMPERATURE 0
