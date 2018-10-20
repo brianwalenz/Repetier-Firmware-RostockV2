@@ -158,9 +158,6 @@ void GCode::keepAlive(enum FirmwareState state) {
 			GCodeSource::printAllFLN(PSTR("busy:paused for user interaction"));	
 		} else if(state == WaitHeater) {
 			GCodeSource::printAllFLN(PSTR("busy:heating"));	
-		} else if(state == DoorOpen) {
-			GCodeSource::printAllFLN(PSTR("busy:door open"));
-      UI_STATUS_F(PSTR("Door open"));
 		} else { // processing and uncaught cases
 			GCodeSource::printAllFLN(PSTR("busy:processing"));
 		}
@@ -1056,7 +1053,8 @@ void GCode::reportFatalError() {
 	Com::printF(PSTR("fatal:"));
 	Com::printF(fatalErrorMsg);
 	Com::printFLN(PSTR(" - Printer stopped and heaters disabled due to this error. Fix error and restart with M999."));
-	UI_ERROR_P(fatalErrorMsg)
+	uid.setStatusP(fatalErrorMsg);
+  uid.refreshPage();
     }
 
 void GCode::resetFatalError() {
@@ -1064,7 +1062,7 @@ void GCode::resetFatalError() {
 	TemperatureController::resetAllErrorStates();
 	Printer::debugReset(8); // disable dry run
 	fatalErrorMsg = NULL;
-	UI_ERROR_P(PSTR(""));
+	uid.setStatusP(PSTR(""), true);
 	Printer::setUIErrorMessage(false); // allow overwrite
 	Com::printFLN(PSTR("info:Continue from fatal state"));
 }
@@ -1211,7 +1209,8 @@ int SDCardGCodeSource::readByte() {
   int n = sd.file.read();
   if(n == -1) {
     Com::printFLN(PSTR("SD read error"));
-    UI_ERROR_P(PSTR("SD Read Error"));
+    uid.setStatusP(PSTR("SD Read Error"), true);
+    uid.refreshPage();
 
     // Second try in case of recoverable errors
     sd.file.seekSet(sd.sdpos);
@@ -1221,7 +1220,8 @@ int SDCardGCodeSource::readByte() {
       close();
       return 0;
     }
-    UI_ERROR_P(PSTR("SD error fixed"));
+    uid.setStatusP(PSTR("SD error fixed"), true);
+    uid.refreshPage();
   }
   sd.sdpos++; // = file.curPosition();
   return n;

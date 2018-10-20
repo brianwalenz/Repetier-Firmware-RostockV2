@@ -261,7 +261,9 @@ bool runBedLeveling(int s) {
   Plane plane;
   if(!measureAutolevelPlane(plane)) {
     Com::printErrorFLN(PSTR("Probing had returned errors - autoleveling canceled."));
-    uid.showMessage(1);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Levelling Error."));
+    uid.refreshPage();
     return false;
   }
   correctAutolevel(plane);
@@ -523,7 +525,9 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
       PrintLine::moveRelativeDistanceInSteps(0, 0, shortMove, 0, HOMING_FEEDRATE_Z, true, true);
       if(Endstops::zProbe()) {
         Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!"));
-        uid.showMessage(1);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Levelling Error."));
+    uid.refreshPage();
         return ILLEGAL_Z_PROBE;
       }
     }
@@ -538,8 +542,10 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
   // Go back to start position
   PrintLine::moveRelativeDistanceInSteps(0, 0, lastCorrection - currentPositionSteps[Z_AXIS], 0, HOMING_FEEDRATE_Z, true, true);
   if(Endstops::zProbe()) { // did we untrigger? If not don't trust result!
-    Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!"));
-    uid.showMessage(1);
+    Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!")); 
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Levelling Error."));
+    uid.refreshPage();
     return ILLEGAL_Z_PROBE;
   }
   updateCurrentPosition(false);
@@ -583,7 +589,9 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
 #endif
   if(Endstops::zProbe()) {
     Com::printErrorFLN(PSTR("z-probe did not untrigger after going back to start position."));
-    uid.showMessage(1);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Levelling Error."));
+    uid.refreshPage();
     return ILLEGAL_Z_PROBE;
   }
   if(last)
@@ -650,7 +658,7 @@ void Printer::waitForZProbeStart() {
     Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
   }
   HAL::delayMilliseconds(30);
-  UI_CLEAR_STATUS;
+  uid.clearStatus();
 #endif
 }
 #endif

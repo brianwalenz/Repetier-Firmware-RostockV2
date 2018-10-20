@@ -28,23 +28,33 @@
 //  Define pages with
 //    UI_PAGE4(name,row1,row2,row3,row4);
 
-//UI_PAGE4(ui_page1,
-//         cTEMP "%ec/%Ec" cDEG "B%eB/%Eb" cDEG,
-//         "Z:%x2  Buf : %oB",
-//         "Mul: %om   E:%x4",
-//         "%os")
 UI_PAGE4(ui_page1,
          "               Temps",
-         "     EXT: %ec/%Ec" cDEG,
-         "     BED: %eB/%Eb" cDEG,
+         "EXT %ec/%Ec" cDEG "C %hc",
+         "BED %eb/%Eb" cDEG "C %hb",
          "%os")
 
-UI_PAGE4(ui_page2, "X:%x0 mm %dx%dX",                     "Y:%x1 mm %dy%dY",                   "Z:%x2 mm %dz%dZ",     "%os")
-UI_PAGE4(ui_page3, " E:%ec/%Ec" cDEG "C" cARROW "%oC",    " B:%eb/%Eb" cDEG "C" cARROW "%ob",  "",                    "%os")
-UI_PAGE4(ui_page4, "Total Printing Time",                 "%Ut",                               "Total Filament Used", "%Uf m")
+UI_PAGE4(ui_page2,
+         "X %x0 mm",   //  dx - IN_HARDWARE_ENDSTOP_X  - addStringP(Endstops::xMin() ? ui_selected : ui_unselected);
+         "Y %x1 mm",   //  dX - MAX_HARDWARE_ENDSTOP_X - addStringP(Endstops::yMin() ? ui_selected : ui_unselected);
+         "Z %x2 mm",
+         "%os")
+
+UI_PAGE4(ui_page3,
+         "page 3 unused",  //" E %ec/%Ec" cDEG "C" cARROW "%hc",
+         "",               //" B %eb/%Eb" cDEG "C" cARROW "%hb",
+         "",
+         "%os")
+
+UI_PAGE4(ui_page4,
+         "Total Printing Time",
+         "%Ut",
+         "Total Filament Used",
+         "%Uf m")
 
 #define UI_PAGES      {&ui_page1, &ui_page2, &ui_page3, &ui_page4}
 #define UI_NUM_PAGES  4
+
 
 ////////////////////////////////////////
 //
@@ -56,28 +66,14 @@ UI_PAGE4(ui_page4, "Total Printing Time",                 "%Ut",                
 //
 //  Menus are defined from leaves up, for some reason.
 
-UI_MENU_ACTIONCOMMAND(ui_menu_back,  "<-" cUP, UI_ACTION_BACK)
+UI_MENU_ACTIONCOMMAND(ui_menu_back,  "" cUP, UI_ACTION_BACK)
 UI_MENU_HEADLINE     (ui_menu_empty, "")
 
-// Error menu
-//UI_MENU_ACTION2_T(ui_menu_error, UI_ACTION_DUMMY, UI_TEXT_ERROR_ID, UI_TEXT_ERRORMSG_ID)
 
-//
-//  MESSAGES
-//
-
-  UI_WIZARD4(ui_msg_decoupled,         UI_ACTION_MESSAGE,             "Notification:",        "Heater decoupled",           "",     ">>> OK <<<")
-UI_WIZARD4(ui_msg_defectsensor,      UI_ACTION_MESSAGE,             "Notification:",        "Temp. sensor defect",        "",     ">>> OK <<<")
-UI_WIZARD4(ui_msg_slipping,          UI_ACTION_MESSAGE,             "Notification:",        "Filament slipping",          "",     ">>> OK <<<")
-UI_WIZARD4(ui_msg_leveling_error,    UI_ACTION_MESSAGE,             "Notification:",        "Leveling error",             "",     ">>> OK <<<")
-//UI_WIZARD4(ui_msg_calibration_error, UI_ACTION_MESSAGE,             "Notification:",        "Calibration Error",          "",     ">>> OK <<<")
-UI_WIZARD4(ui_msg_clearbed,          UI_ACTION_MEASURE_DISTORTION2, "Make sure the heated", "bed is clear of any", "obstructions", ">>> OK <<<")
-UI_WIZARD4(ui_msg_calibrating_bed,   UI_ACTION_STATE,               "",                     "Calibrating bed",                "",     "*** Please wait ***")
-UI_WIZARD4(ui_msg_homing,            UI_ACTION_STATE,               "",                     "Homing...",                     "",     "*** Please wait ***")
 
 //  Probing
 
-#if 1
+#if 0
 UI_MENU_HEADLINE      (ui_menu_mzp_head,    "Meas. Probe Height")
 UI_MENU_CHANGEACTION  (ui_menu_mzp_realz,   "Real Z Pos:%W0mm",  UI_ACTION_MEASURE_ZP_REALZ)
 UI_MENU_ACTIONCOMMAND (ui_menu_mzp_cont,    "Continue",          UI_ACTION_MEASURE_ZPROBE_HEIGHT2)
@@ -175,7 +171,7 @@ UI_MENU_SUBMENU_FILTER      (ui_menu_printing,     "Job Control...",    ui_menu_
 
 //                                                                                                        HIDE IF NOT ALL     HIDE IF ANY
 UI_MENU_CHANGEACTION (ui_menu_preheat_bed,            "Bed:%eb/%pb " cDEG "C", UI_ACTION_BED_PREHEAT)
-UI_MENU_CHANGEACTION (ui_menu_preheat_ext,            "Ext:%e0/%p0 " cDEG "C", UI_ACTION_EXT_PREHEAT)
+UI_MENU_CHANGEACTION (ui_menu_preheat_ext,            "Ext:%ec/%pc " cDEG "C", UI_ACTION_EXT_PREHEAT)
 
 UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_bed_on,  "Preheat BED",           UI_ACTION_BED_PREHEAT_ON,  0,                  MENU_MODE_BED_HEAT)
 UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_bed_off, "Stop BED preheat",      UI_ACTION_BED_PREHEAT_OFF, MENU_MODE_BED_HEAT, 0)
@@ -197,7 +193,7 @@ UI_MENU_ACTIONCOMMAND(ui_menu_preheat_cooldown,       "Turn Heaters Off",      U
 UI_MENU(ui_menu_preheat_sub, UI_MENU_PREHEAT_SUB, 8)
 
 UI_MENU_CHANGEACTION  (ui_menu_bed_temp,       "BED:%eb/%Eb " cDEG "C", UI_ACTION_BED_TARGET)
-UI_MENU_CHANGEACTION  (ui_menu_ext_temp,       "EXT:%e0/%E0 " cDEG "C", UI_ACTION_EXT_TARGET)
+UI_MENU_CHANGEACTION  (ui_menu_ext_temp,       "EXT:%ec/%Ec " cDEG "C", UI_ACTION_EXT_TARGET)
 UI_MENU_CHANGEACTION  (ui_menu_fan_fanspeed,   "LAY fan:%Fs%%",         UI_ACTION_FANSPEED)
 UI_MENU_ACTIONCOMMAND (ui_menu_fan_ignoreM106, "LAY fan forced %Fi",    UI_ACTION_IGNORE_M106)    // %Fi shows a checkbox with status of the flag
 
@@ -226,7 +222,6 @@ UI_MENU_SUBMENU_FILTER(ui_menu_speed,        "Speed...",        ui_menu_speed_su
 
 
 
-
 //
 //  Positioning.
 //
@@ -235,14 +230,14 @@ UI_MENU_SUBMENU_FILTER(ui_menu_speed,        "Speed...",        ui_menu_speed_su
 //  If FEATURE_Z_PROBE, add &ui_menu_measure_zprobe_height to the z height calibration.
 //
 
-UI_MENU_ACTIONCOMMAND(ui_menu_home_all,        "Home.",           UI_ACTION_HOME_ALL)
+UI_MENU_ACTIONCOMMAND(ui_menu_home_all,        "Home.",            UI_ACTION_HOME_ALL)
 UI_MENU_CHANGEACTION (ui_menu_go_epos,         " E %x3 mm",        UI_ACTION_EPOSITION)
 UI_MENU_CHANGEACTION (ui_menu_go_xpos,         " X %x0 mm",        UI_ACTION_XPOSITION)
 UI_MENU_CHANGEACTION (ui_menu_go_ypos,         " Y %x1 mm",        UI_ACTION_YPOSITION)
 UI_MENU_CHANGEACTION (ui_menu_go_zpos,         " Z %x2 mm",        UI_ACTION_ZPOSITION)
 UI_MENU_CHANGEACTION (ui_menu_go_zpos_notest,  " Z %x2 mm (free)", UI_ACTION_ZPOSITION_NOTEST)
-UI_MENU_ACTIONCOMMAND(ui_menu_set_z_origin,    "Set new Z=0.00",  UI_ACTION_SET_MEASURED_ORIGIN)
-UI_MENU_ACTIONCOMMAND(ui_menu_release_stepper, "Release Motors",  UI_ACTION_DISABLE_STEPPER)
+UI_MENU_ACTIONCOMMAND(ui_menu_set_z_origin,    "Set new Z=0.00",   UI_ACTION_SET_MEASURED_ORIGIN)
+UI_MENU_ACTIONCOMMAND(ui_menu_release_stepper, "Release Motors",   UI_ACTION_DISABLE_STEPPER)
 
 UI_MENU_ACTIONCOMMAND(ui_menu_measure_zprobe_height, "Meas. Probe Height", UI_ACTION_MEASURE_ZPROBE_HEIGHT)
 

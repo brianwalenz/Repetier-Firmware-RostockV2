@@ -98,7 +98,6 @@ union wizardVar {
 #define PRINTER_FLAG3_PRINTING              8 // set explicitly with M530
 #define PRINTER_FLAG3_AUTOREPORT_TEMP       16
 #define PRINTER_FLAG3_SUPPORTS_STARTSTOP    32
-#define PRINTER_FLAG3_DOOR_OPEN             64
 
 // define an integer number of steps more than large enough to get to end stop from anywhere
 #define HOME_DISTANCE_STEPS (Printer::zMaxSteps-Printer::zMinSteps+1000)
@@ -326,8 +325,11 @@ public:
   static int maxLayer; // -1 = unknown
   static char printName[21]; // max. 20 chars + 0
   static float progress;
+
+#if FEATURE_Z_PROBE
   static fast8_t wizardStackPos;
   static wizardVar wizardStack[WIZARD_STACK_SIZE];
+#endif
 
   static void handleInterruptEvent();
 
@@ -626,12 +628,6 @@ public:
     flag3 = (b ? flag3 | PRINTER_FLAG3_SUPPORTS_STARTSTOP : flag3 & ~PRINTER_FLAG3_SUPPORTS_STARTSTOP);
   }
 
-  static INLINE uint8_t isDoorOpen() {
-    return (flag3 & PRINTER_FLAG3_DOOR_OPEN) != 0;
-  }
-
-  static bool updateDoorOpen();
-
   static INLINE uint8_t isHoming() {
     return flag2 & PRINTER_FLAG2_HOMING;
   }
@@ -852,6 +848,7 @@ public:
   static void GoToMemoryPosition(bool x, bool y, bool z, bool e, float feed);
   static void zBabystep();
 
+#if FEATURE_Z_PROBE
   static INLINE void resetWizardStack() {
     wizardStackPos = 0;
   }
@@ -861,6 +858,7 @@ public:
   static INLINE wizardVar popWizardVar() {
     return wizardStack[--wizardStackPos];
   }
+#endif
   static void showConfiguration();
   static void homeXAxis();
   static void homeYAxis();

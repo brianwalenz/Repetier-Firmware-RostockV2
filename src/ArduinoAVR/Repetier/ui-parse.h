@@ -26,28 +26,16 @@
 extern UIDisplay uid;
 
 
+//  extruder[exid].tempControl.targetTemperatureC
+//  extruder[exid].tempControl.currentTemperatureC
 
-//
-// NOT DISPLAYING MENUS CORRECTLY - is this cache?
-//
-
-//
-// WHY IS THE CURSOR STILL FUCKING BLINKING??
-//
-
-//
-// IT ALSO SEEMS TO CALL initDisplay TWICE - the 'bri' scroller goes twice
-//
-
-//
-// PROBABLY NEED TO FIGURE OUT SERIAL LOGGING
-//
+//  heatedBedController.targetTemperatureC
+//  heatedBedController.currentTemperatureC
 
 
 
 void
 UIDisplay::parse(const char *txt, bool ram) {
-  float          fvalue = 0;
 
   while(col < MAX_COLS) {
     char c0 = (ram) ? (*txt++) : (pgm_read_byte(txt++));
@@ -68,16 +56,16 @@ UIDisplay::parse(const char *txt, bool ram) {
     //  when that code is processed.
 
     char c1 = (ram) ? (*txt++) : (pgm_read_byte(txt++));
-    char c2 = (ram) ? (*txt++)   : (pgm_read_byte(txt++));
-
 
     if      (c1 == '%') {
       addChar('%');
-      txt--;   //  Because c2 was not used.
+      continue;
     }
 
+    char c2 = (ram) ? (*txt++) : (pgm_read_byte(txt++));
+
     //  If %?x add an 'x' if the last character isn't 'x'.
-    else if (c1 == '?') {
+    if (c1 == '?') {
       if ((col > 0) && (printCols[col-1] != c2))
         addChar(c2);
     }
@@ -97,35 +85,20 @@ UIDisplay::parse(const char *txt, bool ram) {
 
 
     //  Extruder temperature
-    //    eI - extruder temperature        %3d
     //    ec - extruder temperature        %5.1f
     //    e  - extruder temperature preset %3d
     //
     //    er - relative mode?
     //
     //    eb - build plate
-    //    eB - build plate integer
     //
-    else if ((c1 == 'e') && (c2 == 'I')) {
-      //alue = extruder[c2 - '0'].tempControl.currentTemperatureC;
-      fvalue = Extruder::current->tempControl.currentTemperatureC;
-      addFloat(fvalue, 3, 0);
-    }
-
     else if ((c1 == 'e') && (c2 == 'c')) {
       //alue = extruder[c2 - '0'].tempControl.currentTemperatureC;
-      fvalue = Extruder::current->tempControl.currentTemperatureC;
-      addFloat(fvalue, 3, 1);
+      addFloat(Extruder::current->tempControl.currentTemperatureC, 3, 1);
     }
 
-    else if ((c1 == 'e') && (c2 == 'B')) {
-      fvalue = Extruder::getHeatedBedTemperature();
-      addFloat(fvalue, 3, 1);
-    }
-
-    //    er - extruder in relative mode?
-    else if ((c1 == 'e') && (c2 == 'r')) {
-      addStringYesNo(Printer::relativeExtruderCoordinateMode);
+    else if ((c1 == 'e') && (c2 == 'b')) {
+      addFloat(Extruder::getHeatedBedTemperature(), 3, 1);
     }
 
     //  Target temperatures
@@ -134,13 +107,11 @@ UIDisplay::parse(const char *txt, bool ram) {
     //
     else if ((c1 == 'E') && (c2 == 'c')) {
       //alue = extruder[c2 - '0'].tempControl.targetTemperatureC;
-      fvalue = Extruder::current->tempControl.targetTemperatureC;
-      addFloat(fvalue, 3, 0 /*UI_TEMP_PRECISION*/);
+      addFloat(Extruder::current->tempControl.targetTemperatureC, 3, 0);
     }
 
     else if ((c1 == 'E') && (c2 == 'b')) {
-      fvalue = heatedBedController.targetTemperatureC;
-      addFloat(fvalue, 3, 0 /*UI_TEMP_PRECISION*/);
+      addFloat(heatedBedController.targetTemperatureC, 3, 0);
     }
 
     //  Preheating
@@ -153,6 +124,19 @@ UIDisplay::parse(const char *txt, bool ram) {
     else if ((c1 == 'p') && (c2 == 'b')) {
       addNumber(heatedBedController.preheatTemperature, 3, ' ');
     }
+
+    //  Heater PWM fraction.
+    else if ((c1 == 'h') && (c2 == 'c')) {
+      addNumber(pwm_pos[Extruder::current->id] * 100 / 255, 3);
+      addChar('%');
+    }
+
+    else if ((c1 == 'h') && (c2 == 'b')) {
+      addNumber(pwm_pos[heatedBedController.pwmIndex] * 100 / 255, 3);
+      addChar('%');
+    }
+
+
 
 
 
@@ -240,23 +224,14 @@ UIDisplay::parse(const char *txt, bool ram) {
     //  Status messages
 
     else if ((c1 == 'o') && (c2 == 's')) {
-      if(sd.sdactive && sd.sdmode && !statusMsg[0]) {
-        addStringP(PSTR("SD_Printed: "));
-        float percent;
-        if(sd.filesize < 2000000) percent = sd.sdpos * 100.0 / sd.filesize;
-        else percent = (sd.sdpos >> 8) * 100.0 / (sd.filesize >> 8);
-        addFloat(percent, 3, 1);
-        if(col < MAX_COLS)
-          printCols[col++] = '%';
-      } else
-        {
-          parse(statusMsg, true);
-        }
+      parse(statusMsg, true);
     }
 
+#if 0
     else if ((c1 == 'o') && (c2 == 'c')) {
       addNumber(baudrate, 6);
     }
+#endif
 
     else if ((c1 == 'o') && (c2 == 'e')) {
       if(errorMsg != 0) addStringP((char PROGMEM *)errorMsg);
@@ -285,15 +260,6 @@ UIDisplay::parse(const char *txt, bool ram) {
     else if ((c1 == 'o') && (c2 == 'p')) {
     }
 
-    else if ((c1 == 'o') && (c2 == 'b')) {
-      addNumber(pwm_pos[heatedBedController.pwmIndex] * 100 / 255, 3);
-      addChar('%');
-    }
-
-    else if ((c1 == 'o') && (c2 == 'C')) {
-      addNumber(pwm_pos[Extruder::current->id] * 100 / 255, 3);
-      addChar('%');
-    }
 
 
     //  Usage
@@ -337,6 +303,43 @@ UIDisplay::parse(const char *txt, bool ram) {
     }
 
 
+    //  POSITIONS
+    //
+    //  Would print ?.?? if Printer::isAnimation() && ! Printer::ixXHomed()
+    //
+    else if ((c1 == 'x') && (c2 == '0')) {   //  X position
+      addFloat(Printer::realXPosition(), 4, 2);
+    }
+
+    else if ((c1 == 'x') && (c2 == '1')) {   //  Y position
+      addFloat(Printer::realYPosition(), 4, 2);
+    }
+
+    else if ((c1 == 'x') && (c2 == '2')) {   //  Z position
+      addFloat(Printer::realZPosition(), 4, 2);
+    }
+
+    else if ((c1 == 'x') && (c2 == '3')) {   //  E position
+      addFloat(Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS], 4, 2);
+    }
+
+    else if ((c1 == 'x') && (c2 == '4')) {   //  Filament printed?
+      addFloat(Printer::filamentPrinted * 0.001, 3, 2);
+    }
+
+    //  Workpiece Coordinates ??
+    else if ((c1 == 'x') && (c2 == '5')) {   //  X position + offset
+      addFloat(Printer::currentPosition[X_AXIS] + Printer::coordinateOffset[X_AXIS], 4, 2);
+    }
+    else if ((c1 == 'x') && (c2 == '6')) {   //  Y position + offset
+      addFloat(Printer::currentPosition[Y_AXIS] + Printer::coordinateOffset[Y_AXIS], 4, 2);
+    }
+    else if ((c1 == 'x') && (c2 == '7')) {   //  Z position + offset
+      addFloat(Printer::currentPosition[Z_AXIS] + Printer::coordinateOffset[Z_AXIS], 4, 2);
+    }
+
+
+
 
 
 
@@ -374,81 +377,6 @@ if(c2 == '2')
  else
    addFloat(-Printer::coordinateOffset[c2 - '0'], 4, 0);
 break;
-
-
-
-
-
-case 'x':
-if(c2 >= '0' && c2 <= '7') {
-  if(c2 == '4') { // this sequence save 14 bytes of flash
-    addFloat(Printer::filamentPrinted * 0.001, 3, 2);
-    break;
-  }
-
-  if((c2 >= '0' && c2 <= '2') || (c2 >= '5' && c2 <= '7')) {
-    if(Printer::isHoming()) {
-      addStringP(PSTR(" Homing"));
-      break;
-    } else {
-      if (Printer::isAnimation() &&
-          ((c2 == '0' && !Printer::isXHomed()) ||
-           (c2 == '1' && !Printer::isYHomed()) ||
-           (c2 == '2' && !Printer::isZHomed()))) {
-        addStringP(PSTR("   z.??"));
-        break;
-      }
-    }
-  }
-  if(c2 == '0')
-    fvalue = Printer::realXPosition();
-  else if(c2 == '1')
-    fvalue = Printer::realYPosition();
-  else if(c2 == '2')
-    fvalue = Printer::realZPosition();
-
-  //################ Workpiece Coordinates#########################################################
-
-  else if(c2 == '5')
-    fvalue = Printer::currentPosition[X_AXIS] + Printer::coordinateOffset[X_AXIS];
-  else if(c2 == '6')
-    fvalue = Printer::currentPosition[Y_AXIS] + Printer::coordinateOffset[Y_AXIS];
-  else if(c2 == '7')
-    fvalue = Printer::currentPosition[Z_AXIS] + Printer::coordinateOffset[Z_AXIS];
-
-  //############ End Workpiece Coordinates #########################################################
-
-  else
-    fvalue = (float)Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS];
-
-  addFloat(fvalue, 4, 2);
- }
-
- else if(c2 >= 'a' && c2 <= 'f') {
-   //  %xa-%xf : Extruder state icon 0x08 or 0x09 or 0x0a (off) - works only with graphic displays!
-   fast8_t exid = c2 - 'a';
-   TemperatureController &t = extruder[exid].tempControl;
-   if(t.targetTemperatureC < 30)
-     addChar(0x0a);
-   else
-     addChar((t.currentTemperatureC + 4 < t.targetTemperatureC) && Printer::isAnimation() ? 0x08 : 0x09);
-   break;
- }
- else if(c2 == 'B') {
-   //  %xB : Bed icon state 0x0c or 0x0d or 0x0b (off) Bed state - works only with graphic displays!
-   if(heatedBedController.targetTemperatureC < 30)
-     addChar(0x0b);
-   else
-     addChar((heatedBedController.currentTemperatureC + 2 < heatedBedController.targetTemperatureC) && Printer::isAnimation() ? 0x0c : 0x0d);
- }
-break;
-
-
-
-
-
-
-
 
 
 
@@ -649,6 +577,15 @@ if(c2 == 'a') addNumber(lastAction, 4);
  else if(c2 == 'l') addStringOnOff((Printer::isAutolevelActive()));        // Autolevel on/off
 #endif
 break;
+
+
+
+    //    er - extruder in relative mode?
+    else if ((c1 == 'e') && (c2 == 'r')) {
+      addStringYesNo(Printer::relativeExtruderCoordinateMode);
+    }
+
+
 
 
 

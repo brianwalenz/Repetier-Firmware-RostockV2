@@ -41,15 +41,18 @@ void SDCard::automount() {
       //Com::printFLN(PSTR(PSTR("SD card removed")));
       uid.executeAction(UI_ACTION_TOP_MENU, true);
       unmount();
-      UI_STATUS_UPD_F(PSTR("SD card removed"));
+      uid.setStatusP(PSTR("SD card removed"));
+      uid.refreshPage();
     }
   } else {
     if(!sdactive && sdmode != 100) {
-      UI_STATUS_UPD_F(PSTR("SD card inserted"));
+      uid.setStatusP(PSTR("SD card inserted"));
+      uid.refreshPage();
       mount();
       if(sdmode != 100) // send message only if we have success
         Com::printFLN(PSTR("SD card inserted")); // Not translatable or host will not understand signal
-      if(sdactive && !uid.isWizardActive()) { // Wizards have priority
+
+      if(sdactive) {
         Printer::setAutomount(true);
         uid.executeAction(UI_ACTION_SD_PRINT + UI_ACTION_TOPMENU, true);
       }
@@ -133,7 +136,7 @@ void SDCard::startPrint() {
   Printer::setPrinting(true);
   Printer::maxLayer = 0;
   Printer::currentLayer = 0;
-  UI_STATUS_F(PSTR(""));
+  uid.clearStatus();
   GCodeSource::registerSource(&sdSource);
 }
 
@@ -446,7 +449,8 @@ void SDCard::startWrite(char *filename) {
   if(!file.open(filename, O_CREAT | O_APPEND | O_WRITE | O_TRUNC)) {
     Com::printFLN(PSTR("open failed, File: "), filename);
   } else {
-    UI_STATUS_F(PSTR("Uploading..."));
+    uid.setStatusP(PSTR("Uploading..."));
+    uid.refreshPage();
     savetosd = true;
     Com::printFLN(PSTR("Writing to file: "), filename);
   }
@@ -458,7 +462,7 @@ void SDCard::finishWrite() {
   file.close();
   savetosd = false;
   Com::printFLN(PSTR("Done saving file."));
-  UI_CLEAR_STATUS;
+  uid.clearStatus();
 }
 
 void SDCard::deleteFile(char *filename) {

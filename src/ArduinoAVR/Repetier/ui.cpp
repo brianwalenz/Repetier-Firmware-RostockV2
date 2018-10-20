@@ -62,7 +62,7 @@ uiCheckKeys(uint16_t &action) {
   if (READ(UI_ENCODER_B) == 0)    //  Active low.
     uid.encoderLast |= 1;
 
-  //  To change direction of the encoder, swap increment and decrement.
+  //  To change direction of the encoder, swap increment (+=) and decrement (-=).
   //
   //  To change the speed of the encoder, test against different values.
   //     FAST =  1,  7,  8, 14   MEDIUM =  7,  8   SLOW = 14
@@ -261,9 +261,10 @@ void UIDisplay::initialize() {
   cwd[0]           = '/';
   cwd[1]           = 0;
 
-  lastSwitch  = HAL::timeInMilliseconds();
   lastRefresh = HAL::timeInMilliseconds();
 
+  lastEncoderTime = HAL::timeInMilliseconds();
+  encoderAccel    = 1.0;
 
 
   //
@@ -379,7 +380,7 @@ void UIDisplay::initialize() {
   //  And display a nice greeting.
   //
 
-  UI_STATUS_F(PSTR("Printer ready."));
+  setStatusP(PSTR("Printer ready."));
 
   printRowP(0, PSTR("Rostock Max v2"));
   printRowP(1, PSTR("Repetier 1.0.2[bri]"));
@@ -577,7 +578,10 @@ UIDisplay::setStatus(const char *txt, bool error) {
 }
 
 
-
+void
+UIDisplay::clearStatus(void) {
+  statusMsg[0] = 0;
+}
 
 
 
@@ -730,8 +734,11 @@ UIDisplay::refreshPage(void) {
   if ((menuLevel == 0) && (menuPos[0] == 0) && (Printer::isPrinting() != false)) {
     //Com::print("printing-display\n");
 
-    if(sd.sdactive && sd.sdmode)
-      Printer::progress = (static_cast<float>(sd.sdpos) * 100.0) / static_cast<float>(sd.filesize);
+#warning THIS DOES NOT BELONG HERE
+    if ((sd.sdactive) && (sd.sdmode))
+      Printer::progress = (float)sd.sdpos * 100.0 / (float)sd.filesize;
+    else
+      Printer::progress = 0.0;
 
     col = 0;
     parse(PSTR("%Pn"), false);     //  FILENAME
@@ -829,8 +836,16 @@ UIDisplay::refreshPage(void) {
 
         col = 0;
 
+#if 0
+        //  Don't draw selector for
+        //    0 TYPE_INFO
+        //    1 TYPE_FILE_SELECTOR (handled above)
+        //    4 CHANGEACTION
+        //    5 WIZARD
+        //
         if ((entType == UI_MENU_TYPE_SUBMENU) ||
             (entType == UI_MENU_TYPE_MODIFICATION_MENU)) {
+#endif
           if (enti == menuPos[menuLevel] && activeAction != entAction)
             printCols[col++] = CHAR_SELECTOR;
 
@@ -839,7 +854,9 @@ UIDisplay::refreshPage(void) {
 
           else
             printCols[col++] = ' ';
+#if 0
         }
+#endif
 
         parse(entText, false);
 
@@ -987,36 +1004,6 @@ void UIDisplay::popMenu(bool refresh) {
   if (refresh)
     refreshPage();
 }
-
-
-
-
-
-void UIDisplay::showMessage(int id) {
-
-  menuLevel = 0;
-
-  Printer::setUIErrorMessage(true);
-
-  switch(id) {
-    case 1:
-      pushMenu(&ui_msg_leveling_error, true);
-      break;
-    case 2:
-      pushMenu(&ui_msg_defectsensor, true);
-      break;
-    case 3:
-      pushMenu(&ui_msg_decoupled, true);
-      break;
-    case 4:
-      pushMenu(&ui_msg_slipping, true);
-      break;
-  }
-}
-
-
-
-
 
 
 
@@ -1177,6 +1164,7 @@ UIDisplay::okAction(bool allowMoves) {
 
   //  If a wizard, 
 
+#if FEATURE_Z_PROBE
   if(mentype == UI_MENU_TYPE_WIZARD) {
     action = pgm_read_word(&(men->menuAction));
 
@@ -1211,6 +1199,7 @@ UIDisplay::okAction(bool allowMoves) {
 
     return(0);
   }
+#endif
 
   //  If the entry is a submenu, go into the submenu.
 
@@ -1314,7 +1303,7 @@ void UIDisplay::slowAction(bool allowMoves) {
     if(encodeChange) {
       Com::writeToAll = true;
 
-      nextPreviousAction(encodeChange, allowMoves);
+      doEncoderChange(encodeChange, allowMoves);
 
       //uiChirp();
       refresh = 1;
@@ -1362,15 +1351,9 @@ void UIDisplay::slowAction(bool allowMoves) {
   // Go to top menu after x seconds
 
   if(menuLevel > 0 && ui_autoreturn_time < time && !uid.isSticky()) {
-    lastSwitch = time;
     menuLevel = 0;
     activeAction = 0;
   }
-
-  // prevent stepper/heater disable from timeout during active wizard
-
-  if(uid.isWizardActive())
-    previousMillisCmd = HAL::timeInMilliseconds();
 
   //  Refresh the display, every second for the main, and 0.8 seconds for non-main menus.
 

@@ -66,10 +66,10 @@ public:
   virtual void writeByte(uint8_t byte) = 0;
 };
 
-class Com
-{
-public:
 
+
+class Com {
+public:
   static void cap(FSTRINGPARAM(text));
 
   static void config(FSTRINGPARAM(text));
@@ -85,29 +85,27 @@ public:
   static void printWarningF(FSTRINGPARAM(text));
   static void printInfoF(FSTRINGPARAM(text));
   static void printErrorF(FSTRINGPARAM(text));
+
   static void printWarningFLN(FSTRINGPARAM(text));
   static void printInfoFLN(FSTRINGPARAM(text));
   static void printErrorFLN(FSTRINGPARAM(text));
 
   static void printF(FSTRINGPARAM(text));
-  static void printF(FSTRINGPARAM(text),int value);
   static void printF(FSTRINGPARAM(text),const char *msg);
+  static void printF(FSTRINGPARAM(text),int value);
   static void printF(FSTRINGPARAM(text),int32_t value);
   static void printF(FSTRINGPARAM(text),uint32_t value);
-  static void printF(FSTRINGPARAM(text),float value,uint8_t digits=2);
+  static void printF(FSTRINGPARAM(text),float value, uint8_t digits=2);
 
   static void printFLN(FSTRINGPARAM(text));
+  static void printFLN(FSTRINGPARAM(text),const char *msg);
   static void printFLN(FSTRINGPARAM(text),int value);
   static void printFLN(FSTRINGPARAM(text),int32_t value);
   static void printFLN(FSTRINGPARAM(text),uint32_t value);
-  static void printFLN(FSTRINGPARAM(text),const char *msg);
-  static void printFLN(FSTRINGPARAM(text),float value,uint8_t digits=2);
+  static void printFLN(FSTRINGPARAM(text),float value, uint8_t digits=2);
 
   static void printArrayFLN(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
   static void printArrayFLN(FSTRINGPARAM(text),long *arr,uint8_t n=4);
-
-  //static void print(long value);
-  //static inline void print(int value) {print((int32_t)value);}
 
   static void print(int16_t value)   { print((int32_t)value); };
   static void print(uint16_t value)  { print((uint32_t)value); };
@@ -122,8 +120,6 @@ public:
   static void println() {GCodeSource::writeToAll('\r');GCodeSource::writeToAll('\n');}
 
   static bool writeToAll;    
-protected:
-private:
 };
 
 #endif // COMMUNICATION_H

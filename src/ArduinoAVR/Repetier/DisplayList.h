@@ -41,6 +41,8 @@
 #define UI_ENCODER_CLICK       78
 #define UI_KILL_PIN            80
 #define UI_DELAYPERCHAR       50
+
+
 #define UI_INVERT_MENU_DIRECTION 0
 
 //Symbolic character values for specific symbols.
@@ -58,21 +60,6 @@
 #define CHAR_SELECTOR '>'
 #define CHAR_SELECTED '*'
 
-
-#define UI_STATUS(status) uid.setStatusP(PSTR(status));
-#define UI_STATUS_F(status) uid.setStatusP(status);
-#define UI_STATUS_UPD(status) {uid.setStatusP(PSTR(status));uid.refreshPage();}
-#define UI_STATUS_UPD_F(status) {uid.setStatusP(status);uid.refreshPage();}
-#define UI_STATUS_RAM(status) uid.setStatus(status);
-#define UI_STATUS_UPD_RAM(status) {uid.setStatus(status);uid.refreshPage();}
-
-#define UI_ERROR(status) uid.setStatusP(PSTR(status),true);
-#define UI_ERROR_P(status) uid.setStatusP(status,true);
-#define UI_ERROR_UPD(status) {uid.setStatusP(PSTR(status),true);uid.refreshPage();}
-#define UI_ERROR_RAM(status) uid.setStatus(status,true);
-#define UI_ERROR_UPD_RAM(status) {uid.setStatus(status,true);uid.refreshPage();}
-
-#define UI_CLEAR_STATUS {uid.statusMsg[0]=0;}
 #define UI_RESET_MENU {uid.menuLevel=0;uid.refreshPage();}
 
 

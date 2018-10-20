@@ -1055,7 +1055,7 @@
 
 /* Z-Probing */
 
-#define FEATURE_Z_PROBE 1
+#define FEATURE_Z_PROBE 0
 // Especially if you have more then 1 extruder acting as z probe this is important!
 #define EXTRUDER_IS_Z_PROBE 0
 // Disable all heaters before probing - required for inductive sensors
@@ -1158,7 +1158,7 @@
  * DISTORTION_CORRECTION_R is the distance of last row or column from center
  */
 
-#define DISTORTION_CORRECTION         1
+#define DISTORTION_CORRECTION         0
 #define DISTORTION_CORRECTION_POINTS  5
 /** Max. distortion value to enter. Used to prevent dangerous errors with big values. */
 #define DISTORTION_LIMIT_TO 2
@@ -1250,17 +1250,6 @@
 
 
 
-
-/* There are 2 ways to change positions. You can move by increments of 1/0.1 mm resulting in more menu entries
-   and requiring many turns on your encode. The alternative is to enable speed dependent positioning. It will change
-   the move distance depending on the speed you turn the encoder. That way you can move very fast and very slow in the
-   same setting.
-
-*/
-#define UI_SPEEDDEPENDENT_POSITIONING 1
-
-/** If set to 1 faster turning the wheel makes larger jumps. Helps for faster navigation. */
-#define UI_DYNAMIC_ENCODER_SPEED 1          // enable dynamic rotary encoder speed
 
 
 /** \brief bounce time of keys in milliseconds */

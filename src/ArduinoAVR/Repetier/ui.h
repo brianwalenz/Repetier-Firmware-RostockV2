@@ -33,7 +33,7 @@
 // 1000-1999 : Execute
 // 2000-2999 : Write code
 // 4000-4999 : Show menu
-// 5000-5999 : Wizard pages
+//
 // Add UI_ACTION_TOPMENU to show a menu as top menu
 // Add UI_ACTION_NO_AUTORETURN to prevent auto return to start display
 // ----------------------------------------------------------------------------
@@ -79,13 +79,7 @@
 #define UI_ACTION_SD_CONTINUE           1015
 #define UI_ACTION_SD_UNMOUNT            1016
 #define UI_ACTION_SD_MOUNT              1017
-#define UI_ACTION_XPOSITION_FAST        1018
-#define UI_ACTION_YPOSITION_FAST        1019
-#define UI_ACTION_ZPOSITION_FAST        1020
 #define UI_ACTION_HOME_ALL              1021
-#define UI_ACTION_HOME_X                1022
-#define UI_ACTION_HOME_Y                1023
-#define UI_ACTION_HOME_Z                1024
 #define UI_ACTION_STORE_EEPROM          1030
 #define UI_ACTION_LOAD_EEPROM           1031
 #define UI_ACTION_PRINT_ACCEL_X         1032
@@ -273,12 +267,12 @@
 
 
 
-
+//  For all, +128 == sticky, no autoreturn to main menu after timeout.
 #define UI_MENU_TYPE_INFO              0
 #define UI_MENU_TYPE_FILE_SELECTOR     1
 #define UI_MENU_TYPE_SUBMENU           2
 #define UI_MENU_TYPE_MODIFICATION_MENU 3
-#define UI_MENU_TYPE_WIZARD            5   //  For all, +128 == sticky, no autoreturn to main menu after timeout.
+#define UI_MENU_TYPE_CHANGEACTION      4
 
 struct UIMenuEntry_t {
   const char   *entryText;   // Menu text
@@ -316,18 +310,6 @@ typedef const UIMenu_t UIMenu;
   UIMenuEntry name ## _4 PROGMEM ={name ## _4txt,0,0,0,0};              \
   const UIMenuEntry * const name ## _entries [] PROGMEM = {&name ## _1,&name ## _2,&name ## _3,&name ## _4}; \
   const UIMenu name PROGMEM = {UI_MENU_TYPE_INFO, 0, 4, name ## _entries};
-
-#define UI_WIZARD4(name,action,row1,row2,row3,row4)                     \
-  UI_STRING(name ## _1txt,row1);                                        \
-  UI_STRING(name ## _2txt,row2);                                        \
-  UI_STRING(name ## _3txt,row3);                                        \
-  UI_STRING(name ## _4txt,row4);                                        \
-  UIMenuEntry name ## _1 PROGMEM ={name ## _1txt,0,0,0,0};              \
-  UIMenuEntry name ## _2 PROGMEM ={name ## _2txt,0,0,0,0};              \
-  UIMenuEntry name ## _3 PROGMEM ={name ## _3txt,0,0,0,0};              \
-  UIMenuEntry name ## _4 PROGMEM ={name ## _4txt,0,0,0,0};              \
-  const UIMenuEntry * const name ## _entries [] PROGMEM = {&name ## _1,&name ## _2,&name ## _3,&name ## _4}; \
-  const UIMenu name PROGMEM = {UI_MENU_TYPE_WIZARD, action, 4, name ## _entries};
 
 #define UI_MENU_ACTION4(name,action,row1,row2,row3,row4)                \
   UI_STRING(name ## _1txt,row1);                                        \
@@ -402,7 +384,7 @@ public:
 
   int okAction(bool allowMoves);
 
-  bool nextPreviousAction(int16_t next, bool allowMoves);
+  bool doEncoderChange(int16_t next, bool allowMoves);
 
 #if 0
   void waitForKey(void) {
@@ -427,10 +409,12 @@ public:
   void mediumAction();
   void pushMenu(const UIMenu *men, bool refresh);
   void popMenu(bool refresh);
-  void showMessage(int id);
+
   void adjustMenuPos(void);
+
   void setStatusP(PGM_P txt, bool error = false);
   void setStatus(const char *txt, bool error = false);
+  void clearStatus(void);
 
   inline void setOutputMaskBits(unsigned int bits) {
     outputMask |= bits;
@@ -447,13 +431,6 @@ public:
   bool     isDirname(char *name);
   uint8_t  sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]);
 
-
-
-  bool isWizardActive(void) {
-    UIMenu *men = (UIMenu*)menu[menuLevel];
-
-    return((pgm_read_byte(&(men->menuType)) & 127) == 5);
-  }
 
   bool isSticky(void) {
     UIMenu *men = (UIMenu*)menu[menuLevel];
@@ -482,17 +459,17 @@ public:
   uint16_t      activeAction; // action for ok/next/previous
   uint16_t      lastAction;
   uint16_t      delayedAction;
-  millis_t      lastSwitch; // Last time display switched pages
   millis_t      lastRefresh;
   uint16_t      lastButtonAction;
   millis_t      lastButtonStart;
   millis_t      nextRepeat; // Time of next autorepeat
-  millis_t      lastNextPrev; // for increasing speed settings
-  float         lastNextAccumul; // Accumulated value
   unsigned int  outputMask; // Output mask for back light, leds etc.
   int           repeatDuration; // Time between to actions if autorepeat is enabled
 
-  uint8_t       encoderStartScreen;
+  millis_t      lastEncoderTime;     //  Time of the last encoder change event.
+  float         encoderAccel;
+
+  uint8_t       encoderStartScreen;  //  timer on aborting a menu
 
   char          printCols[MAX_COLS + 1];
 

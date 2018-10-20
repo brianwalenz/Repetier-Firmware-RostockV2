@@ -246,10 +246,6 @@ inline void memcopy4(void *dest,void *source) {
 #define Z_PROBE_REPETITIONS 1
 #endif
 
-#define SPEED_MIN_MILLIS 400
-#define SPEED_MAX_MILLIS 60
-#define SPEED_MAGNIFICATION 100.0f
-
 #define SOFTWARE_LEVELING ((FEATURE_SOFTWARE_LEVELING) && (DRIVE_SYSTEM==DELTA))
 /**  \brief Horizontal distance bridged by the diagonal push rod when the end effector is in the center. It is pretty close to 50% of the push rod length (250 mm).
  */

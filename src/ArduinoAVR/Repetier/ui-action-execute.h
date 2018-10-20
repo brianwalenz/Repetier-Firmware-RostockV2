@@ -77,7 +77,6 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
       break;
 
     case UI_ACTION_BACK:
-      if(uid.isWizardActive()) break; // wizards can not exit before finished
       popMenu(false);
       break;
 
@@ -86,12 +85,12 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
       break;
 
     case UI_ACTION_NEXT:
-      if(!nextPreviousAction(1, allowMoves))
+      if(!doEncoderChange(1, allowMoves))
         ret = UI_ACTION_NEXT;
       break;
 
     case UI_ACTION_PREVIOUS:
-      if(!nextPreviousAction(-1, allowMoves))
+      if(!doEncoderChange(-1, allowMoves))
         ret = UI_ACTION_PREVIOUS;
       break;
 
@@ -108,35 +107,12 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
       break;
 
     case UI_ACTION_HOME_ALL:
-      if(!allowMoves) return UI_ACTION_HOME_ALL;
-      uid.pushMenu(&ui_msg_homing, true);
+      if (!allowMoves)
+        return UI_ACTION_HOME_ALL;
+
       Printer::homeAxis(true, true, true);
       Commands::printCurrentPosition();
-      uid.popMenu(true);
-      break;
 
-    case UI_ACTION_HOME_X:
-      if(!allowMoves) return UI_ACTION_HOME_X;
-      uid.pushMenu(&ui_msg_homing, true);
-      Printer::homeAxis(true, false, false);
-      Commands::printCurrentPosition();
-      uid.popMenu(true);
-      break;
-
-    case UI_ACTION_HOME_Y:
-      if(!allowMoves) return UI_ACTION_HOME_Y;
-      uid.pushMenu(&ui_msg_homing, true);
-      Printer::homeAxis(false, true, false);
-      Commands::printCurrentPosition();
-      uid.popMenu(true);
-      break;
-
-    case UI_ACTION_HOME_Z:
-      if(!allowMoves) return UI_ACTION_HOME_Z;
-      uid.pushMenu(&ui_msg_homing, true);
-      Printer::homeAxis(false, false, true);
-      Commands::printCurrentPosition();
-      uid.popMenu(true);
       break;
 
     case UI_ACTION_SET_ORIGIN:
@@ -245,8 +221,6 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
     case UI_ACTION_SD_DELETE:
       if(sd.sdactive) {
         pushMenu(&ui_menu_sd_fileselector, false);
-      } else {
-        UI_ERROR_P(PSTR("No SD card"));
       }
       break;
     case UI_ACTION_SD_PRINT:
@@ -405,13 +379,13 @@ UIDisplay::executeAction(unsigned int action, bool allowMoves) {
 
 #if FEATURE_AUTOLEVEL
     case UI_ACTION_AUTOLEVEL:
-      uid.pushMenu(&ui_msg_clearbed, true);
+      //uid.pushMenu(&ui_msg_clearbed, true);  //  "be sure the heated bed is clear of any obstructions"
       break;
 #endif
 
 #if DISTORTION_CORRECTION
     case UI_ACTION_MEASURE_DISTORTION:
-      uid.pushMenu(&ui_msg_clearbed, true);
+      //uid.pushMenu(&ui_msg_clearbed, true);
       break;
     case UI_ACTION_TOGGLE_DISTORTION:
       if(Printer::distortion.isEnabled())

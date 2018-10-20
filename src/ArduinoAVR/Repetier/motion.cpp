@@ -1465,7 +1465,10 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
 #if INCLUDE_DEBUG_NO_MOVE
       if(Printer::debugNoMoves()) { // simulate a move, but do nothing in reality
         removeCurrentLineForbidInterrupt();
-        if(linesCount == 0) UI_STATUS_F(PSTR("Idle"));
+        if(linesCount == 0) {
+          uid.setStatusP(PSTR("Idle"));
+          uid.refreshPage();
+        }
         return 1000;
       }
 #endif
@@ -1485,7 +1488,10 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       // if the probe was already hit.
       if(Printer::isZProbingActive() && Printer::stepsRemainingAtZHit >= 0) {
         removeCurrentLineForbidInterrupt();
-        if(linesCount == 0) UI_STATUS_F(PSTR("Idle"));
+        if(linesCount == 0) {
+          uid.setStatusP(PSTR("Idle"));
+          uid.refreshPage();
+        }
         return 1000;
       }
 #endif
@@ -1731,7 +1737,8 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     Printer::disableAllowedStepper();
     if(linesCount == 0) {
       if(!Printer::isPrinting()) {
-        UI_STATUS_F(PSTR("Idle"));
+        uid.setStatusP(PSTR("Idle"));
+        uid.refreshPage();
       }
       if(Printer::mode == PRINTER_MODE_FFF) {
         Printer::setFanSpeedDirectly(Printer::fanSpeed);

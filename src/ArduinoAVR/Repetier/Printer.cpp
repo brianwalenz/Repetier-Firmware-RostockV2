@@ -155,8 +155,10 @@ float Printer::maxRealJerk = 0;
 int debugWaitLoop = 0;
 #endif
 
+#if FEATURE_Z_PROBE
 fast8_t Printer::wizardStackPos;
 wizardVar Printer::wizardStack[WIZARD_STACK_SIZE];
+#endif
 
 void Printer::setDebugLevel(uint8_t newLevel) {
   if(newLevel != debugLevel) {
@@ -238,10 +240,6 @@ void Printer::setFan2SpeedDirectly(uint8_t speed) {
 #endif
   pwm_pos[PWM_FAN2] = trimmedSpeed;
 #endif
-}
-
-bool Printer::updateDoorOpen() {
-  return 0;
 }
 
 void Printer::reportPrinterMode() {
@@ -351,7 +349,10 @@ void Printer::kill(uint8_t onlySteppers) {
     for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
       Extruder::setTemperatureForExtruder(0, i);
     Extruder::setHeatedBedTemperature(0);
-    UI_STATUS_UPD_F(PSTR("Standby"));
+
+    uid.setStatusP(PSTR("Standby"));
+    uid.refreshPage();
+
 #if defined(PS_ON_PIN) && PS_ON_PIN>-1 && !defined(NO_POWER_TIMEOUT)
     //pinMode(PS_ON_PIN,INPUT);
     SET_OUTPUT(PS_ON_PIN); //GND
@@ -359,7 +360,11 @@ void Printer::kill(uint8_t onlySteppers) {
     Printer::setPowerOn(false);
 #endif
     Printer::setAllKilled(true);
-  } else UI_STATUS_UPD_F(PSTR("Stepper disabled"));
+  } else {
+    uid.setStatusP(PSTR("Stepper disabled"));
+    uid.refreshPage();
+  }
+
 #if FAN_BOARD_PIN > -1
 #if HAVE_HEATED_BED
   if(heatedBedController.targetTemperatureC < 15)      // turn off FAN_BOARD only if bed heater is off
@@ -575,15 +580,23 @@ uint8_t Printer::setDestinationStepsFromGCode(GCode *com) {
 
 void Printer::setup() {
   HAL::stopWatchdog();
-  for(uint8_t i = 0; i < NUM_PWM; i++) pwm_pos[i] = 0;
+
+  for(uint8_t i = 0; i < NUM_PWM; i++)
+    pwm_pos[i] = 0;
+
+
 #if defined(MB_SETUP)
   MB_SETUP;
 #endif
+
   //HAL::delayMilliseconds(500);  // add a delay at startup to give hardware time for initalization
+
 #if defined(EEPROM_AVAILABLE) && defined(EEPROM_SPI_ALLIGATOR) && EEPROM_AVAILABLE == EEPROM_SPI_ALLIGATOR
   HAL::spiBegin();
 #endif
+
   HAL::hwSetup();
+
 #ifdef ANALYZER
   // Channel->pin assignments
 #if ANALYZER_CH0>=0
@@ -937,6 +950,8 @@ void Printer::homeZAxis() { // Delta z homing
   Printer::zBabysteps = 0;
 #endif
 }
+
+
 // This home axis is for delta
 void Printer::homeAxis(bool xaxis, bool yaxis, bool zaxis) { // Delta homing code
   bool nocheck = isNoDestinationCheck();
@@ -951,14 +966,19 @@ void Printer::homeAxis(bool xaxis, bool yaxis, bool zaxis) { // Delta homing cod
   // so the redundant check is only an opportunity to
   // gratuitously fail due to incorrect settings.
   // The following movements would be meaningless unless it was zeroed for example.
-  UI_STATUS_UPD_F(PSTR("Home Delta"));
+
+  uid.setStatusP(PSTR("Homing..."));
+  uid.refreshPage();
+
   // Homing Z axis means that you must home X and Y
   homeZAxis();
   moveToReal(0, 0, Printer::zLength, IGNORE_COORDINATE, homingFeedrate[Z_AXIS]); // Move to designed coordinates including translation
   updateCurrentPosition(true);
   updateHomedAll();
-  UI_CLEAR_STATUS
-    Commands::printCurrentPosition();
+
+  uid.clearStatus();
+
+  Commands::printCurrentPosition();
   setAutolevelActive(autoLevel);
   Printer::updateCurrentPosition();
   setNoDestinationCheck(nocheck);

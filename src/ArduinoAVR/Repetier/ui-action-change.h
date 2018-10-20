@@ -40,196 +40,321 @@ const long baudrates[] PROGMEM = {9600, 14400, 19200, 28800, 38400, 56000,
 
 
 
-bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
-  if(Printer::isUIErrorMessage()) {
+bool
+UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
+
+  if (Printer::isUIErrorMessage()) {
     Printer::setUIErrorMessage(false);
     // return true;
   }
-  millis_t actTime = HAL::timeInMilliseconds();
-  millis_t dtReal;
-  millis_t dt = dtReal = actTime - lastNextPrev;
-  lastNextPrev = actTime;
-  if(dt < SPEED_MAX_MILLIS) dt = SPEED_MAX_MILLIS;
-  if(dt > SPEED_MIN_MILLIS) {
-    dt = SPEED_MIN_MILLIS;
-    lastNextAccumul = 1;
-  }
-  float f = (float)(SPEED_MIN_MILLIS - dt) / (float)(SPEED_MIN_MILLIS - SPEED_MAX_MILLIS);
-  lastNextAccumul = 1.0f + (float)SPEED_MAGNIFICATION * f * f;
-#if UI_DYNAMIC_ENCODER_SPEED
-  int16_t dynSp = lastNextAccumul / 16;
-  if(dynSp < 1)  dynSp = 1;
-  if(dynSp > 30) dynSp = 30;
-  next *= dynSp;
-#endif
 
-  if(menuLevel == 0) {
-    lastSwitch = HAL::timeInMilliseconds();
-    if((UI_INVERT_MENU_DIRECTION && next < 0) || (!UI_INVERT_MENU_DIRECTION && next > 0)) {
-      menuPos[0]++;
-      if(menuPos[0] >= UI_NUM_PAGES)
-        menuPos[0] = 0;
-    } else {
-      menuPos[0] = (menuPos[0] == 0 ? UI_NUM_PAGES - 1 : menuPos[0] - 1);
-    }
-    return true;
-  }
-  UIMenu *men = (UIMenu*)menu[menuLevel];
-  uint8_t nr = pgm_read_byte(&(men->numEntries));
-  uint8_t mtype = pgm_read_byte(&(men->menuType)) & 127;
-  UIMenuEntry **entries = (UIMenuEntry**)pgm_read_word(&(men->entries));
-  UIMenuEntry *ent = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
-  UIMenuEntry *testEnt;
-  // 0 = Info, 1 = Headline, 2 = sub menu ref, 3 = direct action command
-  //uint8_t entType = pgm_read_byte(&(ent->entryType));
+  //  Find the time delta sine the last encoder change, and remember the time of this change.
+  //
+  //  I've never seen dtActual drop below 100 (maybe 99):
+  //      doEncoderChange() is called by slowAction(),
+  //      which is called in Commands::checkForPeriodicalActions(),
+  //      which seems to have an interrupt driven action every 100ms.
+  //
+  //  Then, use that time to increase the acceleration if we're near the minimal time, decrease it
+  //  if we're somewhat slow, and reset it if we've been idle for a second or more.
 
-  unsigned int action = pgm_read_word(&(ent->entryAction));
-  if(mtype == UI_MENU_TYPE_SUBMENU && activeAction == 0) { // browse through menu items
-    if((UI_INVERT_MENU_DIRECTION && next < 0) || (!UI_INVERT_MENU_DIRECTION && next > 0)) {
-      while(menuPos[menuLevel] + 1 < nr) {
-        menuPos[menuLevel]++;
-        testEnt = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
-        if(testEnt->showEntry())
+  millis_t thisEncoderTime = HAL::timeInMilliseconds();
+  millis_t dtActual        = thisEncoderTime - lastEncoderTime;
+
+  lastEncoderTime = thisEncoderTime;
+
+  if (dtActual < 110)   encoderAccel *= 1.21;
+  if (dtActual > 220)   encoderAccel /= 1.66;
+  if (dtActual > 999)   encoderAccel  = 1.0;
+
+  if (encoderAccel < 1.0) encoderAccel  = 1.0;
+
+
+
+
+  //  No menu displayed, we're showing a status display page.
+  //  No acceleration, only responds to positive/negative turns of the knob.
+  //
+  if ((menuLevel == 0) && (encoderChange > 0)) {
+    menuPos[0]++;
+
+    if(menuPos[0] >= UI_NUM_PAGES)
+      menuPos[0] = 0;
+
+    return(true);
+  }
+
+  if ((menuLevel == 0) && (encoderChange < 0)) {
+    if (menuPos[0] == 0)
+      menuPos[0] = UI_NUM_PAGES;
+
+    menuPos[0]--;
+
+    return(true);
+  }
+
+  //  Otherwise, we're in a menu.  Figure out what menu, etc.
+  //
+  UIMenu       *men        = menu[menuLevel];
+  uint8_t       mtype      =                pgm_read_byte(&(men->menuType)) & 127;
+  UIMenuEntry **entries    = (UIMenuEntry**)pgm_read_word(&(men->entries));
+  uint8_t       numEntries =                pgm_read_byte(&(men->numEntries));
+  UIMenuEntry  *ent        = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
+  unsigned int  action     =                pgm_read_word(&(ent->entryAction));
+
+
+  //  If there's a menu page showing, move forward/backward through the menu items.
+  //  Made compllicated by the need to search forward/backward for the next visible item.
+  //  Again, doesn't use acceleration, just positive/negative turns of the knob.
+  //
+  if ((mtype == UI_MENU_TYPE_SUBMENU) && (activeAction == 0)) {
+
+    //  If a positive change, search forward for the next visible entry.
+    if (encoderChange > 0) {
+      while (menuPos[menuLevel] + 1 < numEntries) {
+        UIMenuEntry *nent = (UIMenuEntry *)pgm_read_word(&(entries[++menuPos[menuLevel]]));
+
+        if (nent->showEntry())
           break;
       }
-    } else if(menuPos[menuLevel] > 0) {
-      while(menuPos[menuLevel] > 0) {
-        menuPos[menuLevel]--;
-        testEnt = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
-        if(testEnt->showEntry())
+    }
+
+    //  Otherwise, a negative change, search backward for the previous visible entry.
+    if (encoderChange < 0) {
+      while (menuPos[menuLevel] > 0) {
+        UIMenuEntry *nent = (UIMenuEntry *)pgm_read_word(&(entries[--menuPos[menuLevel]]));
+
+        if (nent->showEntry())
           break;
       }
     }
-    shift = -2; // reset shift position
+
+    shift = -2; // reset shift position  ?????????
+
     adjustMenuPos();
-    return true;
+
+    return(true);
   }
 
-  if(mtype == UI_MENU_TYPE_FILE_SELECTOR) { // SD listing
-    if((UI_INVERT_MENU_DIRECTION && next < 0) || (!UI_INVERT_MENU_DIRECTION && next > 0)) {
-      menuPos[menuLevel] += 1; // abs(next);
-      if(menuPos[menuLevel] > nFilesOnCard) menuPos[menuLevel] = nFilesOnCard;
-    } else if(menuPos[menuLevel] > 0) {
-      if(menuPos[menuLevel] > 1 /* abs(next) */)
-        menuPos[menuLevel] -= 1; // abs(next);
-      else
-        menuPos[menuLevel] = 0;
-    }
-    if(menuTop[menuLevel] > menuPos[menuLevel]) {
-      menuTop[menuLevel] = menuPos[menuLevel];
-    } else if(menuTop[menuLevel] + UI_ROWS <= menuPos[menuLevel]) {
-      menuTop[menuLevel] = (menuPos[menuLevel] + 1);
-      menuTop[menuLevel] -= static_cast<uint16_t>(UI_ROWS); // DO NOT COMBINE IN ONE LINE - WILL NOT COMPILE CORRECTLY THEN!
-    }
+  //  If in an SD card file listing, same story as a menu page, except every file is visible (well,
+  //  technically, silently filtered by the SD card menu itself).
+  //
+  if (mtype == UI_MENU_TYPE_FILE_SELECTOR) {
+    if ((encoderChange > 0) && (menuPos[menuLevel] < nFilesOnCard))
+      menuPos[menuLevel]++;
+
+    if ((encoderChange < 0) && (menuPos[menuLevel] > 0))
+      menuPos[menuLevel]--;
+
+    if (menuTop[menuLevel] > menuPos[menuLevel])              //  If we back up past the previous top,
+      menuTop[menuLevel] = menuPos[menuLevel];                //  reset the first shown item.
+
+    if (menuTop[menuLevel] + UI_ROWS <= menuPos[menuLevel])   //  Likewise, if we go past the bottom,
+      menuTop[menuLevel] = menuPos[menuLevel] + 1 - UI_ROWS;  //  reset the first shown item.
+
     shift = -2; // reset shift position
-    return true;
+
+    return(true);
   }
 
-  if(mtype == UI_MENU_TYPE_MODIFICATION_MENU || mtype == UI_MENU_TYPE_WIZARD) action = pgm_read_word(&(men->menuAction));
-  else action = activeAction;
-  int16_t increment = next;
 
-  switch(action) {
-    case UI_ACTION_FANSPEED:
-      Commands::setFanSpeed(Printer::getFanSpeed() + increment * 3, true);
-      break;
+  //  If in a modification menu reset the action to that specified by the menu.
+  //
+  if (mtype == UI_MENU_TYPE_MODIFICATION_MENU)
+    action = pgm_read_word(&(men->menuAction));
+  else
+    action = activeAction;
+
+
+
+
+
+
+
+
+
+  //  Move!
+  //
+  if ((action == UI_ACTION_XPOSITION) ||
+      (action == UI_ACTION_YPOSITION) ||
+      (action == UI_ACTION_ZPOSITION) ||
+      (action == UI_ACTION_ZPOSITION_NOTEST)) {
+    if (allowMoves == false)
+      return false;
+
+    uint8_t  axis = Z_AXIS;
+
+    if (action == UI_ACTION_XPOSITION)   axis = X_AXIS;
+    if (action == UI_ACTION_YPOSITION)   axis = Y_AXIS;
+
+    //  Compte a distance to move.
+    //
+    //  Limit it to some maximum distance.  This only happens when dtActual is 100ms,
+    //  and so that is hardcoded.  It used to be Printer::maxFeedrate[axis] * 0.100
+    //
+    //  From that distance, then compute the number of steps we need to move, resetting
+    //  if we somehow end up wanting to move zero steps.
+    //
+    float distance    = encoderChange * encoderAccel / 100.0;   //  Distance in mm
+    float distanceMax = 10.0;
+
+    if ((encoderChange > 0) && (distance > distanceMax))
+      distance = distanceMax;
+
+    if ((encoderChange < 0) && (distance < -distanceMax))
+      distance = -distanceMax;
+
+    int32_t steps = distance * Printer::axisStepsPerMM[axis];
+
+    if ((encoderChange > 0) && (steps == 0))   steps =  1;
+    if ((encoderChange < 0) && (steps == 0))   steps = -1;
+
+    //  Now just move.
+
+    if (action == UI_ACTION_XPOSITION) {
+      PrintLine::moveRelativeDistanceInStepsReal(steps, 0, 0, 0, Printer::maxFeedrate[axis], false, false);
+    }
+
+    if (action == UI_ACTION_YPOSITION) {
+      PrintLine::moveRelativeDistanceInStepsReal(0, steps, 0, 0, Printer::maxFeedrate[axis], false, false);
+    }
+
+    if (action == UI_ACTION_ZPOSITION) {
+      PrintLine::moveRelativeDistanceInStepsReal(0, 0, steps, 0, Printer::maxFeedrate[axis], false, false);
+    }
+
+    if (action == UI_ACTION_ZPOSITION_NOTEST) {
+      PrintLine::moveRelativeDistanceInStepsReal(0, 0, steps, 0, Printer::maxFeedrate[axis], false, false);
+      Printer::setNoDestinationCheck(true);
+    }
+
+    Commands::printCurrentPosition();
+
+    return(true);
+  }
+
+
+  else if (action == UI_ACTION_BED_TARGET) {
+    int temp = (int)heatedBedController.targetTemperatureC;  //  is float
+
+    if (temp < UI_SET_MIN_HEATED_BED_TEMP)
+      temp = 0;
+
+    if (temp == 0 && encoderChange > 0)
+      temp = UI_SET_MIN_HEATED_BED_TEMP;
+    else
+      temp += encoderChange;
+
+    if (temp < UI_SET_MIN_HEATED_BED_TEMP)
+      temp = 0;
+    else if (temp > UI_SET_MAX_HEATED_BED_TEMP)
+      temp = UI_SET_MAX_HEATED_BED_TEMP;
+
+    Extruder::setHeatedBedTemperature(temp);
+  }
+
+
+  else if (action == UI_ACTION_BED_PREHEAT) {
+    int16_t temp = (int)heatedBedController.preheatTemperature + encoderChange;
+
+    if (temp < UI_SET_MIN_HEATED_BED_TEMP)
+      temp = UI_SET_MIN_HEATED_BED_TEMP;
+
+    if (temp > UI_SET_MAX_HEATED_BED_TEMP)
+      temp = UI_SET_MAX_HEATED_BED_TEMP;
+
+    heatedBedController.preheatTemperature = temp;
+  }
+
+
+  else if (action == UI_ACTION_EXT_TARGET) {
+    int temp = (int)extruder[0].tempControl.targetTemperatureC;  //  is float
+
+    if (temp < UI_SET_MIN_EXTRUDER_TEMP)
+      temp = 0;
+
+    if (temp == 0 && encoderChange > 0)
+      temp = UI_SET_MIN_EXTRUDER_TEMP;
+    else
+      temp += encoderChange;
+
+    if (temp < UI_SET_MIN_EXTRUDER_TEMP)
+      temp = 0;
+
+    if (temp > UI_SET_MAX_EXTRUDER_TEMP)
+      temp = UI_SET_MAX_EXTRUDER_TEMP;
+
+    Extruder::setTemperatureForExtruder(temp, 0);
+  }
+
+
+  else if (action == UI_ACTION_EXT_PREHEAT) {
+    int16_t temp = extruder[0].tempControl.preheatTemperature + encoderChange;
+
+    if (temp < UI_SET_MIN_EXTRUDER_TEMP)
+      temp = UI_SET_MIN_EXTRUDER_TEMP;
+
+    if (temp > UI_SET_MAX_EXTRUDER_TEMP)
+      temp = UI_SET_MAX_EXTRUDER_TEMP;
+
+    extruder[0].tempControl.preheatTemperature = temp;
+  }
+
+
+  else if (action == UI_ACTION_FANSPEED) {
+    Commands::setFanSpeed(Printer::getFanSpeed() + encoderChange, true);
+  }
+
+
+  else if (action == UI_ACTION_FEEDRATE_MULTIPLY) {
+    Commands::changeFeedrateMultiply(Printer::feedrateMultiply + encoderChange);
+  }
+
+
+  else if (action == UI_ACTION_FLOWRATE_MULTIPLY) {
+    Commands::changeFlowrateMultiply(Printer::extrudeMultiply + encoderChange);
+  }
+
+
+
+
+
+  ui_autoreturn_time = HAL::timeInMilliseconds() + UI_AUTORETURN_TO_MENU_AFTER;
+
+  return(true);
+}
+
+
+
+
+
+
+
+
+
+#if 0
+
+
     case UI_ACTION_FAN2SPEED:
       Commands::setFan2Speed(Printer::getFan2Speed() + increment * 3);
       break;
-    case UI_ACTION_XPOSITION:
-      if(!allowMoves) return false;
-#if UI_SPEEDDEPENDENT_POSITIONING
-      {
-        float d = 0.01 * (float)increment * lastNextAccumul;
-        if(fabs(d) * 1000 > Printer::maxFeedrate[X_AXIS] * dtReal)
-          d *= Printer::maxFeedrate[X_AXIS] * dtReal / (1000 * fabs(d));
-        long steps = (long)(d * Printer::axisStepsPerMM[X_AXIS]);
-        steps = ( increment < 0 ? RMath::min(steps, (long)increment) : RMath::max(steps, (long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(steps, 0, 0, 0, Printer::maxFeedrate[X_AXIS], false, false);
-      }
-#else
-      PrintLine::moveRelativeDistanceInStepsReal(increment, 0, 0, 0, Printer::homingFeedrate[X_AXIS], false, false);
-#endif
-      Commands::printCurrentPosition();
-      break;
-    case UI_ACTION_YPOSITION:
-      if(!allowMoves) return false;
-#if UI_SPEEDDEPENDENT_POSITIONING
-      {
-        float d = 0.01 * (float)increment * lastNextAccumul;
-        if(fabs(d) * 1000 > Printer::maxFeedrate[Y_AXIS] * dtReal)
-          d *= Printer::maxFeedrate[Y_AXIS] * dtReal / (1000 * fabs(d));
-        long steps = (long)(d * Printer::axisStepsPerMM[Y_AXIS]);
-        steps = ( increment < 0 ? RMath::min(steps, (long)increment) : RMath::max(steps, (long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(0, steps, 0, 0, Printer::maxFeedrate[Y_AXIS], false, false);
-      }
-#else
-      PrintLine::moveRelativeDistanceInStepsReal(0, increment, 0, 0, Printer::homingFeedrate[Y_AXIS], false, false);
-#endif
-      Commands::printCurrentPosition();
-      break;
-    case UI_ACTION_ZPOSITION_NOTEST:
-      if(!allowMoves) return false;
-      Printer::setNoDestinationCheck(true);
-      goto ZPOS1;
-    case UI_ACTION_ZPOSITION:
-      if(!allowMoves) return false;
-    ZPOS1:
-#if UI_SPEEDDEPENDENT_POSITIONING
-      {
-        float d = 0.01 * (float)increment * lastNextAccumul;
-        if(fabs(d) * 1000 > Printer::maxFeedrate[Z_AXIS] * dtReal)
-          d *= Printer::maxFeedrate[Z_AXIS] * dtReal / (1000 * fabs(d));
-        long steps = (long)(d * Printer::axisStepsPerMM[Z_AXIS]);
-        steps = ( increment < 0 ? RMath::min(steps, (long)increment) : RMath::max(steps, (long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(0, 0, steps, 0, Printer::maxFeedrate[Z_AXIS], false, false);
-      }
-#else
-      PrintLine::moveRelativeDistanceInStepsReal(0, 0, ((long)increment * Printer::axisStepsPerMM[Z_AXIS]) / 100, 0, Printer::homingFeedrate[Z_AXIS], false, false);
-#endif
-      Printer::setNoDestinationCheck(false);
-      Commands::printCurrentPosition();
-      break;
-    case UI_ACTION_XPOSITION_FAST:
-      if(!allowMoves) return false;
-      PrintLine::moveRelativeDistanceInStepsReal(Printer::axisStepsPerMM[X_AXIS] * increment, 0, 0, 0, Printer::homingFeedrate[X_AXIS], true, false);
-      Commands::printCurrentPosition();
-      break;
-    case UI_ACTION_YPOSITION_FAST:
-      if(!allowMoves) return false;
-      PrintLine::moveRelativeDistanceInStepsReal(0, Printer::axisStepsPerMM[Y_AXIS] * increment, 0, 0, Printer::homingFeedrate[Y_AXIS], true, false);
-      Commands::printCurrentPosition();
-      break;
-    case UI_ACTION_ZPOSITION_FAST_NOTEST:
-      if(!allowMoves) return false;
-      Printer::setNoDestinationCheck(true);
-      goto ZPOS2;
-    case UI_ACTION_ZPOSITION_FAST:
-      if(!allowMoves) return false;
-    ZPOS2:
-      PrintLine::moveRelativeDistanceInStepsReal(0, 0, Printer::axisStepsPerMM[Z_AXIS] * increment, 0, Printer::homingFeedrate[Z_AXIS], true, false);
-      Printer::setNoDestinationCheck(false);
-      Commands::printCurrentPosition();
-      break;
+
     case UI_ACTION_MEASURE_ZP_REALZ:
       Printer::wizardStack[0].f += 0.01 * static_cast<float>(increment);
       break;
+
     case UI_ACTION_EPOSITION:
       if(!allowMoves) return false;
       PrintLine::moveRelativeDistanceInSteps(0, 0, 0, Printer::axisStepsPerMM[E_AXIS]*increment / Printer::extrusionFactor, UI_SET_EXTRUDER_FEEDRATE, true, false, false);
       Commands::printCurrentPosition();
       break;
-    case UI_ACTION_Z_BABYSTEPS:
 
 #if FEATURE_BABYSTEPPING
+    case UI_ACTION_Z_BABYSTEPS:
       {
         previousMillisCmd = HAL::timeInMilliseconds();
 
-#if UI_DYNAMIC_ENCODER_SPEED
-        increment /= dynSp; // we need fixed speeds or we get in trouble here!
-#endif
-
-        int16_t diff =  increment * BABYSTEP_MULTIPLICATOR;
+        int16_t diff =  encoderChange * BABYSTEP_MULTIPLICATOR;   //  DO NOT ACCELERATE!
         if(abs((int)Printer::zBabysteps + diff) < 30000 && abs(diff) < 2000) {
           InterruptProtectedBlock noint;
           Printer::zBabystepsMissing += diff;
@@ -240,128 +365,40 @@ bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
       break;
 #endif
 
-      //  nextPrevious()
-      //  Set heated bed / extruder target temperature.
 
 
-      //  Set target temperature for bed
-    case UI_ACTION_BED_TARGET:
-      {
-        int temp = (int)heatedBedController.targetTemperatureC;
-
-        if (temp < UI_SET_MIN_HEATED_BED_TEMP)
-          temp = 0;
-
-        if (temp == 0 && increment > 0)
-          temp = UI_SET_MIN_HEATED_BED_TEMP;
-        else
-          temp += increment;
-
-        if (temp < UI_SET_MIN_HEATED_BED_TEMP)
-          temp = 0;
-        else if (temp > UI_SET_MAX_HEATED_BED_TEMP)
-          temp = UI_SET_MAX_HEATED_BED_TEMP;
-
-        Extruder::setHeatedBedTemperature(temp);
-      }
-      break;
-
-      //  Set preheat temperature for bed
-    case UI_ACTION_BED_PREHEAT:
-      {
-        int temp = (int)heatedBedController.preheatTemperature + increment;
-
-        if (temp < UI_SET_MIN_HEATED_BED_TEMP)
-          temp = UI_SET_MIN_HEATED_BED_TEMP;
-
-        if (temp > UI_SET_MAX_HEATED_BED_TEMP)
-          temp = UI_SET_MAX_HEATED_BED_TEMP;
-
-        heatedBedController.preheatTemperature = static_cast<int16_t>(temp);
-      }
-      break;
-
-      //  Set target temperature for extruder
-    case UI_ACTION_EXT_TARGET:
-      {
-        int temp = (int)extruder[0].tempControl.targetTemperatureC;
-
-        if (temp < UI_SET_MIN_EXTRUDER_TEMP)
-          temp = 0;
-
-        if (temp == 0 && increment > 0)
-          temp = UI_SET_MIN_EXTRUDER_TEMP;
-        else
-          temp += increment;
-
-        if (temp < UI_SET_MIN_EXTRUDER_TEMP)
-          temp = 0;
-
-        if (temp > UI_SET_MAX_EXTRUDER_TEMP)
-          temp = UI_SET_MAX_EXTRUDER_TEMP;
-
-        Extruder::setTemperatureForExtruder(temp, 0);
-      }
-      break;
-
-      //  Set preheat temperature for extruder
-    case UI_ACTION_EXT_PREHEAT:
-      {
-        int temp = (int)extruder[0].tempControl.preheatTemperature + increment;
-
-        if (temp < UI_SET_MIN_EXTRUDER_TEMP)
-          temp = UI_SET_MIN_EXTRUDER_TEMP;
-
-        if (temp > UI_SET_MAX_EXTRUDER_TEMP)
-          temp = UI_SET_MAX_EXTRUDER_TEMP;
-
-        extruder[0].tempControl.preheatTemperature = static_cast<int16_t>(temp);
-      }
-      break;
-
-
-
-
-
-
-    case UI_ACTION_FEEDRATE_MULTIPLY: {
-      int fr = Printer::feedrateMultiply;
-      INCREMENT_MIN_MAX(fr, 1, 25, 500);
-      Commands::changeFeedrateMultiply(fr);
-    }
-      break;
-    case UI_ACTION_FLOWRATE_MULTIPLY: {
-      INCREMENT_MIN_MAX(Printer::extrudeMultiply, 1, 25, 500);
-      Commands::changeFlowrateMultiply(Printer::extrudeMultiply);
-    }
-      break;
     case UI_ACTION_STEPPER_INACTIVE: {
       uint8_t inactT = stepperInactiveTime / 60000;
       INCREMENT_MIN_MAX(inactT, 1, 0, 240);
       stepperInactiveTime = inactT * 60000;
     }
       break;
+
     case UI_ACTION_MAX_INACTIVE: {
       uint8_t inactT = maxInactiveTime / 60000;
       INCREMENT_MIN_MAX(inactT, 1, 0, 240);
       maxInactiveTime = inactT * 60000;
     }
       break;
+
     case UI_ACTION_PRINT_ACCEL_X:
     case UI_ACTION_PRINT_ACCEL_Y:
     case UI_ACTION_PRINT_ACCEL_Z:
       INCREMENT_MIN_MAX(Printer::maxAccelerationMMPerSquareSecond[action - UI_ACTION_PRINT_ACCEL_X], 100, 0, 10000);
       Printer::updateDerivedParameter();
       break;
+
     case UI_ACTION_MOVE_ACCEL_X:
     case UI_ACTION_MOVE_ACCEL_Y:
     case UI_ACTION_MOVE_ACCEL_Z:
       INCREMENT_MIN_MAX(Printer::maxTravelAccelerationMMPerSquareSecond[action - UI_ACTION_MOVE_ACCEL_X], 100, 0, 10000);
       Printer::updateDerivedParameter();
       break;
+
     case UI_ACTION_MAX_JERK:
       INCREMENT_MIN_MAX(Printer::maxJerk, 0.1, 1, 99.9);
       break;
+
     case UI_ACTION_HOMING_FEEDRATE_X:
     case UI_ACTION_HOMING_FEEDRATE_Y:
     case UI_ACTION_HOMING_FEEDRATE_Z:
@@ -388,6 +425,7 @@ bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
       Printer::coordinateOffset[action - UI_ACTION_XOFF] = -tmp;
     }
       break;
+
     case UI_ACTION_ZOFF: {
       float tmp = -Printer::coordinateOffset[Z_AXIS];
       INCREMENT_MIN_MAX(tmp, 0.01, -9.99, 9.99);
@@ -412,59 +450,74 @@ bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
         baudrate = pgm_read_dword(&(baudrates[p]));
       }
       break;
+
     case UI_ACTION_PID_PGAIN:
       INCREMENT_MIN_MAX(currHeaterForSetup->pidPGain, 0.1, 0, 200);
       break;
+
     case UI_ACTION_PID_IGAIN:
       INCREMENT_MIN_MAX(currHeaterForSetup->pidIGain, 0.01, 0, 100);
       if(&Extruder::current->tempControl == currHeaterForSetup)
         Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_PID_DGAIN:
       INCREMENT_MIN_MAX(currHeaterForSetup->pidDGain, 0.1, 0, 200);
       break;
+
     case UI_ACTION_DRIVE_MIN:
       INCREMENT_MIN_MAX(currHeaterForSetup->pidDriveMin, 1, 1, 255);
       break;
+
     case UI_ACTION_DRIVE_MAX:
       INCREMENT_MIN_MAX(currHeaterForSetup->pidDriveMax, 1, 1, 255);
       break;
+
     case UI_ACTION_PID_MAX:
       INCREMENT_MIN_MAX(currHeaterForSetup->pidMax, 1, 1, 255);
       break;
+
     case UI_ACTION_X_OFFSET:
       INCREMENT_MIN_MAX(Extruder::current->xOffset, RMath::max(static_cast<int32_t>(1), static_cast<int32_t>(Printer::axisStepsPerMM[X_AXIS] / 100)), -9999999, 9999999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_Y_OFFSET:
       INCREMENT_MIN_MAX(Extruder::current->yOffset, RMath::max(static_cast<int32_t>(1), static_cast<int32_t>(Printer::axisStepsPerMM[Y_AXIS] / 100)), -9999999, 9999999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_Z_OFFSET:
       INCREMENT_MIN_MAX(Extruder::current->zOffset, RMath::max(static_cast<int32_t>(1), static_cast<int32_t>(Printer::axisStepsPerMM[Z_AXIS] / 100)), -9999999, 9999999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_EXTR_STEPS:
       INCREMENT_MIN_MAX(Extruder::current->stepsPerMM, 0.1, 1, 99999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_EXTR_ACCELERATION:
       INCREMENT_MIN_MAX(Extruder::current->maxAcceleration, 10, 10, 99999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_EXTR_MAX_FEEDRATE:
       INCREMENT_MIN_MAX(Extruder::current->maxFeedrate, 1, 1, 999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_EXTR_START_FEEDRATE:
       INCREMENT_MIN_MAX(Extruder::current->maxStartFeedrate, 1, 1, 999);
       Extruder::selectExtruderById(Extruder::current->id);
       break;
+
     case UI_ACTION_EXTR_HEATMANAGER:
       INCREMENT_MIN_MAX(currHeaterForSetup->heatManager, 1, 0, 3);
       Printer::setMenuMode(MENU_MODE_FULL_PID, currHeaterForSetup->heatManager == 1); // show PIDS only with PID controller selected
       Printer::setMenuMode(MENU_MODE_DEADTIME, currHeaterForSetup->heatManager == 3);
       break;
+
     case UI_ACTION_EXTR_WATCH_PERIOD:
       INCREMENT_MIN_MAX(Extruder::current->watchPeriod, 1, 0, 999);
       break;
@@ -473,6 +526,7 @@ bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
     case UI_ACTION_EXTR_WAIT_RETRACT_TEMP:
       INCREMENT_MIN_MAX(Extruder::current->waitRetractTemperature, 1, 100, UI_SET_MAX_EXTRUDER_TEMP);
       break;
+
     case UI_ACTION_EXTR_WAIT_RETRACT_UNITS:
       INCREMENT_MIN_MAX(Extruder::current->waitRetractUnits, 1, 0, 99);
       break;
@@ -500,14 +554,7 @@ bool UIDisplay::nextPreviousAction(int16_t next, bool allowMoves) {
       popMenu(true);
       break;
 #endif
-    default:
-      break;
-  }
-
-  ui_autoreturn_time = HAL::timeInMilliseconds() + UI_AUTORETURN_TO_MENU_AFTER;
-
-  return true;
-}
 
 
 
+#endif

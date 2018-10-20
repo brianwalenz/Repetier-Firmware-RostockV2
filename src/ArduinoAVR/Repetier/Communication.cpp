@@ -21,12 +21,9 @@
 
 #include "Repetier.h"
 
-#ifndef MACHINE_TYPE
-#define MACHINE_TYPE "Delta"
-#endif
-
 
 bool Com::writeToAll = true; // transmit start messages to all devices!
+
 
 void Com::cap(FSTRINGPARAM(text)) {
   printF("Cap:");

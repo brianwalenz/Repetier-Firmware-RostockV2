@@ -174,24 +174,39 @@ void Commands::printTemperatures(bool showRaw) {
   }
   Com::println();
 }
-void Commands::changeFeedrateMultiply(int factor) {
-  if(factor < 25) factor = 25;
-  if(factor > 500) factor = 500;
+
+
+
+
+//  Change the speed of the entire print - both the flow and printhead speed change.
+void
+Commands::changeFeedrateMultiply(int factor) {
+  if (factor < 10)
+    factor = 10;
+
   Printer::feedrate *= (float)factor / (float)Printer::feedrateMultiply;
   Printer::feedrateMultiply = factor;
+
   Com::printFLN(PSTR("SpeedMultiply:"), factor);
 }
 
-void Commands::changeFlowrateMultiply(int factor) {
-  if(factor < 25) factor = 25;
-  if(factor > 200) factor = 200;
+//  Change the flow of filament to the nozzle, leaving the speed of the printhead constant.
+void
+Commands::changeFlowrateMultiply(int factor) {
+  if (factor < 1)
+    factor = 1;
+
   Printer::extrudeMultiply = factor;
-  if(Extruder::current->diameter <= 0)
-    Printer::extrusionFactor = 0.01f * static_cast<float>(factor);
+
+  if (Extruder::current->diameter <= 0)
+    Printer::extrusionFactor = 0.01f * factor;
   else
-    Printer::extrusionFactor = 0.01f * static_cast<float>(factor) * 4.0f / (Extruder::current->diameter * Extruder::current->diameter * 3.141592654f);
+    Printer::extrusionFactor = 0.04f * factor / (Extruder::current->diameter * Extruder::current->diameter * 3.141592654f);
+
   Com::printFLN(PSTR("FlowMultiply:"), factor);
 }
+
+
 
 #if FEATURE_FAN_CONTROL
 uint8_t fanKickstart;
@@ -1026,7 +1041,10 @@ void Commands::processMCode(GCode *com) {
       break;
     case 190: { // M190 - Wait bed for heater to reach target.
       if(Printer::debugDryrun()) break;
-      UI_STATUS_UPD_F(PSTR("Heating BED"));
+
+      uid.setStatusP(PSTR("Heating BED"));
+      uid.refreshPage();
+
       Commands::waitUntilEndOfAllMoves();
       if (com->hasS()) Extruder::setHeatedBedTemperature(com->S + (com->hasO() ? com->O : 0), com->hasF() && com->F > 0);
       else if(com->hasH())  Extruder::setHeatedBedTemperature(heatedBedController.preheatTemperature + (com->hasO() ? com->O : 0), com->hasF() && com->F > 0);
@@ -1034,7 +1052,7 @@ void Commands::processMCode(GCode *com) {
       if(abs(heatedBedController.currentTemperatureC - heatedBedController.targetTemperatureC) < SKIP_M190_IF_WITHIN) break;
 #endif
       tempController[HEATED_BED_INDEX]->waitForTargetTemperature();
-      UI_CLEAR_STATUS;
+      uid.clearStatus();
       previousMillisCmd = HAL::timeInMilliseconds();
     }
       break;
@@ -1115,7 +1133,8 @@ void Commands::processMCode(GCode *com) {
       break;
     case 117: // M117 message to lcd
       if(com->hasString()) {
-        UI_STATUS_UPD_RAM(com->text);
+        uid.setStatus(com->text);
+        uid.refreshPage();
       }
       break;
     case 119: // M119
@@ -1582,9 +1601,6 @@ void Commands::processMCode(GCode *com) {
     }
       break;
 #endif
-    case 998:
-      uid.showMessage(com->S);
-      break;
     case 999: // Stop fatal error take down
       if(com->hasS())
         GCode::fatalError(PSTR("Testing fatal error"));
@@ -1660,7 +1676,9 @@ void Commands::emergencyStop() {
 
   WRITE(HEATED_BED_HEATER_PIN, HEATER_PINS_INVERTED);
 
-  UI_STATUS_UPD_F(PSTR("Killed"));
+  uid.setStatusP(PSTR("Killed"));
+  uid.refreshPage();
+
   HAL::delayMilliseconds(200);
   InterruptProtectedBlock noInts;
   while(1) {}

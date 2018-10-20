@@ -89,7 +89,9 @@ void Extruder::manageTemperatures() {
           newDefectFound = true;
           Printer::setAnyTempsensorDefect();
           reportTempsensorError();
-          uid.showMessage(2);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Temp Sensor Defect!"));
+    uid.refreshPage();
         }
       }
     }
@@ -105,7 +107,9 @@ void Extruder::manageTemperatures() {
           newDefectFound = true;
           Printer::setAnyTempsensorDefect();
           reportTempsensorError();
-          uid.showMessage(2);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Temp Sensor Defect!"));
+    uid.refreshPage();
         }
       }
     }
@@ -131,9 +135,12 @@ void Extruder::manageTemperatures() {
             if(!Printer::isAnyTempsensorDefect()) {
               Printer::setAnyTempsensorDefect();
               newDefectFound = true;
-              uid.showMessage(3);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Heater Decoupled!"));
+    uid.refreshPage();
             }
-            UI_ERROR_P(PSTR("Heater decoupled"));
+            uid.setStatusP(PSTR("!!Heater decoupled!!"), true);
+            uid.refreshPage();
             Com::printErrorFLN(PSTR("One heater seems decoupled from thermistor - disabling all for safety!"));
             Com::printF(PSTR("Error:Temp. raised to slow. Rise = "), act->currentTemperatureC - act->lastDecoupleTemp);
             Com::printF(PSTR(" after "), (int32_t)(time - act->lastDecoupleTest));
@@ -152,9 +159,12 @@ void Extruder::manageTemperatures() {
             if(!Printer::isAnyTempsensorDefect()) {
               Printer::setAnyTempsensorDefect();
               newDefectFound = true;
-              uid.showMessage(3);
+  Printer::setUIErrorMessage(true);
+    uid.setStatusP(PSTR("Heater Decoupled!"));
+    uid.refreshPage();
             }
-            UI_ERROR_P(PSTR("Heater decoupled"));
+            uid.setStatusP(PSTR("!!Heater decoupled!!"), true);
+            uid.refreshPage();
             Com::printErrorFLN(PSTR("One heater seems decoupled from thermistor - disabling all for safety!"));
             Com::printF(PSTR("Error:Could not hold temperature "), act->lastDecoupleTemp);
             Com::printF(PSTR(" measured "), act->currentTemperatureC);
@@ -542,7 +552,10 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
 #endif
      ) {
     Extruder *actExtruder = &extruder[extr];
-    UI_STATUS_UPD_F(PSTR("Heating extruder"));
+
+    uid.setStatusP(PSTR("Heating extruder"));
+    uid.refreshPage();
+
     bool dirRising = actExtruder->tempControl.targetTemperatureC > actExtruder->tempControl.currentTemperatureC;
     //millis_t printedTime = HAL::timeInMilliseconds();
     millis_t waituntil = 0;
@@ -593,7 +606,7 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
     }
 #endif
   }
-  UI_CLEAR_STATUS;
+  uid.clearStatus();
 
   bool alloff = true;
   for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
