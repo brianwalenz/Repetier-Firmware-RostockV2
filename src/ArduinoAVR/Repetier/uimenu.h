@@ -19,410 +19,200 @@
 #ifndef _UI_MENU_H
 #define _UI_MENU_H
 
-////////////////////////////////////////
+//  OLD print status page was
+//    %Pn            FILE NAME
+//    %Pp%%          PERCENT DONE
+//    Layer %Pl/%PL  LAYER (not supported)
+//    %os            STATUS
+
+//  Nothing updates the printer progress:
 //
-//  Pages
-//
-//  If not in a menu, there can be multiple pages of read-only information.
-//
-//  Define pages with
-//    UI_PAGE4(name,row1,row2,row3,row4);
+//    if ((sd.sdactive) && (sd.sdmode))
+//      Printer::progress = (float)sd.sdpos * 100.0 / (float)sd.filesize;
+
+
+//  FIRST PAGE - IF NO CARD INSERTED and NOT PRINTING
+//               IF CARD INSERTED, it shows files on the card; special case in code.
+const char page01_01[] PROGMEM = "    FILE TO PRINT 0 ";
+const char page01_02[] PROGMEM = "   <insert  card>   ";
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry01_01 PROGMEM = { page01_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
+menuEntry entry01_02 PROGMEM = { page01_02, entryType_displ,  0,                0,                    MODE_PRINTING | MODE_CARD_PRESENT };
+
+//  FIRST PAGE - IF PRINTING
+const char page02_01[] PROGMEM = "      PRINTING    1 ";
+const char page02_02[] PROGMEM = " xxxxxxxxxxxxxxxxxxx";  //  filename
+const char page02_03[] PROGMEM = " xx:xx:xx   xx:xx:xx";  //  timeUsed  timeLeft
+const char page02_04[] PROGMEM = "               xx.x%";  //            percPrinted
+const char page02_05[] PROGMEM = " Speed:   %om%%     ";  //   %om 10 - 999   set to zero to pause
+const char page02_06[] PROGMEM = " Flow:    %of%%     ";  //   %of 10 - 999
+const char page02_07[] PROGMEM = " Fan:     %Fs%% %Fi ";  //   %Fs  0 - 100 (fan speed)  %Fi (fan forced)
+const char page02_08[] PROGMEM = " -- ABORT  PRINT -- ";
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry02_01 PROGMEM = { page02_01, entryType_page,   ACT_MENU_CHANGE,  MODE_PRINTING,        0 };
+menuEntry entry02_02 PROGMEM = { page02_02, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry02_03 PROGMEM = { page02_03, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry02_04 PROGMEM = { page02_04, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry02_05 PROGMEM = { page02_05, entryType_action, ACT_SPEED_CHANGE, MODE_PRINTING,        0 };
+menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,  MODE_PRINTING,        0 };
+menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_FAN_CHANGE,   MODE_PRINTING,        0 };
+menuEntry entry02_08 PROGMEM = { page02_08, entryType_toggle, ACT_ABORT_PRINT,  MODE_PRINTING,        0 };
+
+//  SECOND PAGE - TEMPERATURES
+//  the preset temp is what?  the default preset temp or the current target temp?
+const char page03_01[] PROGMEM = "    TEMPERATURES  2 ";   // 
+const char page03_02[] PROGMEM = " EXT %ec/%Ec %hc";   //   %ec %Ec %hc    %hc - "off" or "##%" PWM percentage
+const char page03_03[] PROGMEM = " BED %eb/%Eb %hb";   //   %eb %Eb %hb
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry03_01 PROGMEM = { page03_01, entryType_page,   ACT_MENU_CHANGE,  0,                    0 };
+menuEntry entry03_02 PROGMEM = { page03_02, entryType_action, ACT_EXT_T_TARGET, 0,                    0 };
+menuEntry entry03_03 PROGMEM = { page03_03, entryType_action, ACT_BED_T_TARGET, 0,                    0 };
+
+//  THIRD PAGE - IF NOT PRINTING
+const char page04_01[] PROGMEM = "      POSITION    3 ";
+const char page04_02[] PROGMEM = " Move to home       ";
+const char page04_03[] PROGMEM = " E %x3 mm       ";  //  %x3
+const char page04_04[] PROGMEM = " X %x0 mm       ";  //  %x0
+const char page04_05[] PROGMEM = " Y %x1 mm       ";  //  %x1
+const char page04_06[] PROGMEM = " Z %x2 mm       ";  //  %x2
+const char page04_07[] PROGMEM = " Z %x2 mm (free)";  //  %x2 -- MAKE open mode limit to 0.01 move per click when z < 0.50mm
+const char page04_08[] PROGMEM = " Set new Z=0.00     ";
+const char page04_09[] PROGMEM = " Release Motors     ";
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry04_01 PROGMEM = { page04_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
+menuEntry entry04_02 PROGMEM = { page04_02, entryType_action, ACT_HOME,         0,                    MODE_PRINTING };
+menuEntry entry04_03 PROGMEM = { page04_03, entryType_action, ACT_POS_E,        0,                    MODE_PRINTING };
+menuEntry entry04_04 PROGMEM = { page04_04, entryType_action, ACT_POS_X,        0,                    MODE_PRINTING };
+menuEntry entry04_05 PROGMEM = { page04_05, entryType_action, ACT_POS_Y,        0,                    MODE_PRINTING };
+menuEntry entry04_06 PROGMEM = { page04_06, entryType_action, ACT_POS_Z,        0,                    MODE_PRINTING };
+menuEntry entry04_07 PROGMEM = { page04_07, entryType_action, ACT_POS_Z_OPEN,   0,                    MODE_PRINTING };
+menuEntry entry04_08 PROGMEM = { page04_08, entryType_action, ACT_POS_Z_SET,    0,                    MODE_PRINTING };
+menuEntry entry04_09 PROGMEM = { page04_09, entryType_action, ACT_REL_MOTORS,   0,                    MODE_PRINTING };
+
+//  THIRD PAGE - IF PRINTING
+const char page05_01[] PROGMEM = "      POSITION    4 ";
+const char page05_02[] PROGMEM = " X xxx.xx   E xxx.xx";  //  %x0  %x3;
+const char page05_03[] PROGMEM = " Y xxx.xx           ";  //  %x1;
+const char page05_04[] PROGMEM = " Z xxx.xx    (in mm)";  //  %x2;
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry05_01 PROGMEM = { page05_01, entryType_page,   ACT_MENU_CHANGE,  MODE_PRINTING,        0 };
+menuEntry entry05_02 PROGMEM = { page05_02, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry05_03 PROGMEM = { page05_03, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry05_04 PROGMEM = { page05_04, entryType_displ,  0,                MODE_PRINTING,        0 };
+
+
+//  FOURTH PAGE
+const char page06_01[] PROGMEM = "      SETTINGS    5 ";
+const char page06_02[] PROGMEM = "                    ";
+const char page06_03[] PROGMEM = "                    ";
+const char page06_04[] PROGMEM = "                    ";
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry06_01 PROGMEM = { page06_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
+menuEntry entry06_02 PROGMEM = { page06_02, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry06_03 PROGMEM = { page06_03, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry06_04 PROGMEM = { page06_04, entryType_displ,  0,                0,                    MODE_PRINTING };
+
+//  FIFTH PAGE
+//  Printer::measureDistortion() was the entry point from okAction
+const char page07_01[] PROGMEM = "       PROBING    6 ";
+const char page07_02[] PROGMEM = "                    ";
+const char page07_03[] PROGMEM = "                    ";
+const char page07_04[] PROGMEM = "                    ";
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry07_01 PROGMEM = { page07_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
+menuEntry entry07_02 PROGMEM = { page07_02, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry07_03 PROGMEM = { page07_03, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry07_04 PROGMEM = { page07_04, entryType_displ,  0,                0,                    MODE_PRINTING };
+
+//  SIXTH PAGE
+//  runBedLeveling(2) was the entry point from okAction
+const char page08_01[] PROGMEM = "      LEVELLING   7 ";
+const char page08_02[] PROGMEM = "                    ";
+const char page08_03[] PROGMEM = "                    ";
+const char page08_04[] PROGMEM = "                    ";
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry08_01 PROGMEM = { page08_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
+menuEntry entry08_02 PROGMEM = { page08_02, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry08_03 PROGMEM = { page08_03, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry08_04 PROGMEM = { page08_04, entryType_displ,  0,                0,                    MODE_PRINTING };
+
+//  ACCELERATION SETTINGS
+const char page09_01[] PROGMEM = "    ACCELERATION  8 ";
+const char page09_02[] PROGMEM = " Print  %az         ";  // ACT_ACTION_PRINT_ACCEL_Z);
+const char page09_03[] PROGMEM = " Move   %aZ         ";  // ACT_ACTION_MOVE_ACCEL_Z);
+const char page09_04[] PROGMEM = " Jerk   %aj         ";  // ACT_ACTION_MAX_JERK);
+const char page09_05[] PROGMEM = " ZJerk  %aJ         ";  // ACT_ACTION_MAX_JERK);
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry09_01 PROGMEM = { page09_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
+menuEntry entry09_02 PROGMEM = { page09_02, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry09_03 PROGMEM = { page09_03, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry09_04 PROGMEM = { page09_04, entryType_displ,  0,                0,                    MODE_PRINTING };
+menuEntry entry09_05 PROGMEM = { page09_05, entryType_displ,  0,                0,                    MODE_PRINTING };
 
-UI_PAGE4(ui_page1,
-         "               Temps",
-         "EXT %ec/%Ec" cDEG "C %hc",
-         "BED %eb/%Eb" cDEG "C %hb",
-         "%os")
 
-UI_PAGE4(ui_page2,
-         "X %x0 mm",   //  dx - IN_HARDWARE_ENDSTOP_X  - addStringP(Endstops::xMin() ? ui_selected : ui_unselected);
-         "Y %x1 mm",   //  dX - MAX_HARDWARE_ENDSTOP_X - addStringP(Endstops::yMin() ? ui_selected : ui_unselected);
-         "Z %x2 mm",
-         "%os")
-
-UI_PAGE4(ui_page3,
-         "page 3 unused",  //" E %ec/%Ec" cDEG "C" cARROW "%hc",
-         "",               //" B %eb/%Eb" cDEG "C" cARROW "%hb",
-         "",
-         "%os")
-
-UI_PAGE4(ui_page4,
-         "Total Printing Time",
-         "%Ut",
-         "Total Filament Used",
-         "%Uf m")
-
-#define UI_PAGES      {&ui_page1, &ui_page2, &ui_page3, &ui_page4}
-#define UI_NUM_PAGES  4
-
-
-////////////////////////////////////////
-//
-//  Menus
-//
-//  Each display line has a set of actions associated with it.
-//  Turns of the encoder knob change the value ("up" or "down").
-//  Pushes of the knob select 'OK' and return to the previous menu.
-//
-//  Menus are defined from leaves up, for some reason.
-
-UI_MENU_ACTIONCOMMAND(ui_menu_back,  "" cUP, UI_ACTION_BACK)
-UI_MENU_HEADLINE     (ui_menu_empty, "")
-
-
-
-//  Probing
-
-#if 0
-UI_MENU_HEADLINE      (ui_menu_mzp_head,    "Meas. Probe Height")
-UI_MENU_CHANGEACTION  (ui_menu_mzp_realz,   "Real Z Pos:%W0mm",  UI_ACTION_MEASURE_ZP_REALZ)
-UI_MENU_ACTIONCOMMAND (ui_menu_mzp_cont,    "Continue",          UI_ACTION_MEASURE_ZPROBE_HEIGHT2)
-UI_MENU_ACTIONCOMMAND (ui_menu_mzp_close,   "Close",             UI_ACTION_BACK)
-
-#define UI_MENU_MZP_ITEMS {                     \
-    &ui_menu_mzp_head,                          \
-      &ui_menu_mzp_realz,                       \
-      &ui_menu_mzp_cont,                        \
-      &ui_menu_mzp_close}
-
-UI_STICKYMENU(ui_menu_mzp,UI_MENU_MZP_ITEMS,4)
-#endif
-
-
-
-
-// Bed leveling menu - FEATURE_SOFTWARE_LEVELLING
-//
-//  If FEATURE_SOFTWARE_LEVELLING, add &ui_menu_conf_level to to MENU_CONFIGURATION BELOW
-//
-//  Auto levelling - DISABLED
-//  Add &ui_menu_autolevelbed and &ui_menu_toggle_autolevel to MENU_GENERAL if enabled (and MENU_SETUP?).
-
-#if SOFTWARE_LEVELING
-#define UI_MENU_LEVEL {                         \
-    &ui_menu_back,                              \
-      &ui_menu_set_p1,                          \
-      &ui_menu_set_p2,                          \
-      &ui_menu_set_p3,                          \
-      &ui_menu_calculate_leveling,              \
-      &ui_menu_go_xpos,                         \
-      &ui_menu_go_ypos,                         \
-      &ui_menu_go_zpos}
-
-UI_MENU(ui_menu_level, UI_MENU_LEVEL, 8)
-UI_MENU_SUBMENU(ui_menu_conf_level, "Level delta", ui_menu_level)
-#endif
-
-
-
-
-
-
-
-//  PRINTING CONTROL - pause and cancel.
-//
-
-//  SD CARD
-//
-//  SD card insert pulls up "sd card inserted" and shows file select menu.  UI_TEXT_SD_INSERTED_EN
-//  rmemoving  - UI_TEXT_SD_REMOVED_EN - and drops back to first status page
-//
-//  Other actions:
-//     UI_ACTION_STOP UI_ACTION_PAUSE UI_ACTION_CONTINUE
-//     UI_ACTION_SD_DELETE
-
-//                                                                                                          HIDE IF NOT ALL                        HIDE IF ANY
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_sd_pause,            "Pause print",       UI_ACTION_SD_PAUSE,          MENU_MODE_PRINTING,                    MENU_MODE_PAUSED)
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_sd_continue,         "Continue print",    UI_ACTION_SD_CONTINUE,       MENU_MODE_PAUSED,                      0)
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_sd_stop,             "Stop print",        UI_ACTION_SD_STOP,           MENU_MODE_PRINTING | MENU_MODE_PAUSED, 0)
-
-UI_MENU_FILESELECT(ui_menu_sd_fileselector, {&ui_menu_back}, 1)   //  Used in ui.cpp
-
-#define UI_MENU_PRINTING_SUB {                  \
-    &ui_menu_back,                              \
-      &ui_menu_sd_pause,                        \
-      &ui_menu_sd_continue,                     \
-      &ui_menu_sd_stop }
-UI_MENU(ui_menu_printing_sub, UI_MENU_PRINTING_SUB, 4)
-
-
-//  These appear in the main menu.
-//                                                                                             HIDE IF NOT ALL     HIDE IF ANY
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_sd_printfile, "Print file...",     UI_ACTION_SD_PRINT,    MENU_MODE_MOUNTED,  MENU_MODE_PRINTING)
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_sd_insert,    "<insert SD card>",  UI_ACTION_DUMMY,       0,                  MENU_MODE_MOUNTED)
-UI_MENU_SUBMENU_FILTER      (ui_menu_printing,     "Job Control...",    ui_menu_printing_sub,  MENU_MODE_PRINTING, 0)
-
-
-
-//  PREHEATING WHEN IDLE and TEMP CHANGE WHEN PRINTING
-//
-//  %e - current temperature
-//  %p - preheat temperature
-//  %E - target temperature (when printing)
-//
-//  Other commands:
-//    UI_ACTION_FAN_OFF
-//    UI_ACTION_FAN_25
-//    UI_ACTION_FAN_50
-//    UI_ACTION_FAN_75
-//    UI_ACTION_FAN_FULL
-//
-//    UI_ACTION_FAN2SPEED - not sure what this is, was hoping it'd be the hot end fan, but it does nothing.
-
-//                                                                                                        HIDE IF NOT ALL     HIDE IF ANY
-UI_MENU_CHANGEACTION (ui_menu_preheat_bed,            "Bed:%eb/%pb " cDEG "C", UI_ACTION_BED_PREHEAT)
-UI_MENU_CHANGEACTION (ui_menu_preheat_ext,            "Ext:%ec/%pc " cDEG "C", UI_ACTION_EXT_PREHEAT)
-
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_bed_on,  "Preheat BED",           UI_ACTION_BED_PREHEAT_ON,  0,                  MENU_MODE_BED_HEAT)
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_bed_off, "Stop BED preheat",      UI_ACTION_BED_PREHEAT_OFF, MENU_MODE_BED_HEAT, 0)
-
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_ext_on,  "Preheat EXT",           UI_ACTION_EXT_PREHEAT_ON,  0,                  MENU_MODE_EXT_HEAT)
-UI_MENU_ACTIONCOMMAND_FILTER(ui_menu_preheat_ext_off, "Stop EXT preheat",      UI_ACTION_EXT_PREHEAT_OFF, MENU_MODE_EXT_HEAT, 0)
-
-UI_MENU_ACTIONCOMMAND(ui_menu_preheat_cooldown,       "Turn Heaters Off",      UI_ACTION_COOLDOWN)
-
-#define UI_MENU_PREHEAT_SUB {                   \
-    &ui_menu_preheat_bed,                       \
-      &ui_menu_preheat_ext,                     \
-      &ui_menu_preheat_bed_on,                  \
-      &ui_menu_preheat_bed_off,                 \
-      &ui_menu_preheat_ext_on,                  \
-      &ui_menu_preheat_ext_off,                 \
-      &ui_menu_preheat_cooldown,                \
-      &ui_menu_back}
-UI_MENU(ui_menu_preheat_sub, UI_MENU_PREHEAT_SUB, 8)
-
-UI_MENU_CHANGEACTION  (ui_menu_bed_temp,       "BED:%eb/%Eb " cDEG "C", UI_ACTION_BED_TARGET)
-UI_MENU_CHANGEACTION  (ui_menu_ext_temp,       "EXT:%ec/%Ec " cDEG "C", UI_ACTION_EXT_TARGET)
-UI_MENU_CHANGEACTION  (ui_menu_fan_fanspeed,   "LAY fan:%Fs%%",         UI_ACTION_FANSPEED)
-UI_MENU_ACTIONCOMMAND (ui_menu_fan_ignoreM106, "LAY fan forced %Fi",    UI_ACTION_IGNORE_M106)    // %Fi shows a checkbox with status of the flag
-
-#define UI_MENU_TEMPERATURES_SUB {              \
-    &ui_menu_back,                              \
-      &ui_menu_bed_temp,                        \
-      &ui_menu_ext_temp,                        \
-      &ui_menu_fan_fanspeed,                    \
-      &ui_menu_fan_ignoreM106}
-UI_MENU(ui_menu_temperatures_sub, UI_MENU_TEMPERATURES_SUB, 5)
-
-UI_MENU_CHANGEACTION        (ui_menu_quick_speedmultiply, " Speed  %om%%", UI_ACTION_FEEDRATE_MULTIPLY)
-UI_MENU_CHANGEACTION        (ui_menu_quick_flowmultiply,  " Flow   %of%%", UI_ACTION_FLOWRATE_MULTIPLY)
-
-#define UI_MENU_SPEED_SUB {                     \
-    &ui_menu_back,                              \
-      &ui_menu_quick_speedmultiply,             \
-      &ui_menu_quick_flowmultiply }
-UI_MENU(ui_menu_speed_sub, UI_MENU_SPEED_SUB, 3)
-
-//  These appear in the main menu.
-//                                                                                         HIDE IF NOT ALL     HIDE IF ANY
-UI_MENU_SUBMENU_FILTER(ui_menu_preheat,      "Preheat...",      ui_menu_preheat_sub,       0,                  MENU_MODE_PRINTING)
-UI_MENU_SUBMENU_FILTER(ui_menu_temperatures, "Temperatures...", ui_menu_temperatures_sub,  MENU_MODE_PRINTING, 0)
-UI_MENU_SUBMENU_FILTER(ui_menu_speed,        "Speed...",        ui_menu_speed_sub,         MENU_MODE_PRINTING, 0)
-
-
-
-//
-//  Positioning.
-//
-//  The 'fast' variants are unused, but need to be defined.  See ui.cpp.
-//
-//  If FEATURE_Z_PROBE, add &ui_menu_measure_zprobe_height to the z height calibration.
-//
-
-UI_MENU_ACTIONCOMMAND(ui_menu_home_all,        "Home.",            UI_ACTION_HOME_ALL)
-UI_MENU_CHANGEACTION (ui_menu_go_epos,         " E %x3 mm",        UI_ACTION_EPOSITION)
-UI_MENU_CHANGEACTION (ui_menu_go_xpos,         " X %x0 mm",        UI_ACTION_XPOSITION)
-UI_MENU_CHANGEACTION (ui_menu_go_ypos,         " Y %x1 mm",        UI_ACTION_YPOSITION)
-UI_MENU_CHANGEACTION (ui_menu_go_zpos,         " Z %x2 mm",        UI_ACTION_ZPOSITION)
-UI_MENU_CHANGEACTION (ui_menu_go_zpos_notest,  " Z %x2 mm (free)", UI_ACTION_ZPOSITION_NOTEST)
-UI_MENU_ACTIONCOMMAND(ui_menu_set_z_origin,    "Set new Z=0.00",   UI_ACTION_SET_MEASURED_ORIGIN)
-UI_MENU_ACTIONCOMMAND(ui_menu_release_stepper, "Release Motors",   UI_ACTION_DISABLE_STEPPER)
-
-UI_MENU_ACTIONCOMMAND(ui_menu_measure_zprobe_height, "Meas. Probe Height", UI_ACTION_MEASURE_ZPROBE_HEIGHT)
-
-#define UI_MENU_POSITION_SUB {                  \
-    &ui_menu_back,                              \
-      &ui_menu_home_all,                        \
-      &ui_menu_go_epos,                         \
-      &ui_menu_go_xpos,                         \
-      &ui_menu_go_ypos,                         \
-      &ui_menu_go_zpos,                         \
-      &ui_menu_go_zpos_notest,                  \
-      &ui_menu_set_z_origin,                    \
-      &ui_menu_release_stepper }
-
-UI_MENU               (ui_menu_position_sub, UI_MENU_POSITION_SUB, 9)
-UI_MENU_SUBMENU_FILTER(ui_menu_position, "Position...", ui_menu_position_sub, 0, MENU_MODE_PRINTING)
-
-
-
-
-
-
-
-UI_MENU_ACTIONCOMMAND(ui_menu_conf_to_eeprom,   "Store to EEPROM",  UI_ACTION_STORE_EEPROM)
-UI_MENU_ACTIONCOMMAND(ui_menu_conf_from_eeprom, "Load from EEPROM", UI_ACTION_LOAD_EEPROM)
-
-UI_MENU_ACTION4(ui_menu_eeprom_saved,  UI_ACTION_DUMMY, "Configuration", "stored in EEPROM", "", "");
-UI_MENU_ACTION4(ui_menu_eeprom_loaded, UI_ACTION_DUMMY, "Configuration", "loaded from EEPROM", "", "");
-
-
-
-//
-//  SETTINGS
-//
-//  UI_ACTION_STEPPER_INACTIVE -- set inactive time to disable stepper motors
-//  UI_ACTION_MAX_INACTIVE     -- set inactive time to disable as much as possible
-//
-
-
-
-//  ACCELERATION
-
-UI_MENU_CHANGEACTION(ui_menu_accel_printz,  "Print  %az", UI_ACTION_PRINT_ACCEL_Z)
-UI_MENU_CHANGEACTION(ui_menu_accel_travelz, "Move   %aZ", UI_ACTION_MOVE_ACCEL_Z)
-UI_MENU_CHANGEACTION(ui_menu_accel_jerk,    "Jerk   %aj", UI_ACTION_MAX_JERK)
-UI_MENU_CHANGEACTION(ui_menu_accel_z_jerk,  "ZJerk  %aJ", UI_ACTION_MAX_JERK)
-
-#define UI_MENU_SETTINGS_ACCEL_SUB {            \
-    &ui_menu_back,                              \
-      &ui_menu_accel_printz,                    \
-      &ui_menu_accel_travelz,                   \
-      &ui_menu_accel_jerk,                      \
-      &ui_menu_accel_z_jerk}
-UI_MENU(ui_menu_settings_accel_sub, UI_MENU_SETTINGS_ACCEL_SUB, 4)
 
 //  EXTRUDER SETTINGS
 
-UI_MENU_CHANGEACTION(ui_menu_cext_steps,          "Steps/MM:%Se",              UI_ACTION_EXTR_STEPS)
-UI_MENU_CHANGEACTION(ui_menu_cext_start_feedrate, "Start FR:%Xf",              UI_ACTION_EXTR_START_FEEDRATE)
-UI_MENU_CHANGEACTION(ui_menu_cext_max_feedrate,   "Max FR:%XF",                UI_ACTION_EXTR_MAX_FEEDRATE)
-UI_MENU_CHANGEACTION(ui_menu_cext_acceleration,   "Accel:%XA",                 UI_ACTION_EXTR_ACCELERATION)
-UI_MENU_CHANGEACTION(ui_menu_cext_watch_period,   "Stab.Time:%Xw",             UI_ACTION_EXTR_WATCH_PERIOD)
-UI_MENU_CHANGEACTION(ui_menu_ext_wait_units,      "Wait retr.:%XU mm",         UI_ACTION_EXTR_WAIT_RETRACT_UNITS)
-UI_MENU_CHANGEACTION(ui_menu_ext_wait_temp,       "Wait temp. %XT" cDEG "C",   UI_ACTION_EXTR_WAIT_RETRACT_TEMP)
-UI_MENU_CHANGEACTION(ui_menu_cext_advancel,       "Advance lin:%Xl",           UI_ACTION_ADVANCE_L)   //  "Advance method" to decrease blobs at points where acceleartion changes
-UI_MENU_CHANGEACTION(ui_menu_cext_advancek,       "Advance quad:%Xa",          UI_ACTION_ADVANCE_K)
+//  STATISTICS
+//  --------------------
+//  xxx.x days xx:xx:xx
+//  xxxx:xx:xx hours
+//  xxxx.xx m used
+//  xxxx jobs  xxxx aborts
+//  
+const char page10_01[] PROGMEM = "      STATISTICS  9 ";
+const char page10_02[] PROGMEM = " Total Printing Time";
+const char page10_03[] PROGMEM = " %Ut";                  //  xxx days xx:xx:xx
+const char page10_04[] PROGMEM = " %Uf";                  //  xxx.xx m used
+const char page10_05[] PROGMEM = " %Uf m";
 
-#define UI_MENU_SETTINGS_EXT_SUB {              \
-    &ui_menu_back,                              \
-      &ui_menu_cext_steps,                      \
-      &ui_menu_cext_start_feedrate,             \
-      &ui_menu_cext_max_feedrate,               \
-      &ui_menu_cext_acceleration,               \
-      &ui_menu_cext_watch_period,               \
-      &ui_menu_ext_wait_units,                  \
-      &ui_menu_ext_wait_temp,                   \
-      &ui_menu_cext_advancel,                   \
-      &ui_menu_cext_advancek }
-UI_MENU(ui_menu_settings_ext_sub, UI_MENU_SETTINGS_EXT_SUB, 10)
-
-
-
-UI_MENU_CHANGEACTION       (ui_menu_cext_manager,  "Control:%Xh",       UI_ACTION_EXTR_HEATMANAGER)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_pgain,    "PID P:%Xp",         UI_ACTION_PID_PGAIN,  MENU_MODE_FULL_PID, 0)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_igain,    "PID I:%Xi",         UI_ACTION_PID_IGAIN,  MENU_MODE_FULL_PID, 0)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_dgain,    "PID D:%Xd",         UI_ACTION_PID_DGAIN,  MENU_MODE_FULL_PID, 0)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_dmin,     "Drive Min:%Xm",     UI_ACTION_DRIVE_MIN,  MENU_MODE_FULL_PID, 0)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_dmax,     "Drive Max:%XM",     UI_ACTION_DRIVE_MAX,  MENU_MODE_FULL_PID, 0)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_pgain_dt, "Deadtime:%Xp",      UI_ACTION_PID_PGAIN,  MENU_MODE_DEADTIME, 0)
-UI_MENU_CHANGEACTION_FILTER(ui_menu_cext_dmax_dt,  "Control DPWM:%XM",  UI_ACTION_DRIVE_MAX,  MENU_MODE_DEADTIME, 0)
-UI_MENU_CHANGEACTION       (ui_menu_cext_pmax,     "PID PMax:%XD",      UI_ACTION_PID_MAX)
-
-//  EXT TEMP SETTINGS
-#define UI_MENU_SETTINGS_EXT_TEMP_SUB {         \
-    &ui_menu_back,                              \
-      &ui_menu_cext_manager,                    \
-      &ui_menu_cext_pgain,                      \
-      &ui_menu_cext_igain,                      \
-      &ui_menu_cext_dgain,                      \
-      &ui_menu_cext_dmin,                       \
-      &ui_menu_cext_dmax,                       \
-      &ui_menu_cext_pgain_dt,                   \
-      &ui_menu_cext_dmax_dt,                    \
-      &ui_menu_cext_pmax}
-UI_MENU(ui_menu_settings_ext_temp_sub, UI_MENU_SETTINGS_EXT_TEMP_SUB, 10)
-
-//  BED TEMP SETTINGS
-#define UI_MENU_SETTINGS_BED_TEMP_SUB {         \
-    &ui_menu_back,                              \
-      &ui_menu_cext_manager,                    \
-      &ui_menu_cext_pgain,                      \
-      &ui_menu_cext_igain,                      \
-      &ui_menu_cext_dgain,                      \
-      &ui_menu_cext_dmin,                       \
-      &ui_menu_cext_dmax,                       \
-      &ui_menu_cext_pgain_dt,                   \
-      &ui_menu_cext_dmax_dt,                    \
-      &ui_menu_cext_pmax}
-UI_MENU(ui_menu_settings_bed_temp_sub, UI_MENU_SETTINGS_BED_TEMP_SUB, 10)
-
-
-
-UI_MENU_CHANGEACTION(ui_menu_general_baud,        "Baud: %oc",       UI_ACTION_BAUDRATE)
-UI_MENU_SUBMENU     (ui_menu_settings_accel,      "Acceleration...", ui_menu_settings_accel_sub)
-UI_MENU_SUBMENU     (ui_menu_settings_ext,        "Extruder...",     ui_menu_settings_ext_sub)
-UI_MENU_SUBMENU     (ui_menu_settings_ext_temp,   "EXT Temp Sens...",   ui_menu_settings_ext_temp_sub)
-UI_MENU_SUBMENU     (ui_menu_settings_bed_temp,   "BED Temp Sens...",   ui_menu_settings_bed_temp_sub)
-
-#define UI_MENU_SETTINGS_SUB {                  \
-    &ui_menu_back,                              \
-      &ui_menu_general_baud,                    \
-      &ui_menu_settings_accel,                  \
-      &ui_menu_settings_ext,                    \
-      &ui_menu_settings_ext_temp,               \
-      &ui_menu_settings_bed_temp,               \
-      &ui_menu_conf_to_eeprom,                  \
-      &ui_menu_conf_from_eeprom}
-UI_MENU(ui_menu_settings_sub, UI_MENU_SETTINGS_SUB, 9)
-UI_MENU_SUBMENU_FILTER(ui_menu_settings, "Settings...", ui_menu_settings_sub, 0, MENU_MODE_PRINTING)
-
-
-
-//
-//  DEBUGGING
-//
-
-UI_MENU_ACTIONCOMMAND(ui_menu_quick_debug,   "Write Debug", UI_ACTION_WRITE_DEBUG)
-UI_MENU_ACTIONCOMMAND(ui_menu_debug_echo,    "Echo    %do", UI_ACTION_DEBUG_ECHO)
-UI_MENU_ACTIONCOMMAND(ui_menu_debug_info,    "Info    %di", UI_ACTION_DEBUG_INFO)
-UI_MENU_ACTIONCOMMAND(ui_menu_debug_error,   "Errors  %de", UI_ACTION_DEBUG_ERROR)
-UI_MENU_ACTIONCOMMAND(ui_menu_debug_dryrun,  "Dry run %dd", UI_ACTION_DEBUG_DRYRUN)
-UI_MENU_ACTIONCOMMAND(ui_menu_debug_endstop, "EndStop %dp", UI_ACTION_DEBUG_ENDSTOP)
-
-#define UI_MENU_DEBUGGING_SUB {                 \
-    &ui_menu_back,                              \
-      &ui_menu_debug_echo,                      \
-      &ui_menu_debug_info,                      \
-      &ui_menu_debug_error,                     \
-      &ui_menu_debug_dryrun,                    \
-      &ui_menu_debug_endstop}
-
-UI_MENU(ui_menu_debugging_sub, UI_MENU_DEBUGGING_SUB, 6)
-UI_MENU_SUBMENU(ui_menu_debugging, "Debugging...", ui_menu_debugging_sub)
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry10_01 PROGMEM = { page10_01, entryType_page,   ACT_MENU_CHANGE,  MODE_PRINTING,        0 };
+menuEntry entry10_02 PROGMEM = { page10_02, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry10_03 PROGMEM = { page10_03, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry10_04 PROGMEM = { page10_04, entryType_displ,  0,                MODE_PRINTING,        0 };
+menuEntry entry10_05 PROGMEM = { page10_05, entryType_displ,  0,                MODE_PRINTING,        0 };
 
 
 
 
-#define UI_MENU_MAIN {                          \
-    &ui_menu_back,                              \
-                                                \
-      &ui_menu_sd_printfile,                    \
-      &ui_menu_sd_insert,                       \
-      &ui_menu_printing,                        \
-                                                \
-      &ui_menu_preheat,                         \
-      &ui_menu_temperatures,                    \
-      &ui_menu_speed,                           \
-                                                \
-      &ui_menu_position,                        \
-                                                \
-      &ui_menu_settings,                        \
-      &ui_menu_debugging  }
-
-UI_MENU(ui_menu_main, UI_MENU_MAIN, 10)
 
 
+
+menuEnArr entry01[2]  PROGMEM = { &entry01_01, &entry01_02 };
+menuEnArr entry02[8]  PROGMEM = { &entry02_01, &entry02_02, &entry02_03, &entry02_04, &entry02_05, &entry02_06, &entry02_07, &entry02_08 };
+menuEnArr entry03[3]  PROGMEM = { &entry03_01, &entry03_02, &entry03_03 };
+menuEnArr entry04[9]  PROGMEM = { &entry04_01, &entry04_02, &entry04_03, &entry04_04, &entry04_05, &entry04_06, &entry04_07, &entry04_08, &entry04_09 };
+menuEnArr entry05[4]  PROGMEM = { &entry05_01, &entry05_02, &entry05_03, &entry05_04 };
+menuEnArr entry06[4]  PROGMEM = { &entry06_01, &entry06_02, &entry06_03, &entry06_04 };
+menuEnArr entry07[4]  PROGMEM = { &entry07_01, &entry07_02, &entry07_03, &entry07_04 };
+menuEnArr entry08[4]  PROGMEM = { &entry08_01, &entry08_02, &entry08_03, &entry08_04 };
+menuEnArr entry09[5]  PROGMEM = { &entry09_01, &entry09_02, &entry09_03, &entry09_04, &entry09_05 };
+menuEnArr entry10[5]  PROGMEM = { &entry10_01, &entry10_02, &entry10_03, &entry10_04, &entry10_05 };
+
+menuPage  page01      PROGMEM = { menuType_normal, 2, entry01 };
+menuPage  page02      PROGMEM = { menuType_normal, 8, entry02 };
+menuPage  page03      PROGMEM = { menuType_normal, 3, entry03 };
+menuPage  page04      PROGMEM = { menuType_normal, 9, entry04 };
+menuPage  page05      PROGMEM = { menuType_normal, 4, entry05 };
+menuPage  page06      PROGMEM = { menuType_normal, 4, entry06 };
+menuPage  page07      PROGMEM = { menuType_normal, 4, entry07 };
+menuPage  page08      PROGMEM = { menuType_normal, 4, entry08 };
+menuPage  page09      PROGMEM = { menuType_normal, 5, entry09 };
+menuPage  page10      PROGMEM = { menuType_normal, 5, entry10 };
+
+
+#define UI_NUM_PAGES   10
+
+menuPage * const menuPages[UI_NUM_PAGES] PROGMEM = { &page01, &page02, &page03, &page04, &page05, &page06, &page07, &page08, &page09, &page10 };
 
 #endif // __UI_MENU_H

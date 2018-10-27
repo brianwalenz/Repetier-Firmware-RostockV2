@@ -176,9 +176,7 @@
 #define PAUSE_START_COMMANDS ""
 // These commands get executed before we go to stored position.
 #define PAUSE_END_COMMANDS ""
-/* Set to 1 if all extruders use the same heater block. Temp. control is then always
-   controlled by settings in extruder 0 definition. */
-#define SHARED_EXTRUDER_HEATER 0
+
 /* Speed in mm/s for extruder moves fom internal commands, e.g. switching extruder. */
 #define EXTRUDER_SWITCH_XY_SPEED 100
 

@@ -243,11 +243,6 @@ void Printer::setFan2SpeedDirectly(uint8_t speed) {
 #endif
 }
 
-void Printer::reportPrinterMode() {
-  Printer::setMenuMode(MENU_MODE_FDM, false);
-  Printer::setMenuMode(MENU_MODE_FDM, true);
-  Com::printFLN(PSTR("PrinterMode:FFF"));
-}
 void Printer::updateDerivedParameter() {
   travelMovesPerSecond = EEPROM::deltaSegmentsPerSecondMove();
   printMovesPerSecond = EEPROM::deltaSegmentsPerSecondPrint();
@@ -794,7 +789,7 @@ void Printer::defaultLoopActions() {
   Commands::checkForPeriodicalActions(true);  //check heater every n milliseconds
   uid.mediumAction(); // do check encoder
   millis_t curtime = HAL::timeInMilliseconds();
-  if(PrintLine::hasLines() || isMenuMode(MENU_MODE_PRINTING + MENU_MODE_PAUSED))
+  if(PrintLine::hasLines() || isMenuMode(MODE_PRINTING | MODE_PAUSED))
     previousMillisCmd = curtime;
   else {
     curtime -= previousMillisCmd;
@@ -1112,12 +1107,12 @@ void Printer::showConfiguration() {
 
 
 void Printer::pausePrint() {
-  if(Printer::isMenuMode(MENU_MODE_PRINTING)) {
+  if(Printer::isMenuMode(MODE_PRINTING)) {
     sd.pausePrint(true);
   } else
-    if(Printer::isMenuMode(MENU_MODE_PRINTING)) {
+    if(Printer::isMenuMode(MODE_PRINTING)) {
       GCodeSource::printAllFLN(PSTR("RequestPause:"));
-      Printer::setMenuMode(MENU_MODE_PAUSED, true);
+      Printer::setMenuMode(MODE_PAUSED, true);
 #if !defined(DISABLE_PRINTMODE_ON_PAUSE) || DISABLE_PRINTMODE_ON_PAUSE==1
       Printer::setPrinting(false);
 #endif
@@ -1125,26 +1120,27 @@ void Printer::pausePrint() {
 }
 
 void Printer::continuePrint() {
-  if(Printer::isMenuMode(MENU_MODE_PRINTING + MENU_MODE_PAUSED)) {
+  if(Printer::isMenuMode(MODE_PRINTING | MODE_PAUSED)) {
     sd.continuePrint(true);
   } else
-    if(Printer::isMenuMode(MENU_MODE_PAUSED)) {
+    if(Printer::isMenuMode(MODE_PAUSED)) {
       GCodeSource::printAllFLN(PSTR("RequestContinue:"));
     }
-	setMenuMode(MENU_MODE_PAUSED, false);
+	setMenuMode(MODE_PAUSED, false);
 }
 
 void Printer::stopPrint() {
   //flashSource.close(); // stop flash printing if busy
 
-  if(Printer::isMenuMode(MENU_MODE_PRINTING)) {
+  if(Printer::isMenuMode(MODE_PRINTING)) {
     sd.stopPrint();
   } else
     {
       GCodeSource::printAllFLN(PSTR("RequestStop:"));
     }
 
-	if(!isUIErrorMessage()) {
-		UI_RESET_MENU
-      }
+	//if(!isUIErrorMessage()) {
+  //  uid.menuLevel=0;
+  //  uid.refreshPage();
+  //    }
 }

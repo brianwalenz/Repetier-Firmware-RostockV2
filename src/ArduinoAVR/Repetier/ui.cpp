@@ -25,29 +25,105 @@
 
 #include "uimenu.h"       //  Menu definitions.
 
+
+//
+//  RAMBO controller
+//
+
+#define UI_DISPLAY_RS_PIN      70
+#define UI_DISPLAY_RW_PIN      -1
+#define UI_DISPLAY_ENABLE_PIN  71
+#define UI_DISPLAY_D0_PIN      -1
+#define UI_DISPLAY_D1_PIN      -1
+#define UI_DISPLAY_D2_PIN      -1
+#define UI_DISPLAY_D3_PIN      -1
+#define UI_DISPLAY_D4_PIN      72
+#define UI_DISPLAY_D5_PIN      73
+#define UI_DISPLAY_D6_PIN      74
+#define UI_DISPLAY_D7_PIN      75
+#define UI_ENCODER_A           76
+#define UI_ENCODER_B           77
+#define UI_ENCODER_CLICK       78
+#define UI_KILL_PIN            80
+#define UI_DELAYPERCHAR       50
+
+
+#define UI_INVERT_MENU_DIRECTION 0
+
+//Symbolic character values for specific symbols.
+
+#define cUP     "\001"
+#define cDEG    "\002"
+#define cSEL    "\003"
+#define cUNSEL  "\004"
+#define cTEMP   "\005"
+#define cFOLD   "\006"
+#define cARROW  "\176"
+#define cARROWc  0x3e
+
+#define bSEL    3
+#define bUNSEL  4
+#define bFOLD   6
+
+#define CHAR_SELECTOR 0xa5  //'>'
+#define CHAR_SELECTED '*'
+
+//UI_STRING(ui_selected,   cSEL);
+//UI_STRING(ui_unselected, cUNSEL);
+
+
+
+
+
 UIDisplay uid;
 
 
 static TemperatureController *currHeaterForSetup;    // pointer to extruder or heatbed temperature controller
 
 
-const UIMenu * const ui_pages[UI_NUM_PAGES] PROGMEM = UI_PAGES;
+
+//  This should be inlined in ui.h, but it depends on Printer:: which isn't known until late in Repetier.h
+
+bool
+menuEntry_t::showEntry(void) const {
+  uint16_t  ft = pgm_read_word(&doShow);
+  uint16_t  nf = pgm_read_word(&noShow);
+
+  if ((ft != 0) &&
+      ((ft & Printer::menuMode) == 0))  //  Do not show if all of the 'do-show'
+    return(false);                      //  filter bits are missing in the mode menu.
+
+  if ((nf & Printer::menuMode) != 0)    //  Do not show if any of the 'no-show'
+    return(false);                      //  filter bits are set in the menu mode.
+
+  return(true);                         //  Default to showing.
+}
+
+
+//  Scan the entries in this menu.  If all are disabled, don't show
+//  the menu (by skipping over it in doEncoderChange_page().
+bool
+menuPage_t::showMenu(void) const {
+  uint8_t       entriesLen  =               pgm_read_byte(&menuEntriesLen);
+  menuEntry   **entries     = (menuEntry **)pgm_read_ptr (&menuEntries);
+
+  for (uint8_t ee=0; ee<entriesLen; ee++) {
+    menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[ee]);
+
+    if (entry->showEntry() == true)
+      return(true);
+  }
+
+  return(false);
+}
 
 
 
-//  If idle in a sub menu for this many milliseconds, return to the
-//  first status page.
-#define UI_AUTORETURN_TO_MENU_AFTER 30000
-millis_t ui_autoreturn_time = 0;
-
-UI_STRING(ui_selected,   cSEL);
-UI_STRING(ui_unselected, cUNSEL);
 
 
 
-
-void
-uiCheckKeys(uint16_t &action) {
+uint16_t
+uiCheckKeys(void) {
 
   //  Shift the encoder one position.
 
@@ -76,10 +152,12 @@ uiCheckKeys(uint16_t &action) {
   //  Check for the two buttons, one on the encoder, and the estop/reset.
 
   if (READ(UI_ENCODER_CLICK) == 0)    //  If ENCODER_CLICK is pushed (active low)
-    action = UI_ACTION_OK;            //  make the action be "OK".
+    return(ACT_OK);                   //  make the action be "OK".
 
   if (READ(UI_KILL_PIN) == 0)         //  If KILL is pushed (active low)
-    action = UI_ACTION_KILL;          //  kill ourself.
+    return(ACT_KILL);                 //  kill ourself.
+
+  return(0);
 }
 
 
@@ -171,100 +249,73 @@ void lcdWriteByte(uint8_t c, uint8_t rs) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-bool
-UIMenuEntry::showEntry(void) const {
-
-  //  Get the value of 'filter', store in f.
-  uint16_t  ft = pgm_read_word(&filter);
-  uint16_t  nf = pgm_read_word(&nofilter);
-
-  //  Do not show if all of the 'do-show' filter bits are missing in the mode menu.
-  if ((ft != 0) && ((ft & Printer::menuMode) == 0))
-    return(false);
-
-  //  Do not show if any of the 'no-show' filter bits are set in the menu mode.
-  if ((nf & Printer::menuMode) != 0)
-    return(false);
-
-  //  Default to showing.
-  return(true);
-}
-
-
-
 void
-UIDisplay::printRow(uint8_t r, char *txt) {
-  uint8_t c = 0;
+UIDisplay::initialize() {
 
-  //  Set the cursor to the start of the line.
-  //
-  //                         v-------  Set DRAM address
-  //                          vvvvvvv  DRAM address 
+#ifdef NEW_ACTIONS
+  slowKeyAction = 0;
+  fastButtonStateChange = 0;
+  slowActionRunning = 0;
+  keyTestRunning = 0;
+#else
+  flags = 0;
+#endif
 
-  if (r == 0)   lcdCommand(0b10000000 | 0x00);
-  if (r == 1)   lcdCommand(0b10000000 | 0x40);
-  if (r == 2)   lcdCommand(0b10000000 | 0x14);
-  if (r == 3)   lcdCommand(0b10000000 | 0x54);
-  if (r >= 4)   return;
+  _menuPage = 0;      //  Showing the first page.
+  _menuPos  = 0;      //  With the first entry highlighted.
+  _menuSel  = 255;    //  But no action selected.
+  _menuTop  = 0;      //
 
-  for (; (c < UI_COLS) && (txt[c] != 0); c++)
-    lcdPutChar(txt[c]);
+  uint32_t timeNow = HAL::timeInMilliseconds();
 
-  for (; c < UI_COLS; c++)
-    lcdPutChar(' ');
-}
+  _stopChangeTime  = timeNow;
+  _stopMenuTime    = timeNow;
+  _refreshPageTime = timeNow;
 
+  rbp = 0;
+  rb[0] = 0;
 
+  smp = 0;
+  sm[0] = 0;
 
-void
-UIDisplay::printRowP(uint8_t r, PGM_P txt) {
+  encoderLast = 0;
+  encoderPos  = 0;
 
-  col = 0;
-
-  addStringP(txt);
-
-  printCols[col] = 0;
-
-  printRow(r, printCols);
-}
-
-
-
-
-
-
-void UIDisplay::initialize() {
-
-  flags            = 0;
-  menuLevel        = 0;
-  shift            = -2;
-  menuPos[0]       = 0;
-  lastAction       = 0;
-  delayedAction    = 0;
-  lastButtonAction = 0;
-  activeAction     = 0;
-  statusMsg[0]     = 0;
-
-  cwd[0]           = '/';
-  cwd[1]           = 0;
-
-  lastRefresh = HAL::timeInMilliseconds();
-
-  lastEncoderTime = HAL::timeInMilliseconds();
+  lastEncoderTime = timeNow;
   encoderAccel    = 1.0;
+
+#ifdef NEW_ACTIONS
+  _buttonTime     = 0;
+  _buttonAction   = 0;
+  _executedAction = 0;
+
+  //uint16_t      activeAction; // action for ok/next/previous
+  //uint16_t      delayedAction;
+  //millis_t      lastRefresh;
+#else
+  activeAction = 0;
+  lastAction = 0;
+  delayedAction = 0;
+  lastSwitch = 0;
+  lastRefresh = 0;
+  lastButtonAction = 0;
+  lastButtonStart = 0;
+  nextRepeat = 0;
+  repeatDuration = 0;
+#endif
+
+  //shift = 0;
+  pageDelay = 0;
+  errorMsg = NULL;
+  outputMask = 0;
+  encoderStartScreen = 0;
+  statusMsg[0] = 0;
+
+  cwd[0] = '/';
+  cwd[1] = 0;
+
+  nFilesOnCard = 0;
+
 
 
   //
@@ -420,6 +471,78 @@ void UIDisplay::initialize() {
 
 
 void
+UIDisplay::printRow(uint8_t r, char *text) {
+  uint8_t c = 0;
+
+  //  Set the cursor to      v-------  Set DRAM address
+  //  the start of a line     vvvvvvv  DRAM address 
+  if (r == 0)   lcdCommand(0b10000000 | 0x00);
+  if (r == 1)   lcdCommand(0b10000000 | 0x40);
+  if (r == 2)   lcdCommand(0b10000000 | 0x14);
+  if (r == 3)   lcdCommand(0b10000000 | 0x54);
+  if (r >= 4)   return;
+
+  for (; (c < UI_COLS) && (text[c] != 0); c++)
+    lcdPutChar(text[c]);
+
+  for (; c < UI_COLS; c++)
+    lcdPutChar(' ');
+}
+
+
+
+void
+UIDisplay::printRowP(uint8_t r, const char *text) {
+  uint8_t c = 0;
+
+  //  Set the cursor to      v-------  Set DRAM address
+  //  the start of a line     vvvvvvv  DRAM address 
+  if (r == 0)   lcdCommand(0b10000000 | 0x00);
+  if (r == 1)   lcdCommand(0b10000000 | 0x40);
+  if (r == 2)   lcdCommand(0b10000000 | 0x14);
+  if (r == 3)   lcdCommand(0b10000000 | 0x54);
+  if (r >= 4)   return;
+
+  for (; (c < UI_COLS) && (pgm_read_byte(&text[c]) != 0); c++)
+    lcdPutChar(pgm_read_byte(&text[c]));
+
+  for (; c < UI_COLS; c++)
+    lcdPutChar(' ');
+}
+
+
+
+
+
+void
+UIDisplay::addStringP(const char *text) {
+  while (rbp < MAX_COLS) {
+    uint8_t c = pgm_read_byte(text++);
+
+    if (c == 0)
+      return;
+
+    rb[rbp++] = c;
+  }
+}
+
+
+
+void
+UIDisplay::addString(const char *text) {
+  while (rbp < MAX_COLS) {
+    uint8_t c = *text++;
+
+    if (c == 0)
+      return;
+
+    rb[rbp++] = c;
+  }
+}
+
+
+
+void
 UIDisplay::addNumber(int32_t number, int8_t digits, char fillChar) {
   char     buf[12];
   int8_t   pos = 0;
@@ -447,32 +570,30 @@ UIDisplay::addNumber(int32_t number, int8_t digits, char fillChar) {
   while (pos < digits)
     buf[pos++] = fillChar;
 
-  while ((col < MAX_COLS) && (pos > 0))
-    printCols[col++] = buf[--pos];
+  while ((rbp < MAX_COLS) && (pos > 0))
+    rb[rbp++] = buf[--pos];
 
-  printCols[col] = 0;
+  rb[rbp] = 0;
 }
-
-
 
 
 
 void
 UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
 
-  if (col >= MAX_COLS)
+  if (rbp >= MAX_COLS)
     return;
 
   //  If negative, append a minus sign and make a positive number.
 
   if (number < 0.0) {
-    printCols[col++] = '-';
+    rb[rbp++] = '-';
     number = -number;
 
     wholeDigits--;
   }
 
-  if (col >= MAX_COLS)
+  if (rbp >= MAX_COLS)
     return;
 
   //  Round.
@@ -492,7 +613,7 @@ UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
 
   addNumber(whole, wholeDigits);
 
-  if (col >= UI_COLS)
+  if (rbp >= MAX_COLS)
     return;
 
   //  Display the fractional part, if requested.
@@ -500,7 +621,7 @@ UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
   if (fractDigits == 0)
     return;
 
-  printCols[col++] = '.';
+  rb[rbp++] = '.';
 
   for (uint8_t d=0; d<fractDigits; d++)
     fract *= 10;
@@ -511,77 +632,54 @@ UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
 
 
 void
-UIDisplay::addStringP(FSTRINGPARAM(text)) {
-  while (col < MAX_COLS) {
+UIDisplay::setStatusP(const char *text, bool error) {
+
+  if ((error == false) && Printer::isUIErrorMessage())   //  Don't change if we're
+    return;                                              //  in an error state.
+
+  smp = 0;
+
+  while (smp < MAX_COLS) {
     uint8_t c = pgm_read_byte(text++);
-    
-    if(c == 0)
+
+    if (c == 0)
       return;
 
-    printCols[col++] = c;
+    sm[smp++] = c;
   }
+
+  sm[smp] = 0;
+
+  if (error)
+    Printer::setUIErrorMessage(true);
 }
 
 
 
 void
-UIDisplay::addString(const char *text) {
-  while (col < MAX_COLS) {
+UIDisplay::setStatus(const char *text, bool error) {
+
+  if ((error == false) && Printer::isUIErrorMessage())   //  Don't change if we're
+    return;                                              //  in an error state.
+
+  smp = 0;
+
+  while (smp < MAX_COLS) {
     uint8_t c = *text++;
 
-    if(c == 0)
+    if (c == 0)
       return;
 
-    printCols[col++] = c;
-  }
-}
-
-
-
-void
-UIDisplay::setStatusP(PGM_P txt, bool error) {
-
-  if (!error && Printer::isUIErrorMessage())
-    return;
-
-  uint8_t i = 0;
-
-  while(i < 20) {
-    uint8_t c = pgm_read_byte(txt++);
-    if(!c) break;
-    statusMsg[i++] = c;
+    sm[smp++] = c;
   }
 
-  statusMsg[i] = 0;
+  sm[smp] = 0;
 
-  if(error)
+  if (error)
     Printer::setUIErrorMessage(true);
 }
 
 
-
-void
-UIDisplay::setStatus(const char *txt, bool error) {
-
-  if (!error && Printer::isUIErrorMessage())
-    return;
-
-  uint8_t i = 0;
-
-  while(*txt && i < 20)
-    statusMsg[i++] = *txt++;
-
-  statusMsg[i] = 0;
-
-  if(error)
-    Printer::setUIErrorMessage(true);
-}
-
-
-void
-UIDisplay::clearStatus(void) {
-  statusMsg[0] = 0;
-}
 
 
 
@@ -590,323 +688,220 @@ UIDisplay::clearStatus(void) {
 
 #include "ui-action-change.h"
 #include "ui-action-execute.h"
+#include "ui-action-ok.h"
 #include "ui-parse.h"
 #include "ui-sdcard.h"
 
 
 
 
-
-
-
-
-
-
-//  Find the 'next' visible and useful menu item to show.
-//  Sets the 
+//  Adjust _menuPos so that we're always on a visible item.
+//
+//  Adjust _menuTop so that (a) the display is as full as possible, and
+//                          (b) the active element is displayed.
+//
 void
 UIDisplay::adjustMenuPos(void) {
+  menuPage     *menu       = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
+  uint8_t       menuType   =               pgm_read_byte(&menu->menuType);
+  menuEntry   **entries    = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
+  uint8_t       entriesLen =               pgm_read_byte(&menu->menuEntriesLen);
 
-  //  If not in a menu, there is no position to adjust.
+  //  menuType is menuType_normal
+  //              menuType_fileSelect
+  //
+  //  menuType_fileSelect is done differently, and not handled here.
 
-  if (menuLevel == 0)
+  if (menuType == menuType_fileSelect)
     return;
 
-  //  Figure out what menu we're in.
+  //  Find the next visible entry.  Usually, it's the one we're sitting on,
+  //  but if not, search up in the list (decreasing indices), then down
+  //  (increasing indices), until we find something visible.  And make that
+  //  be the position we're at.
 
-  UIMenu       *men        = (UIMenu *)menu[menuLevel];
-  UIMenuEntry **entries    = (UIMenuEntry **)pgm_read_ptr(&(men->entries));
-  UIMenuEntry  *entry      = NULL;
-  uint8_t       mtype      = pgm_read_byte(&(men->menuType)) & 127;
-  uint8_t       numEntries = pgm_read_byte(&(men->numEntries));
+  //Com::print("adjust menuPos=");
+  //Com::print(_menuPos);
 
-  if (mtype != UI_MENU_TYPE_SUBMENU)
-    return;
+  while (_menuPos > 0) {
+    menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[_menuPos]);
 
-  //  Move up until we reach a visible position.
-
-  while (menuPos[menuLevel] > 0) {
-    UIMenuEntry *entry = (UIMenuEntry *)pgm_read_ptr(&(entries[menuPos[menuLevel]]));
-
-    if (pgm_read_byte(&(entry->entryType)) == 1) // skip headlines
-      menuPos[menuLevel]--;
-
-    else if (entry->showEntry() == true)   //  Found something to show!
+    if (entry->showEntry() == true)
       break;
-
     else
-      menuPos[menuLevel]--;
+      _menuPos--;
   }
 
-  //  With bad luck the only visible option was in the opposite direction
-  //  So go down until we reach a visible position.
+  //Com::print(" menuPos=");
+  //Com::print(_menuPos);
 
-  while (menuPos[menuLevel] < numEntries - 1) {
-    UIMenuEntry *entry = (UIMenuEntry *)pgm_read_ptr(&(entries[menuPos[menuLevel]]));
+  while (_menuPos < entriesLen - 1) {
+    menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[_menuPos]);
 
-    if(pgm_read_byte(&(entry->entryType)) == 1) // skip headlines
-      menuPos[menuLevel]++;
-
-    else if (entry->showEntry() == true)   //  Found something to show!
+    if (entry->showEntry() == true)
       break;
-
     else
-      menuPos[menuLevel]++;
+      _menuPos++;
   }
 
-  //  Adjust the top to keep the list
-  //  from scrolling up past the bottom
-  //  (I think)
+  //Com::print(" menuPos=");
+  //Com::print(_menuPos);
 
-  uint16_t skipped = 0;
-  bool     modified;
+  //  If the active position is before the top, reset the top
+  //  to show the active position.
 
-  if(menuTop[menuLevel] > menuPos[menuLevel])
-    menuTop[menuLevel] = menuPos[menuLevel];
+  if (_menuPos < _menuTop)
+    _menuTop = _menuPos;
 
-  do {
-    skipped  = 0;
-    modified = false;
+  //  But now some pain.  We need to move the top down the list (increase the value)
+  //  if the position we're at is more than UI_ROWS _visible_ elements away.
+  //
+  //  There's probably a way to do this by counting backwards from _menuPos.
+#if 1
+  uint8_t  nVisible = UI_ROWS + 1;
 
-    for (uint8_t r=menuTop[menuLevel]; r<menuPos[menuLevel]; r++) {
-      UIMenuEntry *entry = (UIMenuEntry *)pgm_read_ptr(&(entries[r]));
+  while (nVisible > UI_ROWS) {
+    nVisible = 0;
 
-      if (entry->showEntry() == false)
-        skipped++;
+    for (uint8_t vv=_menuTop; vv<=_menuPos; vv++) {
+      menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[_menuPos]);
+
+      if (entry->showEntry() == true)
+        nVisible++;
     }
 
-    if ((menuTop[menuLevel] + skipped + UI_ROWS) - 1 < menuPos[menuLevel]) {
-      menuTop[menuLevel]  = menuPos[menuLevel] + 1;
-      menuTop[menuLevel] -= UI_ROWS;
-      modified = true;
-    }
+    if (nVisible > UI_ROWS)
+      _menuTop++;
+  }
+#else
+#endif
 
-  } while(modified);
+  //Com::print(" menuTop=");
+  //Com::print(_menuTop);
+  //Com::print("\n");
 }
 
 
 
-// Refresh current menu page
+
 void
 UIDisplay::refreshPage(void) {
   char    cache[UI_ROWS][MAX_COLS + 1] = {0};
 
-  Endstops::update();
-
-  //  This does what?
+  //Endstops::update();
 
   adjustMenuPos();
 
-  // Reset timeout on menu back when user active on menu
-
-  if (encoderLast != encoderStartScreen)
-    ui_autoreturn_time = HAL::timeInMilliseconds() + UI_AUTORETURN_TO_MENU_AFTER;
-
-  encoderStartScreen = encoderLast;
-
-  // Copy result into cache
-
   Endstops::update();
+
 
   //  Figure out what to display.
 
-  uint8_t    rowi    = 0;
-  uint8_t    enti    = 0;
+  menuPage     *menu       = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
+  uint8_t       menuType   =               pgm_read_byte(&menu->menuType);
+  uint8_t       entriesLen =               pgm_read_byte(&menu->menuEntriesLen);
+  menuEntry   **entries    = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
 
-  UIMenu    *men     = NULL;
-  uint16_t   menType = 0;
+  uint8_t       rowi       = 0;
+  uint8_t       enti       = 0;
 
-#if 0
-  Com::print("refreshPage menuLevel=");
-  Com::print(menuLevel);
-  Com::print(" menuPos[0]==");
-  Com::print(menuPos[0]);
+#if 1
+  Com::print("refreshPage _menuPage=");
+  Com::print(_menuPage);
+  Com::print(" menuType=");
+  Com::print(menuType);
+  Com::print(" entriesLen=");
+  Com::print(entriesLen);
+  Com::print(" _menuTop=");
+  Com::print(_menuTop);
+  Com::print(" _menuPos=");
+  Com::print(_menuPos);
+  Com::print(" _menuSel=");
+  Com::print(_menuSel);
   Com::print(" isPrinting==");
   Com::print(Printer::isPrinting());
   Com::print("\n");
 #endif
 
-  //
-  //  If not in a menu, and printing, show a default display.
-  //
-  //  isPrinting() is a bit flag, currently returns 8 if true.
+  //  If the current menu page is a file selector, get a file list and show it.
 
-  if ((menuLevel == 0) && (menuPos[0] == 0) && (Printer::isPrinting() != false)) {
-    //Com::print("printing-display\n");
-
-#warning THIS DOES NOT BELONG HERE
-    if ((sd.sdactive) && (sd.sdmode))
-      Printer::progress = (float)sd.sdpos * 100.0 / (float)sd.filesize;
-    else
-      Printer::progress = 0.0;
-
-    col = 0;
-    parse(PSTR("%Pn"), false);     //  FILENAME
-    for (uint8_t c=0; c<MAX_COLS; c++)
-      cache[rowi][c] = printCols[c];
-    rowi++;
-
-    col = 0;
-    parse(PSTR("              %Pp%%"), false);  //  PROGRESS
-    for (uint8_t c=0; c<MAX_COLS; c++)
-      cache[rowi][c] = printCols[c];
-    rowi++;
-
-    col = 0;
-    parse(PSTR("Layer %Pl/%PL"), false);
-    for (uint8_t c=0; c<MAX_COLS; c++)
-      cache[rowi][c] = printCols[c];
-    rowi++;
-
-    col = 0;
-    parse(PSTR("%os"), false);       //  STATUS
-    for (uint8_t c=0; c<MAX_COLS; c++)
-      cache[rowi][c] = printCols[c];
-    rowi++;
+  if (menuType == menuType_fileSelect) {
+      //Com::print("sd-card\n");
+      rowi = sdrefresh(cache);
   }
 
-  //
-  //  If not in a menu and not printing OR
-  //     not in a menu and on a secondary status page, show one of the main status pages.
-  //
-  //  (status page 0 is replaced with the above page)
-  //
-  else if (((menuLevel == 0) && (Printer::isPrinting() == false)) ||
-           ((menuLevel == 0) && (menuPos[0] > 0))) {
-    //Com::print("status-display\n");
+  //  But if it's a menu, show those items.
 
-    UIMenu       *men        = (UIMenu*)      pgm_read_ptr(&(ui_pages[menuPos[0]]));
-    UIMenuEntry **entries    = (UIMenuEntry**)pgm_read_ptr(&(men->entries));
-    uint8_t       entriesLen =                pgm_read_byte(&(men->numEntries));
-
+  if (menuType == menuType_normal) {
     rowi = 0;
-    enti = 0;
+    enti = _menuTop;
 
     while ((enti < entriesLen) && (rowi < UI_ROWS)) {
-      UIMenuEntry *ent = (UIMenuEntry *)pgm_read_ptr(&(entries[enti]));
+      menuEntry   *entry     = (menuEntry *) pgm_read_ptr(&entries[enti]);
+      const char  *entryText = (const char *)pgm_read_ptr(&entry->entryText);
+      uint8_t      entryType =               pgm_read_byte(&entry->entryType);
 
-      col = 0;
-      parse((char*)pgm_read_ptr(&(ent->entryText)), false);
+#if 0
+      Com::print("entryTextRaw=");
+      Com::print((uint16_t)entry->entryText);
+      Com::print(" text='");
+      Com::printF(entryText);
+      Com::print("'\n");
+#endif
+
+      if (entry->showEntry() == false) {
+        enti++;
+        continue;
+      }
+
+      rbp = 0;
+      parse(entryText, false);
+
+      //  Copy the parsed string to our display buffer.
 
       for (uint8_t c=0; c<MAX_COLS; c++)
-        cache[rowi][c] = printCols[c];
+        cache[rowi][c] = rb[c];
+
+      //  If an entryType_page, add arrows on the ends
+
+      if (entryType == entryType_page) {
+        cache[rowi][1]         = 0x7f;
+        cache[rowi][UI_COLS-1] = 0x7e;
+      }
+
+      //  Set the SELECTOR / SELECTED icon if the row is active or selected.
+
+      if      (enti == _menuSel)
+        cache[rowi][0] = CHAR_SELECTED;
+
+      else if (enti == _menuPos)
+        cache[rowi][0] = CHAR_SELECTOR;
+
+      else
+        cache[rowi][0] = ' ';
 
       rowi++;
       enti++;
     }
   }
 
-  //
-  //  If in a menu, show the menu.
-  //
-  else if (menuLevel > 0) {
-
-    men     = (UIMenu*)menu[menuLevel];
-    menType = pgm_read_byte(&(men->menuType));
-
-    if (menType == UI_MENU_TYPE_FILE_SELECTOR) {
-      //Com::print("sd-card\n");
-      rowi = sdrefresh(cache);
-    }
-
-    else {
-      //Com::print("menu-display\n");
-
-      UIMenuEntry **entries    = (UIMenuEntry**)pgm_read_ptr(&(men->entries));
-      uint8_t       entriesLen =                pgm_read_byte(&(men->numEntries));
-
-      rowi = 0;
-      enti = menuTop[menuLevel];;
-
-      while ((rowi < UI_ROWS) &&
-             (enti < entriesLen)) {
-        UIMenuEntry *ent       = (UIMenuEntry *)pgm_read_ptr(&(entries[enti]));
-        uint8_t      entType   =                pgm_read_byte(&(ent->entryType)) & 127;
-        uint16_t     entAction =                pgm_read_word(&(ent->entryAction));
-        char        *entText   = (char *)       pgm_read_ptr(&(ent->entryText));
-
-        //  If the menu entry is hidden, don't show it.
-
-        if (ent->showEntry() == false) {
-          enti++;
-          continue;
-        }
-
-        //  Othwewise, add the menu entry to the display list
-
-        col = 0;
-
-#if 0
-        //  Don't draw selector for
-        //    0 TYPE_INFO
-        //    1 TYPE_FILE_SELECTOR (handled above)
-        //    4 CHANGEACTION
-        //    5 WIZARD
-        //
-        if ((entType == UI_MENU_TYPE_SUBMENU) ||
-            (entType == UI_MENU_TYPE_MODIFICATION_MENU)) {
-#endif
-          if (enti == menuPos[menuLevel] && activeAction != entAction)
-            printCols[col++] = CHAR_SELECTOR;
-
-          else if(activeAction == entAction)
-            printCols[col++] = CHAR_SELECTED;
-
-          else
-            printCols[col++] = ' ';
-#if 0
-        }
-#endif
-
-        parse(entText, false);
-
-        //  Draw sub menu marker at the right side
-
-        if (entType == UI_MENU_TYPE_SUBMENU) {
-          while (col < UI_COLS - 1)
-            printCols[col++] = ' ';
-
-          printCols[UI_COLS - 1] = cARROWc;
-          printCols[UI_COLS    ] = 0;
-        }
-
-        //  Copy the parsed string to our display cache.
-
-        for (uint8_t c=0; c<MAX_COLS; c++)
-          cache[rowi][c] = printCols[c];
-
-        //  Move to the next row.
-
-        rowi++;
-        enti++;
-      }
-    }
-  }
-
-
-  else {
-  }
-
-
-
-
-
-
-
-
   //  Blank out any remaning rows.
 
   while (rowi < UI_ROWS)
     cache[rowi++][0] = 0;
 
+  cache[0][UI_COLS] = 0;
+  cache[1][UI_COLS] = 0;
+  cache[2][UI_COLS] = 0;
+  cache[3][UI_COLS] = 0;
 
+  //  Do we need to scroll the display?  Nope.
 
-  //  compute line scrolling values
-
-  uint8_t off0 = (shift <= 0 ? 0 : shift);
   uint8_t off[UI_ROWS] = {0};
 
 #if 0
+  uint8_t off0 = (shift <= 0 ? 0 : shift);
+
   for (uint8_t y=0; y<UI_ROWS; y++) {
     uint8_t len = strlen(cache[y]); // length of line content
 
@@ -930,300 +925,10 @@ UIDisplay::refreshPage(void) {
 
   for (uint8_t y=0; y<UI_ROWS; y++)
     printRow(y, cache[y] + off[y]);
-
-  //  And do something.
-
-  Printer::toggleAnimation();
 }
 
 
 
-
-
-void
-UIDisplay::pushMenu(const UIMenu *men, bool refresh) {
-
-  //  If we're trying to go to the same menu, just refresh the page.
-
-  if (men == menu[menuLevel]) {
-    refreshPage();
-    return;
-  }
-
-  //  If too many menus, gah, abort!
-
-  if (menuLevel + 1 >= UI_MENU_MAXLEVEL)
-    return;
-
-  //  Push the new menu onto our list of menus.
-
-  menuLevel++;
-
-  menu   [menuLevel] = men;
-  menuTop[menuLevel] = 0;
-  menuPos[menuLevel] = 0;
-
-  //  If the menu is a file selector, reload the directory and update.
-
-  if (pgm_read_byte(&(men->menuType)) == UI_MENU_TYPE_FILE_SELECTOR) {
-    updateSDFileCount();
-
-    if (nFilesOnCard > 0)
-      menuPos[menuLevel] = 1;  //  Top entry is 'back', default to the first real entry if one exists.
-  }
-
-  //  Otherwise, we're just a normal menu.
-
-  else {
-    UIMenuEntry **entries  = (UIMenuEntry**)pgm_read_ptr(&(men->entries));
-    UIMenuEntry *entry     = (UIMenuEntry *)pgm_read_ptr(&(entries[0]));
-    uint16_t     entAction                = pgm_read_word(&(entry->entryAction));
-
-    if (entAction == UI_ACTION_BACK)
-      menuPos[menuLevel] = 1;  //  Top entry is 'back', default to the first real entry.
-  }
-
-  //  Refresh if requested.
-
-  if(refresh)
-    refreshPage();
-}
-
-
-
-
-void UIDisplay::popMenu(bool refresh) {
-
-  if (menuLevel > 0)
-    menuLevel--;
-
-  Printer::setAutomount(false);
-
-  activeAction = 0;
-
-  if (refresh)
-    refreshPage();
-}
-
-
-
-
-
-
-int
-UIDisplay::okAction(bool allowMoves) {
-
-  if (Printer::isUIErrorMessage()) {
-    Printer::setUIErrorMessage(false);
-    // return 0;
-  }
-
-  uiChirp();
-
-  //  Enter the main menu if we're not at it.  This action is a button press from the status display.
-
-  if (menuLevel == 0) {
-    menuLevel   = 1;
-    menuTop[1]  = 0;
-    menuPos[1]  = 1;  //  Assume top item is back, default to first useful item.
-    menu[1]     = &ui_menu_main;
-
-    return(0);
-  }
-
-  //  Do something.
-
-  const UIMenu   *men     = menu[menuLevel];
-  uint8_t         mentype = pgm_read_byte(&(men->menuType)) & 63;
-
-  UIMenuEntry   **entries;
-  UIMenuEntry    *ent;
-  unsigned char   entType;
-  unsigned int    action;
-
-  //  If a file selector, and 'back' was selected, go back.
-
-  if ((mentype == UI_MENU_TYPE_FILE_SELECTOR) &&
-      (menuPos[menuLevel] == 0)) {
-
-    //  If the first level fileselector menu, return to the main menu.
-    if ((cwd[0] == '/') && (cwd[1] == 0))
-      return(executeAction(UI_ACTION_BACK, allowMoves));
-
-    //  Otherwise, go up a directory.
-
-    goDir(NULL);
-
-    menuTop[menuLevel] = 0;
-    menuPos[menuLevel] = 1;
-
-    refreshPage();
-
-    return(0);
-  }
-
-  //  If a file selector, but no SD card is active, return.
-
-  if ((mentype == UI_MENU_TYPE_FILE_SELECTOR) &&
-      (sd.sdactive == false))
-    return(0);
-
-  //  If a file selector, ....
-
-  if (mentype == UI_MENU_TYPE_FILE_SELECTOR) {
-    uint8_t filePos = menuPos[menuLevel] - 1;
-    char    filename[LONG_FILENAME_LENGTH + 2];   //  Needs one extra byte for an appended '/', and nul terminator.
-
-    getSDFilenameAt(filePos, filename);
-
-    //  If a directory was selected, go into it.
-
-    if (isDirname(filename)) {
-      goDir(filename);
-
-      menuTop[menuLevel] = 0;
-      menuPos[menuLevel] = 1;
-
-      refreshPage();
-
-      return(0);
-    }
-
-    if (Printer::isAutomount()) {
-      action = UI_ACTION_SD_PRINT;
-    }
-
-    else {
-      men     = menu[menuLevel - 1];
-      entries = (UIMenuEntry **)pgm_read_ptr(&(men->entries));
-      ent     = (UIMenuEntry  *)pgm_read_ptr(&(entries[menuPos[menuLevel - 1]]));
-      action  =                 pgm_read_word(&(ent->entryAction));
-    }
-
-    sd.file.close();
-    sd.fat.chdir(cwd);
-
-    switch (action) {
-      case UI_ACTION_SD_PRINT:
-        if (sd.selectFile(filename, false)) {
-          sd.startPrint();
-          uiAlert();
-          menuLevel = 0;
-        }
-        break;
-      case UI_ACTION_SD_DELETE:
-        if(sd.sdactive) {
-          sd.sdmode = 0;
-          sd.file.close();
-          if(sd.fat.remove(filename)) {
-            Com::printFLN(PSTR("File deleted"));
-            uiAlert();
-            if(menuPos[menuLevel] > 0)
-              menuPos[menuLevel]--;
-            updateSDFileCount();
-          } else {
-            Com::printFLN(PSTR("Deletion failed"));
-          }
-        }
-        break;
-    }
-
-    return(0);
-  }  //  UI_MENU_TYPE_FILE_SELECTOR
-
-
-
-  entries = (UIMenuEntry**)pgm_read_word(&(men->entries));
-  ent     = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
-  entType =                pgm_read_byte(&(ent->entryType));
-  action  =                pgm_read_word(&(ent->entryAction));
-
-  //  If a modification menu, grab the action from the menu, do it, then go back to where we came from.
-
-  if (mentype == UI_MENU_TYPE_MODIFICATION_MENU) {
-    action = pgm_read_word(&(men->menuAction));
-
-    finishAction(action);
-
-    return(executeAction(UI_ACTION_BACK, true));
-  }
-
-  //  If a submenu, with entry type 4??
-
-  if ((mentype == UI_MENU_TYPE_SUBMENU) &&
-      (entType == 4)) { // Modify action
-    if (activeAction) {
-      finishAction(action);
-      activeAction = 0;
-    } else {
-      activeAction = action;
-    }
-
-    return(0);
-  }
-
-  //  If a wizard, 
-
-#if FEATURE_Z_PROBE
-  if(mentype == UI_MENU_TYPE_WIZARD) {
-    action = pgm_read_word(&(men->menuAction));
-
-    switch(action) {
-      case UI_ACTION_MESSAGE:
-        popMenu(true);
-        break;
-
-      case UI_ACTION_STATE:
-        break;
-
-#if FEATURE_AUTOLEVEL & FEATURE_Z_PROBE
-      case UI_ACTION_AUTOLEVEL2:
-        uid.popMenu(false);
-        uid.pushMenu(&ui_msg_calibrating_bed, true);
-        runBedLeveling(2);
-        uid.popMenu(true);
-        break;
-#endif
-
-#if DISTORTION_CORRECTION
-      case UI_ACTION_MEASURE_DISTORTION2:
-        uid.pushMenu(&ui_msg_calibrating_bed, true);
-        Printer::measureDistortion();
-        uid.popMenu(true);
-        break;
-#endif
-
-      default:
-        break;
-    }
-
-    return(0);
-  }
-#endif
-
-  //  If the entry is a submenu, go into the submenu.
-
-  if (entType == UI_MENU_TYPE_SUBMENU) {
-    pushMenu((UIMenu*)action, false);
-
-    currHeaterForSetup = &(Extruder::current->tempControl);
-
-    Printer::setMenuMode(MENU_MODE_FULL_PID, currHeaterForSetup->heatManager == 1);
-    Printer::setMenuMode(MENU_MODE_DEADTIME, currHeaterForSetup->heatManager == 3);
-
-    return(0);
-  }
-
-  //  
-
-  if (entType == UI_MENU_TYPE_MODIFICATION_MENU) {
-    return executeAction(action, allowMoves);
-  }
-
-  //  Otherwise, go back.
-
-  return executeAction(UI_ACTION_BACK, allowMoves);
-}
 
 
 
@@ -1350,21 +1055,17 @@ void UIDisplay::slowAction(bool allowMoves) {
 
   // Go to top menu after x seconds
 
-  if(menuLevel > 0 && ui_autoreturn_time < time && !uid.isSticky()) {
-    menuLevel = 0;
-    activeAction = 0;
-  }
+  //if(menuLevel > 0 && ui_autoreturn_time < time && !uid.isSticky()) {
+  //  menuLevel = 0;
+  //  activeAction = 0;
+  //}
 
   //  Refresh the display, every second for the main, and 0.8 seconds for non-main menus.
 
-  if (menuLevel == 0) {
-    if (time - lastRefresh >= 1000)
-      refresh = 1;
-  } else {
-    if (time - lastRefresh >= 800)
-      refresh = 1;
-  }
+  if (time - lastRefresh >= 800)
+    refresh = 1;
 
+#if 0
   if (refresh) {
     if (menuLevel > 1 || Printer::isAutomount()) {
       shift++;
@@ -1375,6 +1076,7 @@ void UIDisplay::slowAction(bool allowMoves) {
       shift = -2;
     }
   }
+#endif
 
   if (refresh) {
     refreshPage();
@@ -1400,9 +1102,7 @@ UIDisplay::fastAction(void) {
   if ((flags & (UI_FLAG_KEY_TEST_RUNNING + UI_FLAG_SLOW_KEY_ACTION)) == 0) {
     flags |= UI_FLAG_KEY_TEST_RUNNING;
 
-    uint16_t nextAction = 0;
-
-    uiCheckKeys(nextAction);
+    uint16_t nextAction = uiCheckKeys();
 
     if (lastButtonAction != nextAction) {
       lastButtonStart = HAL::timeInMilliseconds();
@@ -1414,5 +1114,6 @@ UIDisplay::fastAction(void) {
     flags &= ~UI_FLAG_KEY_TEST_RUNNING;
   }
 }
+
 
 

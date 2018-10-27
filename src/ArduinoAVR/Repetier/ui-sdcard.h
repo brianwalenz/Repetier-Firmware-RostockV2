@@ -28,9 +28,8 @@ extern UIDisplay uid;
 
 
 
-
 void
-UIDisplay::updateSDFileCount() {
+UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
   dir_t   *p    = NULL;
   FatFile *root = sd.fat.vwd();
   FatFile  file;
@@ -40,7 +39,7 @@ UIDisplay::updateSDFileCount() {
   nFilesOnCard = 0;
 
   Com::print("\n");
-  Com::print("updateSDFileCount\n");
+  Com::print("scanSDcard\n");
 
   while (file.openNext(root, O_READ)) {
     HAL::pingWatchdog();
@@ -50,61 +49,38 @@ UIDisplay::updateSDFileCount() {
     file.getName(tempLongFilename, LONG_FILENAME_LENGTH);
     file.close();
 
-    Com::print("updateSDFileCount -- '");
+    Com::print("scanSDcard -- '");
     Com::print(tempLongFilename);
     Com::print("'\n");
+
+    //  Skip dot files.
 
     if ((tempLongFilename[0] == '.') && (tempLongFilename[1] != '.'))
       continue;
 
-    nFilesOnCard++;
+    //  If this is the file we want to get the name for, copy the name.
 
-    if (nFilesOnCard > 5000) // Arbitrary maximum, limited only by how long someone would scroll
-      return;
+    if ((filename != NULL) && (nFilesOnCard == filePos)) {
+      uint16_t  pos = 0;
+
+      for (pos=0; tempLongFilename[pos] != 0; pos++)
+        filename[pos] = tempLongFilename[pos];
+
+      if (isDir)
+        filename[pos++] = '/';
+
+      filename[pos] = 0;
+    }
+
+    nFilesOnCard++;
   }
 
-  Com::print("updateSDFileCount ");
+  Com::print("scanSDcard ");
   Com::print(nFilesOnCard);
   Com::print("\n");
 }
 
 
-
-//  MAKE PART OF UID
-void getSDFilenameAt(uint16_t filePos, char *filename) {
-  dir_t* p = NULL;
-  FatFile *root = sd.fat.vwd();
-  FatFile file;
-
-  root->rewind();
-
-  while (file.openNext(root, O_READ)) {
-    HAL::pingWatchdog();
-
-    bool isDir = file.isDir();
-
-    file.getName(tempLongFilename, LONG_FILENAME_LENGTH);
-    file.close();
-
-    if ((tempLongFilename[0] == '.') && (tempLongFilename[1] != '.'))
-      continue;
-
-    if (filePos--)
-      continue;
-
-    uint16_t  pos = 0;
-
-    for (pos=0; tempLongFilename[pos] != 0; pos++)
-      filename[pos] = tempLongFilename[pos];
-
-    if (isDir)
-      filename[pos++] = '/';
-
-    filename[pos] = 0;
-
-    break;
-  }
-}
 
 
 
@@ -156,7 +132,7 @@ void UIDisplay::goDir(char *name) {
 
   sd.fat.chdir(cwd);
 
-  updateSDFileCount();
+  scanSDcard();
 }
 
 
@@ -176,13 +152,13 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   uint8_t    rowi = 0;                    //  Which display row are we creating?
   uint8_t    enti = 0;                    //  Which file entry are we processing?
 
-  // menuTop[menuLevel]   Which entry is the first to be displayed?
-  // menuPos[menuLevel]   Which entry is highlighted?
+  // _menuTop   Which entry is the first to be displayed?
+  // _menuPos   Which entry is highlighted?
 
   Com::print("sdrefresh -- menuTop=");
-  Com::print(menuTop[menuLevel]);
+  Com::print(_menuTop);
   Com::print(" menuPos=");
-  Com::print(menuPos[menuLevel]);
+  Com::print(_menuPos);
   Com::print("\n");
 
   sd.fat.chdir(cwd);
@@ -193,16 +169,16 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   //  If no active files. reset menuTop to be 'back'.
 
   if (nFilesOnCard == 0) {
-    menuTop[menuLevel] = 0;
-    menuPos[menuLevel] = 0;
+    _menuTop = 0;
+    _menuPos = 0;
   }
 
   //  If at the first or second entry, make the first displayed item be '..'
 
-  if (menuTop[menuLevel] == 0) {
-    col = 0;
+  if (_menuTop == 0) {
+    uint8_t col = 0;
 
-    cache[rowi][col++] = (menuPos[menuLevel] == 0) ? CHAR_SELECTOR : ' ';
+    cache[rowi][col++] = (_menuPos == 0) ? CHAR_SELECTOR : ' ';
     cache[rowi][col++] = '[';
     cache[rowi][col++] = '.';
     cache[rowi][col++] = '.';
@@ -244,24 +220,24 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     //  A menuTop of 1 means we're showing the first file as the first, and we should skip no file names.
     //  A menuTop of 2 ... and we should skip the first file (at enti==0).
     //
-    if (enti + 1 < menuTop[menuLevel]) {
+    if (enti + 1 < _menuTop) {
       enti++;
       continue;
     }
 
     //  Mark this file as selected?  The first file is 'enti 0', but is in the second menuPos (menuPos = 1)
 
-    col = 0;
+    uint8_t col = 0;
 
-    if (enti + 1 == menuPos[menuLevel])
-      printCols[col++] = CHAR_SELECTOR;
+    if (enti + 1 == _menuPos)
+      cache[rowi][col++] = CHAR_SELECTOR;
     else
-      printCols[col++] = ' ';
+      cache[rowi][col++] = ' ';
 
     //  Add the filename.
 
     if (isDir)
-      printCols[col++] = '[';
+      cache[rowi][col++] = '[';
 
     uint8_t   length = 0;
 
@@ -273,16 +249,13 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     Com::print("'\n");
 
     for (uint8_t pos=0; ((col < MAX_COLS) && (pos < length)); pos++, col++)
-      printCols[col] = tempLongFilename[pos];
+      cache[rowi][col] = tempLongFilename[pos];
 
     if (isDir)
-      printCols[col++] = ']';
+      cache[rowi][col++] = ']';
 
     while (col < MAX_COLS)
-      printCols[col++] = ' ';
-
-    for (uint8_t pos=0; pos<MAX_COLS; pos++)
-      cache[rowi][pos] = printCols[pos];
+      cache[rowi][col++] = ' ';
 
     rowi++;
     enti++;

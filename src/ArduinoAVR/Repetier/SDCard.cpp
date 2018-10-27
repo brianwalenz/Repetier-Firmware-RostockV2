@@ -25,53 +25,71 @@ char tempLongFilename[LONG_FILENAME_LENGTH + 1];
 char fullName[LONG_FILENAME_LENGTH * SD_MAX_FOLDER_DEPTH + SD_MAX_FOLDER_DEPTH + 1];
 
 SDCardGCodeSource sdSource;
-
-SDCard sd;
+SDCard            sd;
 
 SDCard::SDCard() {
   sdmode = 0;
+
   sdactive = false;
   savetosd = false;
+
   Printer::setAutomount(false);
 }
 
-void SDCard::automount() {
-  if(READ(SDCARDDETECT) != SDCARDDETECTINVERTED) {
-    if(sdactive || sdmode == 100) { // Card removed
-      //Com::printFLN(PSTR(PSTR("SD card removed")));
-      uid.executeAction(UI_ACTION_TOP_MENU, true);
-      unmount();
-      uid.setStatusP(PSTR("SD card removed"));
-      uid.refreshPage();
-    }
-  } else {
-    if(!sdactive && sdmode != 100) {
-      uid.setStatusP(PSTR("SD card inserted"));
-      uid.refreshPage();
-      mount();
-      if(sdmode != 100) // send message only if we have success
-        Com::printFLN(PSTR("SD card inserted")); // Not translatable or host will not understand signal
+void
+SDCard::automount(void) {
+  uint8_t  inserted = (READ(SDCARDDETECT) == 0);
 
-      if(sdactive) {
+  //  If the card is not present, but it was, report it's been removed.
+  if (inserted == false) {
+    if ((sdactive == true) || (sdmode == 100)) {
+      //Com::printFLN(PSTR(PSTR("SD card removed")));
+      //uid.executeAction(UI_ACTION_TOP_MENU, true);
+
+      unmount();
+
+      //uid.setStatusP(PSTR("SD card removed"));
+      //uid.refreshPage();
+    }
+  }
+
+  if (inserted == true) {
+    if ((sdactive == false) && (sdmode != 100)) {
+      //uid.setStatusP(PSTR("SD card inserted"));
+      //uid.refreshPage();
+
+      mount();
+
+      //if (sdmode != 100)   // send message only if we have success
+      //  Com::printFLN(PSTR("SD card inserted")); // Not translatable or host will not understand signal
+
+      if (sdactive == true) {
         Printer::setAutomount(true);
-        uid.executeAction(UI_ACTION_SD_PRINT + UI_ACTION_TOPMENU, true);
+        //uid.executeAction(UI_ACTION_SD_PRINT + UI_ACTION_TOPMENU, true);
       }
     }
   }
 }
 
+
 void SDCard::initsd() {
+
   sdactive = false;
-#if SDSS > -1
+
   if(READ(SDCARDDETECT) != SDCARDDETECTINVERTED)
     return;
+
   HAL::pingWatchdog();
   HAL::delayMilliseconds(50); // wait for stabilization of contacts, bootup ...
+
   fat.begin(SDSS, SD_SCK_MHZ(50)); // dummy init of SD_CARD
   HAL::delayMilliseconds(50);       // wait for init end
+
   HAL::pingWatchdog();
+
   /*if(dir[0].isOpen())
     dir[0].close();*/
+
   if (!fat.begin(SDSS, SD_SCK_MHZ(50))) {
     Com::printFLN(PSTR("SD init fail"));
     sdmode = 100; // prevent automount loop!
@@ -98,7 +116,7 @@ void SDCard::initsd() {
   }
   Com::printFLN(PSTR("Card successfully initialized."));
   sdactive = true;
-  Printer::setMenuMode(MENU_MODE_MOUNTED, true);
+  Printer::setMenuMode(MODE_CARD_PRESENT, true);
   HAL::pingWatchdog();
 
   fat.chdir();
@@ -106,10 +124,10 @@ void SDCard::initsd() {
 #if defined(EEPROM_AVAILABLE) && EEPROM_AVAILABLE == EEPROM_SDCARD
   HAL::importEEPROM();
 #endif
+
   if(selectFile("init.g", true)) {
     startPrint();
   }
-#endif
 }
 
 void SDCard::mount() {
@@ -122,7 +140,9 @@ void SDCard::unmount() {
   sdactive = false;
   savetosd = false;
   Printer::setAutomount(false);
-  Printer::setMenuMode(MENU_MODE_MOUNTED + MENU_MODE_PAUSED + MENU_MODE_PRINTING, false);
+  Printer::setMenuMode(MODE_CARD_PRESENT, false);
+  Printer::setMenuMode(MODE_PAUSED, false);
+  Printer::setMenuMode(MODE_PRINTING, false);
 
   uid.cwd[0] = '/';
   uid.cwd[1] = 0;
@@ -131,8 +151,8 @@ void SDCard::unmount() {
 void SDCard::startPrint() {
   if(!sdactive) return;
   sdmode = 1;
-  Printer::setMenuMode(MENU_MODE_PRINTING, true);
-  Printer::setMenuMode(MENU_MODE_PAUSED, false);
+  Printer::setMenuMode(MODE_PRINTING, true);
+  Printer::setMenuMode(MODE_PAUSED, false);
   Printer::setPrinting(true);
   Printer::maxLayer = 0;
   Printer::currentLayer = 0;
@@ -143,7 +163,7 @@ void SDCard::startPrint() {
 void SDCard::pausePrint(bool intern) {
   if(!sdactive) return;
   sdmode = 2; // finish running line
-  Printer::setMenuMode(MENU_MODE_PAUSED, true);
+  Printer::setMenuMode(MODE_PAUSED, true);
 #if !defined(DISABLE_PRINTMODE_ON_PAUSE) || DISABLE_PRINTMODE_ON_PAUSE==1
   Printer::setPrinting(false);
 #endif
@@ -173,7 +193,7 @@ void SDCard::continuePrint(bool intern) {
   }
   GCodeSource::registerSource(&sdSource);
   Printer::setPrinting(true);
-  Printer::setMenuMode(MENU_MODE_PAUSED, false);
+  Printer::setMenuMode(MODE_PAUSED, false);
   sdmode = 1;
 }
 
@@ -182,8 +202,8 @@ void SDCard::stopPrint() {
   if(sdmode)
     Com::printFLN(PSTR("SD print stopped by user."));
   sdmode = 0;
-  Printer::setMenuMode(MENU_MODE_PRINTING, false);
-  Printer::setMenuMode(MENU_MODE_PAUSED, false);
+  Printer::setMenuMode(MODE_PRINTING, false);
+  Printer::setMenuMode(MODE_PAUSED, false);
   Printer::setPrinting(0);
   GCodeSource::removeSource(&sdSource);
   GCode::executeFString(PSTR(SD_RUN_ON_STOP));

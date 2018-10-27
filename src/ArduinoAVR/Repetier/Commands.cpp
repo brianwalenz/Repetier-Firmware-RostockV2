@@ -26,54 +26,65 @@ int Commands::lowestRAMValue = MAX_RAM;
 int Commands::lowestRAMValueSend = MAX_RAM;
 
 void Commands::commandLoop() {
-  //while(true) {
+
 #ifdef DEBUG_PRINT
   debugWaitLoop = 1;
 #endif
-  if(!Printer::isBlockingReceive()) {
+
+  if (Printer::isBlockingReceive() == false) {
     GCode::readFromSerial();
     GCode *code = GCode::peekCurrentCommand();
 
     //uid.slowAction()  //  do slow events?  was disabled
 
     uid.mediumAction(); // do check encoder
+
     if(code) {
       if(sd.savetosd) {
         if(!(code->hasM() && code->M == 29))   // still writing to file
           sd.writeCommand(code);
         else
           sd.finishWrite();
+
 #if ECHO_ON_EXECUTE
         code->echoCommand();
 #endif
       } else
         Commands::executeGCode(code);
+
       code->popCurrentCommand();
     }
+
   } else {
     GCode::keepAlive(Paused);
     uid.mediumAction();
   }
+
   Printer::defaultLoopActions();
-  //}
 }
 
 void Commands::checkForPeriodicalActions(bool allowNewMoves) {
+
   Printer::handleInterruptEvent();
 
-  if(!executePeriodical) return; // gets true every 100ms
+  if(executePeriodical == false)
+    return; // gets true every 100ms
+
   executePeriodical = 0;
 
   Extruder::manageTemperatures();
-  if(--counter500ms == 0) {
+
+  if (--counter500ms == 0) {
     if(manageMonitor)
       writeMonitor();
     counter500ms = 5;
   }
+
   // If called from queueDelta etc. it is an error to start a new move since it
   // would invalidate old computation resulting in unpredicted behavior.
   // lcd controller can start new moves, so we disallow it if called from within
   // a move command.
+
   uid.slowAction(allowNewMoves);
 }
 
@@ -220,7 +231,7 @@ void Commands::setFanSpeed(int speed, bool immediately) {
   if(Printer::fanSpeed == speed)
     return;
   speed = constrain(speed, 0, 255);
-  Printer::setMenuMode(MENU_MODE_FAN_RUNNING, speed != 0);
+  //Printer::setMenuMode(MODE_FAN_RUNNING, speed != 0);
   Printer::fanSpeed = speed;
   if(PrintLine::linesCount == 0 || immediately) {
     if(Printer::mode == PRINTER_MODE_FFF) {
@@ -1120,7 +1131,6 @@ void Commands::processMCode(GCode *com) {
       Com::cap(PSTR("PAUSESTOP:1"));
       Com::cap(PSTR("PREHEAT:1"));
       reportPrinterUsage();
-      Printer::reportPrinterMode();
       break;
     case 114: // M114
       Com::writeToAll = false;
@@ -1439,38 +1449,13 @@ void Commands::processMCode(GCode *com) {
     case 402: // M402 Go to stored position
       Printer::GoToMemoryPosition(com->hasX(), com->hasY(), com->hasZ(), com->hasE(), (com->hasF() ? com->F : Printer::feedrate));
       break;
-    case 450:
-      Printer::reportPrinterMode();
-      break;
-    case 451:
-      waitUntilEndOfAllMoves();
-      Printer::mode = PRINTER_MODE_FFF;
-      Printer::reportPrinterMode();
-      break;
-    case 452:
-      Printer::reportPrinterMode();
-      break;
-    case 453:
-      Printer::reportPrinterMode();
-      break;
 
-      //- M530 S<printing> L<layer> - Enables explicit printing mode (S1) or disables it (S0). L can set layer count
-    case 530:
-      if(com->hasL())
-        Printer::maxLayer = static_cast<int>(com->L);
-      if(com->hasS())
-        Printer::setPrinting(static_cast<uint8_t>(com->S));
-      else {
-        Printer::setPrinting(0);
-      }
-      Printer::setMenuMode(MENU_MODE_PAUSED, false);
-      UI_RESET_MENU
-        break;
       //- M531 filename - Define filename being printed
     case 531:
       strncpy(Printer::printName, com->text, 20);
       Printer::printName[20] = 0;
       break;
+
       //- M532 X<percent> L<curLayer> - update current print state progress (X=0..100) and layer L
     case 532:
       if(com->hasX())
@@ -1526,31 +1511,21 @@ void Commands::processMCode(GCode *com) {
         Printer::maxRealJerk = 0;
       break;
 #endif
-    case 539:
-      if(com->hasS()) {
-        Printer::setSupportStartStop(com->S != 0);
-      }
-      if(com->hasP()) {
-        if(com->P) {
-          Printer::setMenuMode(MENU_MODE_PAUSED, true);
-        } else {
-          Printer::setMenuMode(MENU_MODE_PAUSED, false);
-          UI_RESET_MENU
-            }
-      }
-      break;
+
     case 601:
       if(com->hasS() && com->S > 0)
         Extruder::pauseExtruders(com->hasB() && com->B != 0);
       else
         Extruder::unpauseExtruders(com->hasP() && com->P != 1);
       break;
+
     case 670:
       if(com->hasS()) {
         HAL::eprSetByte(EPR_VERSION, static_cast<uint8_t>(com->S));
         HAL::eprSetByte(EPR_INTEGRITY_BYTE, EEPROM::computeChecksum());
       }
       break;
+
     case 907: { // M907 Set digital trimpot/DAC motor current using axis codes.
       // If "S" is specified, use that as initial default value, then update each axis w/ specific values as found later.
       if(com->hasS()) {

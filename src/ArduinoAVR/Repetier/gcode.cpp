@@ -1233,8 +1233,8 @@ void SDCardGCodeSource::close() {
   sd.sdmode = 0;    
   GCodeSource::removeSource(this);  
   Printer::setPrinting(false);
-  Printer::setMenuMode(MENU_MODE_PRINTING,false);
-  Printer::setMenuMode(MENU_MODE_PAUSED,false);
+  Printer::setMenuMode(MODE_PRINTING,false);
+  Printer::setMenuMode(MODE_PAUSED,false);
   Com::printFLN(PSTR("Done printing file"));
 }
 

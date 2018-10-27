@@ -367,7 +367,7 @@ public:
   inline static void resetPathPlanner() {
     linesCount = 0;
     linesPos = linesWritePos;
-    Printer::setMenuMode(MENU_MODE_PRINTING, Printer::isPrinting());
+    Printer::setMenuMode(MODE_PRINTING, Printer::isPrinting());
   }
   // Only called from bresenham -> inside interrupt handle
   inline void updateAdvanceSteps(speed_t v, uint8_t max_loops, bool accelerate) {
@@ -467,11 +467,11 @@ public:
     HAL::forbidInterrupts();
     --linesCount;
     if(!linesCount)
-      Printer::setMenuMode(MENU_MODE_PRINTING, Printer::isPrinting());
+      Printer::setMenuMode(MODE_PRINTING, Printer::isPrinting());
   }
   static INLINE void pushLine() {
     nextPlannerIndex(linesWritePos);
-    Printer::setMenuMode(MENU_MODE_PRINTING, true);
+    Printer::setMenuMode(MODE_PRINTING, true);
     InterruptProtectedBlock noInts;
     linesCount++;
   }

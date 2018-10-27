@@ -80,7 +80,6 @@ union wizardVar {
 #define PRINTER_FLAG0_LARGE_MACHINE         128
 #define PRINTER_FLAG1_HOMED_ALL             1
 #define PRINTER_FLAG1_AUTOMOUNT             2
-#define PRINTER_FLAG1_ANIMATION             4
 #define PRINTER_FLAG1_ALLKILLED             8
 #define PRINTER_FLAG1_UI_ERROR_MESSAGE      16
 #define PRINTER_FLAG1_NO_DESTINATION_CHECK  32
@@ -338,7 +337,6 @@ public:
     if(highPriority || interruptEvent == 0)
       interruptEvent = evt;
   }
-  static void reportPrinterMode();
   static INLINE void setMenuMode(uint16_t mode, bool on) {
     if(on)
       menuMode |= mode;
@@ -559,14 +557,6 @@ public:
     flag1 = (b ? flag1 | PRINTER_FLAG1_AUTOMOUNT : flag1 & ~PRINTER_FLAG1_AUTOMOUNT);
   }
 
-  static INLINE uint8_t isAnimation() {
-    return flag1 & PRINTER_FLAG1_ANIMATION;
-  }
-
-  static INLINE void setAnimation(uint8_t b) {
-    flag1 = (b ? flag1 | PRINTER_FLAG1_ANIMATION : flag1 & ~PRINTER_FLAG1_ANIMATION);
-  }
-
   static INLINE uint8_t isUIErrorMessage() {
     return flag1 & PRINTER_FLAG1_UI_ERROR_MESSAGE;
   }
@@ -618,7 +608,7 @@ public:
 
   static INLINE void setPrinting(uint8_t b) {
     flag3 = (b ? flag3 | PRINTER_FLAG3_PRINTING : flag3 & ~PRINTER_FLAG3_PRINTING);
-    Printer::setMenuMode(MENU_MODE_PRINTING, b);
+    Printer::setMenuMode(MODE_PRINTING, b);
   }
 
   static INLINE uint8_t isStartStopSupported() {
@@ -644,9 +634,6 @@ public:
     flag2 = (b ? flag2 | PRINTER_FLAG2_ALL_E_MOTORS : flag2 & ~PRINTER_FLAG2_ALL_E_MOTORS);
   }
 
-  static INLINE void toggleAnimation() {
-    setAnimation(!isAnimation());
-  }
   static INLINE float convertToMM(float x) {
     return (unitIsInches ? x * 25.4 : x);
   }

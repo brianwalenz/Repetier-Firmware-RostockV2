@@ -181,10 +181,6 @@ enum debugFlags {
 
 typedef uint8_t secondspeed_t;
 
-#ifndef SHARED_EXTRUDER_HEATER
-#define SHARED_EXTRUDER_HEATER 0
-#endif
-
 #ifndef MOVE_X_WHEN_HOMED
 #define MOVE_X_WHEN_HOMED 0
 #endif
@@ -297,19 +293,6 @@ inline void memcopy4(void *dest,void *source) {
 
 #define ANALOG_INPUT_CHANNELS {EXT0_TEMPSENSOR_PIN, HEATED_BED_SENSOR_PIN}
 
-
-
-#define MENU_MODE_MOUNTED 1    // Used.
-#define MENU_MODE_PRINTING 2   // Used.
-#define MENU_MODE_PAUSED 4   // Used.
-
-#define MENU_MODE_FAN_RUNNING 8
-#define MENU_MODE_FULL_PID 32
-#define MENU_MODE_DEADTIME 64
-#define MENU_MODE_FDM 128
-
-#define MENU_MODE_BED_HEAT 1024    //  Used.
-#define MENU_MODE_EXT_HEAT 2048    //  Used.
 
 #include "HAL.h"
 
@@ -771,7 +754,5 @@ public:
 		}
 	}
 };
-
-#include "DisplayList.h"
 
 #endif
