@@ -471,7 +471,7 @@ public:
   }
   static INLINE void pushLine() {
     nextPlannerIndex(linesWritePos);
-    Printer::setMenuMode(MODE_PRINTING, true);
+    //Printer::setMenuMode(MODE_PRINTING, true);
     InterruptProtectedBlock noInts;
     linesCount++;
   }
