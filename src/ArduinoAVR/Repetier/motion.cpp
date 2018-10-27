@@ -32,18 +32,6 @@
 // #          No configuration below this line - just some error checking             #
 // ####################################################################################
 
-#if X_STEP_PIN < 0 || Y_STEP_PIN < 0 || Z_STEP_PIN < 0
-#error One of the following pins is not assigned: X_STEP_PIN,Y_STEP_PIN,Z_STEP_PIN
-#endif
-
-#if EXT0_STEP_PIN < 0 && NUM_EXTRUDER > 0
-#error EXT0_STEP_PIN not set to a pin number.
-#endif
-
-#if EXT0_DIR_PIN < 0 && NUM_EXTRUDER > 0
-#error EXT0_DIR_PIN not set to a pin number.
-#endif
-
 #if PRINTLINE_CACHE_SIZE < 4
 #error PRINTLINE_CACHE_SIZE must be at least 5
 #endif
@@ -85,10 +73,9 @@ ufast8_t PrintLine::linesPos = 0;                 ///< Position for executing li
    \param pathOptimize If false start and end speeds get fixed to minimum values.
 */
 void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool checkEndstop, bool pathOptimize) {
-#if NUM_EXTRUDER > 0
   if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0))
     e = 0; // should not be allowed for current temperature
-#endif
+
 #if MOVE_X_WHEN_HOMED == 1 || MOVE_Y_WHEN_HOMED == 1 || MOVE_Z_WHEN_HOMED == 1
   if(!Printer::isHoming() && !Printer::isNoDestinationCheck()) {
 #if MOVE_X_WHEN_HOMED
@@ -156,10 +143,10 @@ void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z,
   if(!Printer::isPositionAllowed( Printer::lastCmdPos[X_AXIS], Printer::lastCmdPos[Y_AXIS], Printer::lastCmdPos[Z_AXIS])) {
     return; // ignore move
   }
-#if NUM_EXTRUDER > 0
+
   if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0))
     e = 0; // should not be allowed for current temperature
-#endif
+
   Printer::moveToReal(Printer::lastCmdPos[X_AXIS], Printer::lastCmdPos[Y_AXIS], Printer::lastCmdPos[Z_AXIS],
                       (Printer::currentPositionSteps[E_AXIS] + e) * Printer::invAxisStepsPerMM[E_AXIS], feedrate, pathOptimize);
   Printer::updateCurrentPosition();
