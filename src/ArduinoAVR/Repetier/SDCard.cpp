@@ -114,8 +114,11 @@ void SDCard::initsd() {
     }
     return;
   }
+
   Com::printFLN(PSTR("Card successfully initialized."));
+
   sdactive = true;
+
   Printer::setMenuMode(MODE_CARD_PRESENT, true);
   HAL::pingWatchdog();
 
@@ -124,6 +127,8 @@ void SDCard::initsd() {
 #if defined(EEPROM_AVAILABLE) && EEPROM_AVAILABLE == EEPROM_SDCARD
   HAL::importEEPROM();
 #endif
+
+  uid.scanSDcard();
 
   if(selectFile("init.g", true)) {
     startPrint();
