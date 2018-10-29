@@ -28,48 +28,17 @@ extern UIDisplay uid;
 
 
 
-void
-UIDisplay::finishAction(uint16_t action) {
-
-  if (action == ACT_EXT_T_PREHEAT) {
-    int i = 0;
-    int o = i * EEPROM_EXTRUDER_LENGTH + EEPROM_EXTRUDER_OFFSET;
-
-    Extruder *e = &extruder[i];
-
-    HAL::eprSetInt16(o + EPR_EXTRUDER_PREHEAT, e->tempControl.preheatTemperature);
-    EEPROM::updateChecksum();
-  }
-
-  if (action == ACT_BED_T_PREHEAT) {
-    HAL::eprSetInt16(EPR_BED_PREHEAT_TEMP, heatedBedController.preheatTemperature);
-    EEPROM::updateChecksum();
-  }
-}
-
-
-
-
-
-// Actions are events from user input. Depending on the current state, each
-// action can behave differently. Other actions do always the same like home, disable extruder etc.
-
+//  This is called on a button press.
+//
 uint16_t
 UIDisplay::executeAction(uint16_t action, bool allowMoves) {
-  int ret = 0;
 
-  Com::print("executeAction action=");
-  Com::print(action);
-  Com::print("\n");
-
-  if      (action == ACT_OK) {
+  if      (action == ACT_OK)
     okAction(allowMoves);
-  }
 
-  else if (action == ACT_KILL) {
+  else if (action == ACT_KILL)
     Commands::emergencyStop();
-  }
 
-  return(ret);
+  return(0);
 }
 

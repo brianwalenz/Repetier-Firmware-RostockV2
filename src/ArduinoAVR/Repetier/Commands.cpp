@@ -40,17 +40,7 @@ void Commands::commandLoop() {
     uid.mediumAction(); // do check encoder
 
     if(code) {
-      if(sd.savetosd) {
-        if(!(code->hasM() && code->M == 29))   // still writing to file
-          sd.writeCommand(code);
-        else
-          sd.finishWrite();
-
-#if ECHO_ON_EXECUTE
-        code->echoCommand();
-#endif
-      } else
-        Commands::executeGCode(code);
+      Commands::executeGCode(code);
 
       code->popCurrentCommand();
     }
@@ -116,16 +106,7 @@ void Commands::waitUntilEndOfAllBuffers() {
     code = GCode::peekCurrentCommand();
     uid.mediumAction(); // do check encoder
     if(code) {
-      if(sd.savetosd) {
-        if(!(code->hasM() && code->M == 29))   // still writing to file
-          sd.writeCommand(code);
-        else
-          sd.finishWrite();
-#if ECHO_ON_EXECUTE
-        code->echoCommand();
-#endif
-      } else
-        Commands::executeGCode(code);
+      Commands::executeGCode(code);
       code->popCurrentCommand();
     }
     Commands::checkForPeriodicalActions(false); // only called from memory
@@ -820,60 +801,7 @@ void Commands::processGCode(GCode *com) {
 void Commands::processMCode(GCode *com) {
 
   switch( com->M ) {
-    case 3: // Spindle/laser on
-      break;
-    case 4: // Spindle CCW
-      break;
-    case 5: // Spindle/laser off
-      break;
-    case 20: // M20 - list SD card
-      sd.ls();
-      break;
-    case 21: // M21 - init SD card
-      sd.mount();
-      break;
-    case 22: //M22 - release SD card
-      sd.unmount();
-      break;
-    case 23: //M23 - Select file
-      if(com->hasString()) {
-        sd.fat.chdir();
-        sd.selectFile(com->text);
-      }
-      break;
-    case 24: //M24 - Start SD print
-      sd.startPrint();
-      break;
-    case 25: //M25 - Pause SD print
-      sd.pausePrint();
-      break;
-    case 26: //M26 - Set SD index
-      if(com->hasS())
-        sd.setIndex(com->S);
-      break;
-    case 27: //M27 - Get SD status
-      sd.printStatus();
-      break;
-    case 28: //M28 - Start SD write
-      if(com->hasString())
-        sd.startWrite(com->text);
-      break;
-    case 29: //M29 - Stop SD write
-      //processed in write to file routine above
-      //savetosd = false;
-      break;
-    case 30: // M30 filename - Delete file
-      if(com->hasString()) {
-        sd.fat.chdir();
-        sd.deleteFile(com->text);
-      }
-      break;
-    case 32: // M32 directoryname
-      if(com->hasString()) {
-        sd.fat.chdir();
-        sd.makeDirectory(com->text);
-      }
-      break;
+
     case 42: //M42 -Change pin status via gcode
       if (com->hasP()) {
         int pin_number = com->P;

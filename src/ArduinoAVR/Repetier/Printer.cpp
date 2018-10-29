@@ -769,7 +769,8 @@ void Printer::setup() {
 #if FEATURE_WATCHDOG
   HAL::startWatchdog();
 #endif // FEATURE_WATCHDOG
-  sd.mount();
+
+  sd.automount();
 
   transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
 

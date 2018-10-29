@@ -23,14 +23,6 @@
 
 #include "Repetier.h"
 
-
-//#define INCREMENT_MIN_MAX(a,steps,_min,_max) if ( (increment<0) && (_min>=0) && (a<_min-increment*steps) ) {a=_min;} else { a+=increment*steps; if(a<_min) a=_min; else if(a>_max) a=_max;};
-
-// this version not have single byte variable rollover bug
-#define INCREMENT_MIN_MAX(a,steps,_min,_max) a = constrain((a + increment * steps), _min, _max);
-
-
-
 extern UIDisplay uid;
 
 
@@ -42,7 +34,7 @@ const long baudrates[] PROGMEM = {9600, 14400, 19200, 28800, 38400, 56000,
 bool
 UIDisplay::doEncoderChange_file(int16_t encoderChange) {
 
-  if ((encoderChange > 0) && (_menuPos < nFilesOnCard))
+  if ((encoderChange > 0) && (_menuPos < nFilesOnCard + 1))
     _menuPos++;
 
   if ((encoderChange < 0) && (_menuPos > 0))
@@ -61,31 +53,24 @@ UIDisplay::doEncoderChange_file(int16_t encoderChange) {
 
 bool
 UIDisplay::doEncoderChange_entry(int16_t encoderChange) {
-  menuPage     *menu        = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
-  menuEntry   **entries     = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
-  uint8_t       entriesLen  =               pgm_read_byte(&menu->menuEntriesLen);
+  menuPage     *menu        = menuPagePtr(_menuPage);
+  uint8_t       entriesLen  = menu->entriesLen();
 
   //  Search forward/backward for the next visible item.
 
   if (encoderChange > 0) {
     while (_menuPos + 1 < entriesLen) {
-      menuEntry *e = (menuEntry *)pgm_read_ptr(entries + ++_menuPos);
-
-      if (e->showEntry())
+      if (menu->entry(++_menuPos)->visible())
         break;
     }
   }
 
   if (encoderChange < 0) {
     while (_menuPos > 0) {
-      menuEntry *e = (menuEntry *)pgm_read_ptr(entries + --_menuPos);
-
-      if (e->showEntry())
+      if (menu->entry(--_menuPos)->visible())
         break;
     }
   }
-
-  //adjustMenuPos();
 
   return(true);
 }
@@ -106,9 +91,6 @@ UIDisplay::doEncoderChange_entry(int16_t encoderChange) {
 
 bool
 UIDisplay::doEncoderChange_page(int16_t encoderChange) {
-  menuPage   *menu;
-  uint8_t     entriesLen;
-  menuEntry **entries;
 
   //  Move forward/backward to the next visible menu.
 
@@ -122,33 +104,24 @@ UIDisplay::doEncoderChange_page(int16_t encoderChange) {
       if (_menuPage-- == 0)
         _menuPage = UI_NUM_PAGES-1;
     }
-
-    menu = (menuPage *)pgm_read_ptr(&menuPages[_menuPage]);
-  } while (menu->showMenu() == false);
+  } while (menuPagePtr(_menuPage)->visible() == false);
 
 
   //  Reset menuTop and menuPos, then find the actual valid menuTop and menuPos.
   //  Not absolutely necessary, adjustMenuPos() should do the same work.
 
-  entriesLen =               pgm_read_byte(&menu->menuEntriesLen);
-  entries    = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
+  uint8_t  entriesLen = menuPagePtr(_menuPage)->entriesLen();
 
   _menuPos = 0;
   _menuSel = 0;
   _menuTop = 0;
 
   while ((_menuPos < entriesLen) &&
-         (((menuEntry *)pgm_read_ptr(&entries[_menuPos]))->showEntry() == false)) {
+         (menuPagePtr(_menuPage)->entry(_menuPos)->visible() == false)) {
     _menuPos++;
     _menuSel++;
     _menuTop++;
   }
-
-  Com::print("after encoder_menu menuTop=");
-  Com::print(_menuTop);
-  Com::print("\n");
-
-  //adjustMenuPos();
 
   return(true);
 }
@@ -156,6 +129,7 @@ UIDisplay::doEncoderChange_page(int16_t encoderChange) {
 
 
 
+//  Called from ui.cpp slowAction().
 bool
 UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
 
@@ -163,8 +137,6 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
     Printer::setUIErrorMessage(false);
     // return true;
   }
-
-  //Com::writeToAll = true;
 
   //  Find the time delta sine the last encoder change, and remember the time of this change.
   //
@@ -194,20 +166,16 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
 
   //  Figure out where we're at.
 
-  menuPage     *menu        = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
-  uint8_t       menuType    =               pgm_read_byte(&menu->menuType);
-  menuEntry   **entries     = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
-  uint8_t       entriesLen  =               pgm_read_byte(&menu->menuEntriesLen);
-  menuEntry    *entry       = (menuEntry  *)pgm_read_ptr (&entries[_menuPos]);
-  uint8_t       entryType   =               pgm_read_byte(&entry->entryType);
-  uint8_t       entryAction =               pgm_read_word(&entry->entryAction);
-
+  menuPage  *menu        = menuPagePtr(_menuPage);
+  uint8_t    menuType    = menu->type();
+  uint8_t    entryType   = menu->entry(_menuPos)->type();
+  uint16_t   entryAction = menu->entry(_menuPos)->action();
 
   //  If there isn't a selected entry, scroll up/down through the menu
   //  entries or file list.
 
   if (_menuSel == 255) {
-    if (menuType == menuType_fileSelect)
+    if (menuType == menuType_select)
       doEncoderChange_file(encoderChange);
 
     else
@@ -248,7 +216,7 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
       (entryAction == ACT_POS_Z) ||
       (entryAction == ACT_POS_Z_OPEN)) {
     if (allowMoves == false)
-      return false;
+      return(false);
 
     uint8_t  axis = Z_AXIS;
 

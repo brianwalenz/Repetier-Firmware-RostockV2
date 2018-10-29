@@ -31,15 +31,19 @@ extern UIDisplay uid;
 void
 UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
   dir_t   *p    = NULL;
-  FatFile *root = sd.fat.vwd();
+  FatFile *root = sd.getvwd();
   FatFile  file;
 
   root->rewind();
 
   nFilesOnCard = 0;
 
+#define SHOW_SCANSDCARD
+
+#ifdef SHOW_SCANSDCARD
   Com::print("\n");
   Com::print("scanSDcard\n");
+#endif
 
   while (file.openNext(root, O_READ)) {
     HAL::pingWatchdog();
@@ -49,9 +53,11 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
     file.getName(tempLongFilename, LONG_FILENAME_LENGTH);
     file.close();
 
+#ifdef SHOW_SCANSDCARD
     Com::print("scanSDcard -- '");
     Com::print(tempLongFilename);
     Com::print("'\n");
+#endif
 
     //  Skip dot files.
 
@@ -75,9 +81,11 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
     nFilesOnCard++;
   }
 
+#ifdef SHOW_SCANSDCARD
   Com::print("scanSDcard ");
   Com::print(nFilesOnCard);
   Com::print("\n");
+#endif
 }
 
 
@@ -130,7 +138,7 @@ void UIDisplay::goDir(char *name) {
 
   //  Now set the directory.
 
-  sd.fat.chdir(cwd);
+  sd.chdir(cwd);
 
   scanSDcard();
 }
@@ -144,7 +152,11 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   FatFile   *root;
   FatFile    file;
 
+  //if (nFilesOnCard == 0)
+  //  scanSDcard();  //  necessary?  should be done when inserted.
+
   //  The menu shows:
+  //    SELECT FILE TO PRINT
   //    [..]      --
   //    file1     -- enti == 0
   //    file2     -- enti == 1
@@ -155,30 +167,52 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   // _menuTop   Which entry is the first to be displayed?
   // _menuPos   Which entry is highlighted?
 
+#define SHOW_SDREFRESH
+
+#ifdef SHOW_SDREFRESH
   Com::print("sdrefresh -- menuTop=");
   Com::print(_menuTop);
   Com::print(" menuPos=");
   Com::print(_menuPos);
   Com::print("\n");
+#endif
 
-  sd.fat.chdir(cwd);
+  sd.chdir(cwd);
 
-  root = sd.fat.vwd();
+  root = sd.getvwd();
   root->rewind();
 
-  //  If no active files. reset menuTop to be 'back'.
-
-  if (nFilesOnCard == 0) {
-    _menuTop = 0;
-    _menuPos = 0;
-  }
-
-  //  If at the first or second entry, make the first displayed item be '..'
+  //  If showing the first element, it's the usual header.
 
   if (_menuTop == 0) {
+    uint8_t  col = 0;
+
+    if      (_menuSel == 0)                 //  The first xolumn is either
+      cache[rowi][col++] = CHAR_SELECTED;   //  SELECTED
+    else if (_menuPos == 0)                 //  or
+      cache[rowi][col++] = CHAR_SELECTOR;   //  has the selector on it
+    else                                    //  or
+      cache[rowi][col++]  = ' ';            //  doesn't.
+
+    cache[rowi][col++]  = 0x7f;             //  The second column is always a back arrow.
+
+    for (; col < 19; col++)
+      cache[rowi][col] = pgm_read_byte(&page01_01[col]);
+
+    cache[rowi][col++] = 0x7e;              //  The last column is always a forward arrow.
+
+    rowi++;
+  }
+
+  //  If showing the first or second element, make the second element by
+  //  'up dir' regardlss of if there is an up dir (greatly simplifies the
+  //  logic when processing the button clicks).
+
+  if ((_menuTop == 0) ||
+      (_menuTop == 1)) {
     uint8_t col = 0;
 
-    cache[rowi][col++] = (_menuPos == 0) ? CHAR_SELECTOR : ' ';
+    cache[rowi][col++] = (_menuPos == 1) ? CHAR_SELECTOR : ' ';
     cache[rowi][col++] = '[';
     cache[rowi][col++] = '.';
     cache[rowi][col++] = '.';
@@ -203,24 +237,27 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     file.getName(tempLongFilename, LONG_FILENAME_LENGTH);
     file.close();
 
+#ifdef SHOW_SDREFRESH
     Com::print("sdrefresh -- enti=");
     Com::print(enti);
     Com::print(" '");
     Com::print(tempLongFilename);
     Com::print("'\n");
+#endif
 
     //  Skip junk.
 
-    if (tempLongFilename[0] == '.' && tempLongFilename[1] != '.')
+    if (tempLongFilename[0] == '.')
       continue; 
 
     //  Skip files that aren't displayed.  Can't skip them until we skip the garbage files above.
     //
-    //  A menuTop of 0 means we're showing [..] as the first element, and we should skip no file names.
-    //  A menuTop of 1 means we're showing the first file as the first, and we should skip no file names.
-    //  A menuTop of 2 ... and we should skip the first file (at enti==0).
+    //  A menuTop of 0 means we're showing the page title as the first element, and we should skip no file names.
+    //  A menuTop of 1 means we're showing [..] as the first element, and we should skip no file names.
+    //  A menuTop of 2 means we're showing the first file as the first, and we should skip no file names.
+    //  A menuTop of 3 ... and we should skip the first file (at enti==0).
     //
-    if (enti + 1 < _menuTop) {
+    if (enti + 2 < _menuTop) {
       enti++;
       continue;
     }
@@ -229,7 +266,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
     uint8_t col = 0;
 
-    if (enti + 1 == _menuPos)
+    if (enti + 2 == _menuPos)
       cache[rowi][col++] = CHAR_SELECTOR;
     else
       cache[rowi][col++] = ' ';
@@ -244,9 +281,11 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     while ((length < MAX_COLS - col - isDir) && (tempLongFilename[length] != 0))
       length++;
 
+#ifdef SHOW_SDREFRESH
     Com::print("sdrefresh -- length '");
     Com::print(length);
     Com::print("'\n");
+#endif
 
     for (uint8_t pos=0; ((col < MAX_COLS) && (pos < length)); pos++, col++)
       cache[rowi][col] = tempLongFilename[pos];
@@ -261,7 +300,9 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     enti++;
   }
 
+#ifdef SHOW_SDREFRESH
   Com::print("sdrefresh return\n");
+#endif
 
   return(rowi);
 }

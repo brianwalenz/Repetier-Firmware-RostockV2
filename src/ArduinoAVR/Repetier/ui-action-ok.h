@@ -1,12 +1,5 @@
 
 
-
-
-
-
-
-
-
 void
 UIDisplay::okAction_selectFile(uint8_t filePos) {
   char    filename[LONG_FILENAME_LENGTH + 2];   //  Needs one extra byte for an appended '/', and nul terminator.
@@ -36,7 +29,7 @@ UIDisplay::okAction_selectFile(uint8_t filePos) {
 
     uiAlert();
 
-    _menuPage = 0;
+    _menuPage = 1;
     _menuPos  = 0;
     _menuSel  = 255;
     _menuTop  = 0;
@@ -46,41 +39,17 @@ UIDisplay::okAction_selectFile(uint8_t filePos) {
 
   //  the original seems to do these here - they seem extraneous
   //sd.file.close();
-  //sd.fat.chdir(cwd);
+  //sd.chdir(cwd);
 }
-
-
-
-
-
-//  DELETE A FILE
-//
-//  if(sd.sdactive) {
-//    sd.sdmode = 0;
-//    sd.file.close();
-//    if(sd.fat.remove(filename)) {
-//      Com::printFLN(PSTR("File deleted"));
-//      uiAlert();
-//      if(_menuPos > 0)
-//        _menuPos--;
-//      updateSDFileCount();
-//    } else {
-//      Com::printFLN(PSTR("Deletion failed"));
-//    }
-//  }
-
 
 
 
 void
 UIDisplay::okAction_start(bool allowMoves) {
-  menuPage     *menu        = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
-  uint8_t       menuType    =               pgm_read_byte(&menu->menuType);
-  menuEntry   **entries     = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
-  uint8_t       entriesLen  =               pgm_read_byte(&menu->menuEntriesLen);
-  menuEntry    *entry       = (menuEntry  *)pgm_read_ptr (&entries[_menuPos]);
-  uint8_t       entryType   =               pgm_read_byte(&entry->entryType);
-  uint8_t       entryAction =               pgm_read_word(&entry->entryAction);
+  menuPage     *menu        = menuPagePtr(_menuPage);
+  uint8_t       menuType    = menu->type();
+  uint8_t       entryType   = menu->entry(_menuPos)->type();
+  uint16_t      entryAction = menu->entry(_menuPos)->action();
 
 #if 0
   Com::print("okAction_start _menuPos=");
@@ -98,17 +67,12 @@ UIDisplay::okAction_start(bool allowMoves) {
   //  Then, the wheel will scroll through available menus.
   //
   if (entryType == entryType_page) {
-    _menuSel = 0;
+    _menuSel = _menuPos;
   }
 
-  //  In a menuSelect, but selected the menu itself.  Cancel!  Start changing menus.
-  else if ((menuType == menuType_fileSelect) && (entryType == entryType_page)) {
-    _menuSel = 0;  //  actually handled above....
-  }
-
-  //  In a fileSelect, but selected the first item, which is always 'up directory',
-  //  even if there is no up directory.
-  else if ((menuType == menuType_fileSelect) && (_menuPos == 1)) {
+  //  In a file selection menu, but selected the first item, which is always
+  //  'up directory', even if there is no up directory.
+  else if ((menuType == menuType_select) && (_menuPos == 1)) {
     goDir(NULL);
 
     _menuPos = 1;
@@ -119,7 +83,7 @@ UIDisplay::okAction_start(bool allowMoves) {
   }
 
   //  In a menuSelect, and selected a file or directory.
-  else if (menuType == menuType_fileSelect) {
+  else if (menuType == menuType_select) {
     okAction_selectFile(_menuPos - 2);
   }
 
@@ -129,11 +93,41 @@ UIDisplay::okAction_start(bool allowMoves) {
 
   //  On a toggle item.  Toggle!
   else if (entryType == entryType_toggle) {
-    if      (entryAction == 0) {
+    if      (entryAction == ACT_ABORT_PRINT) {
+      sd.stopPrint();
+      //Printer::stopPrint();       //  What's the difference??
+      //Printer::continuePrint();
     }
 
-    else if (entryAction == 1) {
+    else if (entryAction == ACT_HOME) {
+      Printer::homeAxis(true, true, true);
+      Commands::printCurrentPosition();
     }
+
+    else if (entryAction == ACT_POS_Z_SET) {
+      Printer::setOrigin(-Printer::currentPosition[X_AXIS],
+                         -Printer::currentPosition[Y_AXIS],
+                         -Printer::currentPosition[Z_AXIS]);
+      Commands::printCurrentPosition();
+    }
+
+    else if (entryAction == ACT_REL_MOTORS) {
+      Printer::kill(true);
+    }
+
+#if 0
+    case UI_ACTION_STORE_EEPROM:
+      EEPROM::storeDataIntoEEPROM(false);
+      //pushMenu(&ui_menu_eeprom_saved, false);
+      uiAlert();
+      break;
+    case UI_ACTION_LOAD_EEPROM:
+      EEPROM::readDataFromEEPROM(true);
+      Extruder::selectExtruderById(Extruder::current->id);
+      //pushMenu(&ui_menu_eeprom_loaded, false);
+      uiAlert();
+      break;
+#endif
   }
 
   //  If we're on an action item, this is actually the easy case, just set the
@@ -148,13 +142,10 @@ UIDisplay::okAction_start(bool allowMoves) {
 
 void
 UIDisplay::okAction_stop(bool allowMoves) {
-  menuPage     *menu        = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
-  //uint8_t       menuType    =               pgm_read_byte(&menu->menuType);
-  menuEntry   **entries     = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
-  //uint8_t       entriesLen  =               pgm_read_byte(&menu->menuEntriesLen);
-  menuEntry    *entry       = (menuEntry  *)pgm_read_ptr (&entries[_menuPos]);
-  uint8_t       entryType   =               pgm_read_byte(&entry->entryType);
-  uint8_t       entryAction =               pgm_read_word(&entry->entryAction);
+  menuPage     *menu        = menuPagePtr(_menuPage);
+  uint8_t       menuType    = menu->type();
+  uint8_t       entryType   = menu->entry(_menuPos)->type();
+  uint16_t      entryAction = menu->entry(_menuPos)->action();
 
 #if 0
   Com::print("okAction_stop _menuSel=");
@@ -195,12 +186,6 @@ UIDisplay::okAction(bool allowMoves) {
 
   uiChirp();
 
-#if 0
-  Com::print("okAction _menuSel=");
-  Com::print(_menuSel);
-  Com::print("\n");
-#endif
-
   if (_menuSel == 255)
     okAction_start(allowMoves);   //  If nothing active, start some action.
   else
@@ -212,7 +197,6 @@ UIDisplay::okAction(bool allowMoves) {
 
 
 #if 0
-
   if (entType == UI_MENU_TYPE_SUBMENU) {
     pushMenu((UIMenu*)action, false);
 
@@ -227,5 +211,23 @@ UIDisplay::okAction(bool allowMoves) {
   if (entType == UI_MENU_TYPE_MODIFICATION_MENU) {
     return executeAction(action, allowMoves);
   }
+#endif
 
+
+#if 0
+  //  former finishAction
+  if (action == ACT_EXT_T_PREHEAT) {
+    int i = 0;
+    int o = i * EEPROM_EXTRUDER_LENGTH + EEPROM_EXTRUDER_OFFSET;
+
+    Extruder *e = &extruder[i];
+
+    HAL::eprSetInt16(o + EPR_EXTRUDER_PREHEAT, e->tempControl.preheatTemperature);
+    EEPROM::updateChecksum();
+  }
+
+  if (action == ACT_BED_T_PREHEAT) {
+    HAL::eprSetInt16(EPR_BED_PREHEAT_TEMP, heatedBedController.preheatTemperature);
+    EEPROM::updateChecksum();
+  }
 #endif

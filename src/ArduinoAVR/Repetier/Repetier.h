@@ -653,52 +653,7 @@ extern char fullName[LONG_FILENAME_LENGTH*SD_MAX_FOLDER_DEPTH+SD_MAX_FOLDER_DEPT
 
 #define SHORT_FILENAME_LENGTH 14
 #include "src/SdFat/SdFat.h"
-
-enum LsAction {LS_SerialPrint,LS_Count,LS_GetFilename};
-class SDCard
-{
-public:
-  SdFat fat;
-  SdFile file;
-  uint32_t filesize;
-  uint32_t sdpos;
-  char *shortname; // Pointer to start of filename itself
-  char *pathend; // File to char where pathname in fullname ends
-  uint8_t sdmode;  // 1 if we are printing from sd card, 2 = stop accepting new commands
-  bool sdactive;
-  bool savetosd;
-  SdBaseFile parentFound;
-
-  SDCard();
-  void initsd();
-  void writeCommand(GCode *code);
-  bool selectFile(const char *filename,bool silent=false);
-  void mount();
-  void unmount();
-  void startPrint();
-  void pausePrint(bool intern = false);
-  void continuePrint(bool intern = false);
-  void stopPrint();
-  inline void setIndex(uint32_t  newpos)
-  {
-    if(!sdactive) return;
-    sdpos = newpos;
-    file.seekSet(sdpos);
-  }
-  void printStatus();
-  void ls();
-  void startWrite(char *filename);
-  void deleteFile(char *filename);
-  void finishWrite();
-  char *createFilename(char *buffer,const dir_t &p);
-  void makeDirectory(char *filename);
-  bool showFilename(const uint8_t *name);
-  void automount();
-private:
-  uint8_t lsRecursive(SdBaseFile *parent,uint8_t level,char *findFilename);
-};
-
-extern SDCard sd;
+#include "SDCard.h"
 
 extern volatile int waitRelax; // Delay filament relax at the end of print, could be a simple timeout
 extern void updateStepsParameter(PrintLine *p/*,uint8_t caller*/);

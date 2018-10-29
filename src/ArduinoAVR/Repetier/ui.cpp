@@ -85,9 +85,9 @@ static TemperatureController *currHeaterForSetup;    // pointer to extruder or h
 //  This should be inlined in ui.h, but it depends on Printer:: which isn't known until late in Repetier.h
 
 bool
-menuEntry_t::showEntry(void) const {
-  uint16_t  ft = pgm_read_word(&doShow);
-  uint16_t  nf = pgm_read_word(&noShow);
+menuEntry_t::visible(void) const {
+  uint16_t  ft = pgm_read_word(&_doShow);
+  uint16_t  nf = pgm_read_word(&_noShow);
 
   if ((ft != 0) &&
       ((ft & Printer::menuMode) == 0))  //  Do not show if all of the 'do-show'
@@ -103,14 +103,10 @@ menuEntry_t::showEntry(void) const {
 //  Scan the entries in this menu.  If all are disabled, don't show
 //  the menu (by skipping over it in doEncoderChange_page().
 bool
-menuPage_t::showMenu(void) const {
-  uint8_t       entriesLen  =               pgm_read_byte(&menuEntriesLen);
-  menuEntry   **entries     = (menuEntry **)pgm_read_ptr (&menuEntries);
+menuPage_t::visible(void) const {
 
-  for (uint8_t ee=0; ee<entriesLen; ee++) {
-    menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[ee]);
-
-    if (entry->showEntry() == true)
+  for (uint8_t ee=0; ee<entriesLen(); ee++) {
+    if (entry(ee)->visible() == true)
       return(true);
   }
 
@@ -145,9 +141,9 @@ uiCheckKeys(void) {
   //     FAST =  2,  4, 11, 13   MEDIUM =  2, 13   SLOW = 11
 
   if ((uid.encoderLast ==  7) || (uid.encoderLast ==  8))
-    uid.encoderPos -= 1;
-  if ((uid.encoderLast ==  2) || (uid.encoderLast == 13))
     uid.encoderPos += 1;
+  if ((uid.encoderLast ==  2) || (uid.encoderLast == 13))
+    uid.encoderPos -= 1;
 
   //  Check for the two buttons, one on the encoder, and the estop/reset.
 
@@ -163,7 +159,7 @@ uiCheckKeys(void) {
 
 
 void
-uiChirp(void) {
+UIDisplay::uiChirp(void) {
 
   SET_OUTPUT(BEEPER_PIN);
 
@@ -174,13 +170,13 @@ uiChirp(void) {
 
 
 void
-uiAlert(void) {
+UIDisplay::uiAlert(uint8_t n) {
 
   SET_OUTPUT(BEEPER_PIN);
 
-  for (uint8_t i=0; i<4; i++) {
-    WRITE(BEEPER_PIN, HIGH);   HAL::delayMilliseconds(1);
-    WRITE(BEEPER_PIN, LOW);    HAL::delayMilliseconds(2);
+  for (uint8_t i=0; i<n; i++) {
+    WRITE(BEEPER_PIN, HIGH);   HAL::delayMilliseconds(50);
+    WRITE(BEEPER_PIN, LOW);    HAL::delayMilliseconds(100);
   }
 }
 
@@ -631,6 +627,37 @@ UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
 
 
 
+//  Print a time in seconds as "x days xx:xx".
+void
+UIDisplay::addTimeInDaysHoursMinutes(uint32_t seconds) {
+  uint32_t days    = seconds / 86400;  seconds -= days  * 86400;
+  uint32_t hours   = seconds / 3600;   seconds -= hours * 3600;
+  uint32_t minutes = seconds / 60;
+
+  addNumber(days, 1);
+  addStringP(PSTR(" days "));
+  addNumber(hours, 2, '0');
+  addStringP(PSTR(":"));
+  addNumber(minutes, 2, '0');
+}
+
+
+
+//  Print a time in seconds as "xx:xx:xx".
+void
+UIDisplay::addTimeInHoursMinutesSeconds(uint32_t seconds) {
+  uint32_t hours   = seconds / 3600;   seconds -= hours * 3600;
+  uint32_t minutes = seconds / 60;     seconds -= minutes  * 60;
+
+  addNumber(hours, 2, '0');
+  addStringP(PSTR(":"));
+  addNumber(minutes, 2, '0');
+  addStringP(PSTR(":"));
+  addNumber(seconds, 2, '0');
+}
+
+
+
 void
 UIDisplay::setStatusP(const char *text, bool error) {
 
@@ -702,50 +729,47 @@ UIDisplay::setStatus(const char *text, bool error) {
 //
 void
 UIDisplay::adjustMenuPos(void) {
-  menuPage     *menu       = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
-  uint8_t       menuType   =               pgm_read_byte(&menu->menuType);
-  menuEntry   **entries    = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
-  uint8_t       entriesLen =               pgm_read_byte(&menu->menuEntriesLen);
-
-  //  menuType is menuType_normal
-  //              menuType_fileSelect
-  //
-  //  menuType_fileSelect is done differently, and not handled here.
-
-  if (menuType == menuType_fileSelect)
-    return;
+  menuPage     *menu       = menuPagePtr(_menuPage);
+  uint8_t       menuType   = menu->type();
+  uint8_t       entriesLen = menu->entriesLen();
 
   //  Find the next visible entry.  Usually, it's the one we're sitting on,
   //  but if not, search up in the list (decreasing indices), then down
   //  (increasing indices), until we find something visible.  And make that
   //  be the position we're at.
 
-  //Com::print("adjust menuPos=");
-  //Com::print(_menuPos);
+#undef DEBUG_ADJUST_MENU_POS
+
+#ifdef DEBUG_ADJUST_MENU_POS
+  Com::print("adjust menuMode=");
+  Com::print(Printer::menuMode);
+  Com::print(" menuPos=");
+  Com::print(_menuPos);
+#endif
 
   while (_menuPos > 0) {
-    menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[_menuPos]);
-
-    if (entry->showEntry() == true)
+    if (menu->entry(_menuPos)->visible() == true)
       break;
     else
       _menuPos--;
   }
 
-  //Com::print(" menuPos=");
-  //Com::print(_menuPos);
+#ifdef DEBUG_ADJUST_MENU_POS
+  Com::print(" menuPos=");
+  Com::print(_menuPos);
+#endif
 
   while (_menuPos < entriesLen - 1) {
-    menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[_menuPos]);
-
-    if (entry->showEntry() == true)
+    if (menu->entry(_menuPos)->visible() == true)
       break;
     else
       _menuPos++;
   }
 
-  //Com::print(" menuPos=");
-  //Com::print(_menuPos);
+#ifdef DEBUG_ADJUST_MENU_POS
+  Com::print(" menuPos=");
+  Com::print(_menuPos);
+#endif
 
   //  If the active position is before the top, reset the top
   //  to show the active position.
@@ -757,28 +781,26 @@ UIDisplay::adjustMenuPos(void) {
   //  if the position we're at is more than UI_ROWS _visible_ elements away.
   //
   //  There's probably a way to do this by counting backwards from _menuPos.
-#if 1
+
   uint8_t  nVisible = UI_ROWS + 1;
 
   while (nVisible > UI_ROWS) {
     nVisible = 0;
 
     for (uint8_t vv=_menuTop; vv<=_menuPos; vv++) {
-      menuEntry *entry = (menuEntry *)pgm_read_ptr(&entries[_menuPos]);
-
-      if (entry->showEntry() == true)
+      if (menu->entry(_menuPos)->visible() == true)
         nVisible++;
     }
 
     if (nVisible > UI_ROWS)
       _menuTop++;
   }
-#else
-#endif
 
-  //Com::print(" menuTop=");
-  //Com::print(_menuTop);
-  //Com::print("\n");
+#ifdef DEBUG_ADJUST_MENU_POS
+  Com::print(" menuTop=");
+  Com::print(_menuTop);
+  Com::print("\n");
+#endif
 }
 
 
@@ -788,24 +810,26 @@ void
 UIDisplay::refreshPage(void) {
   char    cache[UI_ROWS][MAX_COLS + 1] = {0};
 
-  //Endstops::update();
-
-  adjustMenuPos();
-
   Endstops::update();
-
 
   //  Figure out what to display.
 
-  menuPage     *menu       = (menuPage   *)pgm_read_ptr (&menuPages[_menuPage]);
-  uint8_t       menuType   =               pgm_read_byte(&menu->menuType);
-  uint8_t       entriesLen =               pgm_read_byte(&menu->menuEntriesLen);
-  menuEntry   **entries    = (menuEntry **)pgm_read_ptr (&menu->menuEntries);
+  //  If the current menu page isn't visible, move to the next.
+
+  while (menuPagePtr(_menuPage)->visible() == false)
+    doEncoderChange_page(1);
+
+  menuPage    *menu       = menuPagePtr(_menuPage);
+  uint8_t      menuType   = menu->type();
+  uint8_t      entriesLen = menu->entriesLen();
 
   uint8_t       rowi       = 0;
   uint8_t       enti       = 0;
 
-#if 1
+#undef DEBUG_REFRESH_PAGE
+#undef DEBUG_REFRESH_PAGE_FULL
+
+#ifdef DEBUG_REFRESH_PAGE
   Com::print("refreshPage _menuPage=");
   Com::print(_menuPage);
   Com::print(" menuType=");
@@ -825,23 +849,26 @@ UIDisplay::refreshPage(void) {
 
   //  If the current menu page is a file selector, get a file list and show it.
 
-  if (menuType == menuType_fileSelect) {
-      //Com::print("sd-card\n");
+  if ((menuType == menuType_select) &&
+      (Printer::menuMode & MODE_CARD_PRESENT)) {
       rowi = sdrefresh(cache);
   }
 
   //  But if it's a menu, show those items.
+  //    (menuType == menuType_normal)
 
-  if (menuType == menuType_normal) {
+  else {
+    adjustMenuPos();
+
     rowi = 0;
     enti = _menuTop;
 
     while ((enti < entriesLen) && (rowi < UI_ROWS)) {
-      menuEntry   *entry     = (menuEntry *) pgm_read_ptr(&entries[enti]);
-      const char  *entryText = (const char *)pgm_read_ptr(&entry->entryText);
-      uint8_t      entryType =               pgm_read_byte(&entry->entryType);
+      menuEntry   *entry     = menu->entry(enti);
+      const char  *entryText = entry->text();
+      uint8_t      entryType = entry->type();
 
-#if 0
+#ifdef DEBUG_REFRESH_PAGE_FULL
       Com::print("entryTextRaw=");
       Com::print((uint16_t)entry->entryText);
       Com::print(" text='");
@@ -849,7 +876,7 @@ UIDisplay::refreshPage(void) {
       Com::print("'\n");
 #endif
 
-      if (entry->showEntry() == false) {
+      if (entry->visible() == false) {
         enti++;
         continue;
       }

@@ -69,20 +69,31 @@
 #define entryType_action     (uint8_t)34      //  A value entry.
 
 #define menuType_normal      (uint8_t)21
-#define menuType_fileSelect  (uint8_t)22
+#define menuType_select      (uint8_t)22
 
+#if 1
+//  OLD ACTIONS
+#define UI_FLAG_FAST_KEY_ACTION     1
+#define UI_FLAG_SLOW_KEY_ACTION     2
+#define UI_FLAG_SLOW_ACTION_RUNNING 4
+#define UI_FLAG_KEY_TEST_RUNNING    8
+#endif
 
 
 class menuEntry_t {
 public:
-  bool         showEntry(void) const;
+  bool         visible(void)     const;
+
+  const char  *text(void)        const  {  return((const char *)pgm_read_ptr (&_entryText));      };
+  uint8_t      type(void)        const  {  return((uint8_t)     pgm_read_byte(&_entryType));      };
+  uint16_t     action(void)      const  {  return((uint16_t)    pgm_read_byte(&_entryAction));    };
 
 public:
-  const char  *entryText;
-  uint8_t      entryType;
-  uint16_t     entryAction;
-  uint16_t     doShow;        //  hide if all of these are missing
-  uint16_t     noShow;        //  hide if any of these are present
+  const char  *_entryText;
+  uint8_t      _entryType;
+  uint16_t     _entryAction;
+  uint16_t     _doShow;        //  hide if all of these are missing
+  uint16_t     _noShow;        //  hide if any of these are present
 };
 
 typedef const menuEntry_t           menuEntry;
@@ -92,34 +103,20 @@ typedef const menuEntry_t * const   menuEnArr;
 
 class menuPage_t {
 public:
-  bool        showMenu(void) const;
+  bool         visible(void)     const;
+
+  uint8_t      type(void)        const  {  return((uint8_t)     pgm_read_byte(&_menuType));         };
+  uint8_t      entriesLen(void)  const  {  return((uint8_t)     pgm_read_byte(&_menuEntriesLen));   };
+  menuEntry  **entries(void)     const  {  return((menuEntry **)pgm_read_ptr (&_menuEntries));      };
+  menuEntry   *entry(uint8_t ee) const  {  return((menuEntry *) pgm_read_ptr (&entries()[ee]));     };
 
 public:
-  uint8_t     menuType;
-  uint8_t     menuEntriesLen;
-  menuEnArr  *menuEntries;
+  uint8_t     _menuType;
+  uint8_t     _menuEntriesLen;
+  menuEnArr  *_menuEntries;
 };
 
 typedef const menuPage_t     menuPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#define UI_FLAG_FAST_KEY_ACTION     1
-#define UI_FLAG_SLOW_KEY_ACTION     2
-#define UI_FLAG_SLOW_ACTION_RUNNING 4
-#define UI_FLAG_KEY_TEST_RUNNING    8
 
 
 
@@ -132,6 +129,13 @@ public:
   };
 
   void initialize(void);
+
+  //  Alerts
+
+  void  uiChirp(void);
+  void  uiAlert(uint8_t n=4);
+
+  //  Display
 
   void printRow (uint8_t r, char *txt);
   void printRowP(uint8_t r, PGM_P txt);
@@ -151,6 +155,9 @@ public:
   void addNumber(int32_t value, int8_t digits, char fillChar = ' ');
   void addFloat(float number, char fixdigits=-9, uint8_t digits=2);
 
+  void addTimeInDaysHoursMinutes(uint32_t seconds);
+  void addTimeInHoursMinutesSeconds(uint32_t seconds);
+
   void setStatusP(PGM_P txt, bool error = false);
   void setStatus(const char *txt, bool error = false);
 
@@ -158,32 +165,27 @@ public:
     sm[0] = 0;
   }
 
+  void        parse(const char *txt, bool ram);
 
-  void parse(const char *txt, bool ram);
-
-  void adjustMenuPos(void);
-  void refreshPage();
-
-
-  void     okAction_selectFile(uint8_t filePos);
-  void     okAction_start(bool allowMoves);
-  void     okAction_stop(bool allowMoves);
-  void     okAction(bool allowMoves);
-
-  bool doEncoderChange_file (int16_t encoderChange);
-  bool doEncoderChange_entry(int16_t encoderChange);
-  bool doEncoderChange_page (int16_t encoderChange);
-
-  bool doEncoderChange(int16_t encoderChange, bool allowMoves);
+  void        adjustMenuPos(void);
+  void        refreshPage();
 
 
+  void        okAction_selectFile(uint8_t filePos);
+  void        okAction_start(bool allowMoves);
+  void        okAction_stop(bool allowMoves);
+  void        okAction(bool allowMoves);
 
-  uint16_t  executeAction(uint16_t action, bool allowMoves);
-  void      finishAction(uint16_t action);
+  bool        doEncoderChange_file (int16_t encoderChange);
+  bool        doEncoderChange_entry(int16_t encoderChange);
+  bool        doEncoderChange_page (int16_t encoderChange);
+  bool        doEncoderChange(int16_t encoderChange, bool allowMoves);
 
-  void slowAction(bool allowMoves);
-  void mediumAction();
-  void fastAction();
+  uint16_t    executeAction(uint16_t action, bool allowMoves);
+
+  void        slowAction(bool allowMoves);
+  void        mediumAction();
+  void        fastAction();
 
 
 

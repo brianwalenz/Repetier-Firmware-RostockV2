@@ -236,6 +236,18 @@ UIDisplay::parse(const char *txt, bool ram) {
       addString(Printer::printName);
     }
 
+    else if ((c1 == 'P') && (c2 == 'e')) {   //  Time elapsed
+      addTimeInHoursMinutesSeconds(0);
+    }
+
+    else if ((c1 == 'P') && (c2 == 'r')) {   //  Time remaining
+      addTimeInHoursMinutesSeconds(0);
+    }
+
+    else if ((c1 == 'P') && (c2 == 'f')) {   //  Filament used
+      //Printer::filamentPrinted * 0.001
+    }
+
     else if ((c1 == 'P') && (c2 == 'l')) {   //  Current layer number
       addNumber(Printer::currentLayer, 0);
     }
@@ -298,36 +310,23 @@ UIDisplay::parse(const char *txt, bool ram) {
     //  Would be nice if there was a report of the time of the current print,
     //  not just historical times.
 
-    else if ((c1 == 'U') && (c2 == 't')) {   //  Printing time in HH:MM
-      int32_t secs = HAL::eprGetInt32(EPR_PRINTING_TIME);
+    //  Total time printing:
+    //    x days xx:xx
+    else if ((c1 == 'U') && (c2 == 't')) {
+      uint32_t seconds = HAL::eprGetInt32(EPR_PRINTING_TIME);
 
-      int32_t days  = secs / 86400;  secs -= days  * 86400;
-      int32_t hours = secs / 3600;   secs -= hours * 3600;
-      int32_t mins  = secs / 60;
-
-      addNumber(days, 1);
-      addStringP(PSTR(" days "));
-      addNumber(hours, 2, '0');
-      addStringP(PSTR(":"));
-      addNumber(mins, 2, '0');
+      addTimeInDaysHoursMinutes(seconds);
     }
 
-    else if ((c1 == 'U') && (c2 == 'h')) {   // Printing time in hours
-      int32_t seconds = HAL::eprGetInt32(EPR_PRINTING_TIME);
-
-      addNumber(seconds / 3600, 5);
-    }
-
+    //  Filament usage:
+    //    xxx.xx m
+    //    x,xxx.xx m
+    //
     else if ((c1 == 'U') && (c2 == 'f')) {   //  Filament usage
-      float dist = Printer::filamentPrinted * 0.001 + HAL::eprGetFloat(EPR_PRINTING_DISTANCE);
+      float dist  = HAL::eprGetFloat(EPR_PRINTING_DISTANCE);  //  In meters?
 
-      addFloat(dist, (dist > 9999 ? 6 : 4), (dist > 9999 ? 0 : 1));
-    }
-
-    else if ((c1 == 'U') && (c2 == 'k')) {   //  Filament usage in km
-      float dist = (Printer::filamentPrinted * 0.001 + HAL::eprGetFloat(EPR_PRINTING_DISTANCE)) * 0.001;
-
-      addFloat(dist, (dist > 999 ? 5 : 3), (dist > 9999 ? 1 : 2));
+      addFloat(dist);
+      addStringP(PSTR(" m filament"));
     }
 
 

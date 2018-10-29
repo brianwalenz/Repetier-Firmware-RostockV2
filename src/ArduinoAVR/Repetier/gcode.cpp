@@ -1183,58 +1183,57 @@ void SerialGCodeSource::writeByte(uint8_t byte) {
 }
 void SerialGCodeSource::close() {
 }    
+
+
+
+
+
 // ----- SD card source -----
 
 
 bool SDCardGCodeSource::isOpen() {
-  return (sd.sdmode > 0 && sd.sdmode < 100);
+  return (sd.isOpen());
 }
+
 bool SDCardGCodeSource::supportsWrite() { ///< true if write is a non dummy function
   return false;
 }
+
 bool SDCardGCodeSource::closeOnError() { // return true if the channel can not interactively correct errors.
   return true;
 }
+
 bool SDCardGCodeSource::dataAvailable() { // would read return a new byte?
-  if(sd.sdmode == 1) {
-    if(sd.sdpos == sd.filesize) {
-      close();
-      return false;
-    }
-    return true;         
-  }
-  return false;
+  if (sd.isPrinting() == false)
+    return(false);
+
+  if (sd.isFinished() == false)
+    return(true);
+
+  close();
+  return(false);
 }
+
 int SDCardGCodeSource::readByte() {
   int n = sd.file.read();
-  if(n == -1) {
-    Com::printFLN(PSTR("SD read error"));
-    uid.setStatusP(PSTR("SD Read Error"), true);
-    uid.refreshPage();
 
-    // Second try in case of recoverable errors
-    sd.file.seekSet(sd.sdpos);
-    n = sd.file.read();
-    if(n == -1) {
-      Com::printErrorFLN(PSTR("SD error did not recover!"));
-      close();
-      return 0;
-    }
-    uid.setStatusP(PSTR("SD error fixed"), true);
-    uid.refreshPage();
+  if (n == -1) {
+    close();
   }
-  sd.sdpos++; // = file.curPosition();
-  return n;
+
+  return(n);
 }
+
 void SDCardGCodeSource::writeByte(uint8_t byte) {
   // dummy
 }
+
 void SDCardGCodeSource::close() {
-  sd.sdmode = 0;    
-  GCodeSource::removeSource(this);  
-  Printer::setPrinting(false);
-  Printer::setMenuMode(MODE_PRINTING,false);
-  Printer::setMenuMode(MODE_PAUSED,false);
+  sd.stopPrint();
+
+  //  stopPrint() removes the source too.
+  //GCodeSource::removeSource(this);  
+
   Com::printFLN(PSTR("Done printing file"));
 }
 

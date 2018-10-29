@@ -1192,16 +1192,12 @@
 //  SDSUPPORT is MAGIC, it's in FatLib/FatFile*cpp, and removing it breaks the build.
 #define SDSUPPORT 1
 #define SDCARDDETECT 81
-#define SDCARDDETECTINVERTED 0  // Change to true if you get a inserted message on removal.
+//#define SDCARDDETECTINVERTED 0  // Change to true if you get a inserted message on removal.
 
 
 /** Show extended directory including file length. Don't use this with Pronterface! */
+//  used in src/SdFat/FatLib/FatFilePrint.cpp
 #define SD_EXTENDED_DIR 1
-/** The GCODEs in this line get executed, when you stop a SD print before it was ended.
-    Separate commands by \n */
-#define SD_RUN_ON_STOP ""
-/** Disable motors and heaters when print was stopped. */
-#define SD_STOP_HEATER_AND_MOTORS_ON_STOP 1
 
 /** You can store the current position with M401 and go back to it with M402.
     This works only if feature is set to true. */

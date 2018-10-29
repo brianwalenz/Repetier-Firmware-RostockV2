@@ -79,7 +79,6 @@ union wizardVar {
 #define PRINTER_FLAG0_ZPROBEING             64
 #define PRINTER_FLAG0_LARGE_MACHINE         128
 #define PRINTER_FLAG1_HOMED_ALL             1
-#define PRINTER_FLAG1_AUTOMOUNT             2
 #define PRINTER_FLAG1_ALLKILLED             8
 #define PRINTER_FLAG1_UI_ERROR_MESSAGE      16
 #define PRINTER_FLAG1_NO_DESTINATION_CHECK  32
@@ -547,14 +546,6 @@ public:
 
   static INLINE void setAllKilled(uint8_t b) {
     flag1 = (b ? flag1 | PRINTER_FLAG1_ALLKILLED : flag1 & ~PRINTER_FLAG1_ALLKILLED);
-  }
-
-  static INLINE uint8_t isAutomount() {
-    return flag1 & PRINTER_FLAG1_AUTOMOUNT;
-  }
-
-  static INLINE void setAutomount(uint8_t b) {
-    flag1 = (b ? flag1 | PRINTER_FLAG1_AUTOMOUNT : flag1 & ~PRINTER_FLAG1_AUTOMOUNT);
   }
 
   static INLINE uint8_t isUIErrorMessage() {
