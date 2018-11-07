@@ -51,16 +51,7 @@ bool FatFile::getSFN(char* name) {
 fail:
   return false;
 }
-//------------------------------------------------------------------------------
-void FatFile::printSFN() {
-  char name[13];
-  if (!getSFN(name)) {
-    DBG_FAIL_MACRO;
-    return;
-  }
-  Com::print(name);
 
-}
 #if !USE_LONG_FILE_NAMES
 //------------------------------------------------------------------------------
 bool FatFile::getName(char* name, size_t size) {
@@ -239,10 +230,6 @@ bool FatFile::open(FatFile* dirFile, fname_t* fname, uint8_t oflag) {
 
 fail:
   return false;
-}
-//------------------------------------------------------------------------------
-void FatFile::printName() {
-  printSFN();
 }
 //------------------------------------------------------------------------------
 bool FatFile::remove() {

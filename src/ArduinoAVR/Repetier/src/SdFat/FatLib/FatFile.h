@@ -272,12 +272,6 @@ class FatFile {
    *         if an error occurs.
    */
   uint32_t dirSize();
-  /** Dump file in Hex
-   * \param[in] pr Print stream for list.
-   * \param[in] pos Start position in file.
-   * \param[in] n number of locations to dump.
-   */
-  void dmpFile(uint32_t pos, size_t n);
   /** Test for the existence of a file in a directory
    *
    * \param[in] path Path of the file to be tested for.
@@ -386,10 +380,6 @@ class FatFile {
   bool isSystem() const {
     return m_attr & FILE_ATTR_SYSTEM;
   }
-  void lsRecursive(uint8_t level, bool isJson);
-  #if JSON_OUTPUT
-    void lsJSON();
-  #endif
 
   /** Check for a legal 8.3 character.
    * \param[in] c Character to be checked.
@@ -413,22 +403,6 @@ class FatFile {
     }
     return 0X20 < c && c < 0X7F;
   }
-  /** List directory contents.
-   *
-   * \param[in] pr Print stream for list.
-   *
-   * \param[in] flags The inclusive OR of
-   *
-   * LS_DATE - %Print file modification date
-   *
-   * LS_SIZE - %Print file size.
-   *
-   * LS_R - Recursive list of subdirectories.
-   *
-   * \param[in] indent Amount of space before file name. Used for recursive
-   * list to indicate subdirectory level.
-   */
-  void ls(uint8_t flags = 0, uint8_t indent = 0);
   /** Make a new directory.
    *
    * \param[in] dir An open FatFile instance for the directory that will
@@ -553,93 +527,6 @@ class FatFile {
    * \return The byte if no error and not at eof else -1;
    */
   int peek();
-  /** Print a file's creation date and time
-   *
-   * \param[in] pr Print stream for output.
-   *
-   * \return The value true is returned for success and
-   * the value false is returned for failure.
-   */
-  bool printCreateDateTime();
-  /** %Print a directory date field.
-   *
-   *  Format is yyyy-mm-dd.
-   *
-   * \param[in] pr Print stream for output.
-   * \param[in] fatDate The date field from a directory entry.
-   */
-  static void printFatDate(uint16_t fatDate);
-  /** %Print a directory time field.
-   *
-   * Format is hh:mm:ss.
-   *
-   * \param[in] pr Print stream for output.
-   * \param[in] fatTime The time field from a directory entry.
-   */
-  static void printFatTime(uint16_t fatTime);
-  /** Print a number followed by a field terminator.
-   * \param[in] value The number to be printed.
-   * \param[in] term The field terminator.  Use '\\n' for CR LF.
-   * \param[in] prec Number of digits after decimal point.
-   * \return The number of bytes written or -1 if an error occurs.
-   */
-  int printField(float value, char term, uint8_t prec = 2);
-  /** Print a number followed by a field terminator.
-   * \param[in] value The number to be printed.
-   * \param[in] term The field terminator.  Use '\\n' for CR LF.
-   * \return The number of bytes written or -1 if an error occurs.
-   */
-  int printField(int16_t value, char term);
-  /** Print a number followed by a field terminator.
-   * \param[in] value The number to be printed.
-   * \param[in] term The field terminator.  Use '\\n' for CR LF.
-   * \return The number of bytes written or -1 if an error occurs.
-   */
-  int printField(uint16_t value, char term);
-  /** Print a number followed by a field terminator.
-   * \param[in] value The number to be printed.
-   * \param[in] term The field terminator.  Use '\\n' for CR LF.
-   * \return The number of bytes written or -1 if an error occurs.
-   */
-  int printField(int32_t value, char term);
-  /** Print a number followed by a field terminator.
-   * \param[in] value The number to be printed.
-   * \param[in] term The field terminator.  Use '\\n' for CR LF.
-   * \return The number of bytes written or -1 if an error occurs.
-   */
-  int printField(uint32_t value, char term);
-  /** Print a file's modify date and time
-   *
-   * \param[in] pr Print stream for output.
-   *
-   * \return The value true is returned for success and
-   * the value false is returned for failure.
-   */
-  bool printModifyDateTime();
-  /** Print a file's name
-   *
-   * \param[in] pr Print stream for output.
-   *
-   * \return The value true is returned for success and
-   * the value false is returned for failure.
-   */
-  void printName();
-  /** Print a file's size.
-   *
-   * \param[in] pr Print stream for output.
-   *
-   * \return The number of characters printed is returned
-   *         for success and zero is returned for failure.
-   */
-  void printFileSize();
-  /** Print a file's Short File Name.
-   *
-   * \param[in] pr Print stream for output.
-   *
-   * \return The number of characters printed is returned
-   *         for success and zero is returned for failure.
-   */
-  void printSFN();
   /** Read the next byte from a file.
    *
    * \return For success read returns the next byte in the file as an int.

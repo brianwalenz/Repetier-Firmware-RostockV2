@@ -36,9 +36,6 @@
 #include "BlockDriver.h"
 #include "FatLib/FatLib.h"
 #include "SdCard/SdioCard.h"
-#if INCLUDE_SDIOS
-#include "sdios.h"
-#endif // INCLUDE_SDIOS
 //------------------------------------------------------------------------------
 /** SdFat version */
 #define SD_FAT_VERSION "1.0.7"
@@ -130,7 +127,8 @@ public:
    */
     void errorPrint(const char* msg) {
         Com::printF(PSTR("error: "));
-        Com::printFLN(msg);
+        Com::printF(msg);
+        Com::printF(PSTR("\n"));
         errorPrint();
     }
     /** %Print any SD error code and halt. */
@@ -149,17 +147,17 @@ public:
     /** Print error details after begin() fails. */
     void initErrorPrint() {
         if (cardErrorCode()) {
-            Com::printFLN(PSTR("Can't access SD card. Do not reformat."));
+            Com::printF(PSTR("Can't access SD card. Do not reformat.\n"));
             if (cardErrorCode() == SD_CARD_ERROR_CMD0) {
-                Com::printFLN(PSTR("No card, wrong chip select pin, or SPI problem?"));
+                Com::printF(PSTR("No card, wrong chip select pin, or SPI problem?\n"));
             }
             errorPrint();
         } else if (vol()->fatType() == 0) {
-            Com::printFLN(PSTR("Invalid format, reformat SD."));
+            Com::printF(PSTR("Invalid format, reformat SD.\n"));
         } else if (!vwd()->isOpen()) {
-            Com::printFLN(PSTR("Can't open root directory."));
+            Com::printF(PSTR("Can't open root directory.\n"));
         } else {
-            Com::printFLN(PSTR("No error found."));
+            Com::printF(PSTR("No error found.\n"));
         }
     }
     /**Print message and error details and halt after begin() fails.
@@ -167,7 +165,8 @@ public:
    * \param[in] msg Message to print.
    */
     void initErrorPrint(char const* msg) {
-        Com::printFLN(msg);
+        Com::printF(msg);
+        Com::printF(PSTR("\n"));
         initErrorPrint();
     }
 #if defined(ARDUINO) || defined(DOXYGEN)
@@ -186,7 +185,8 @@ public:
    */
     void errorPrint(const __FlashStringHelper* msg) {
         Com::printF(PSTR("error: "));
-        Com::printFLN(reinterpret_cast<const char*>(msg));
+        Com::printF(reinterpret_cast<const char*>(msg));
+        Com::printF(PSTR("\n"));
         errorPrint();
     }
     /**Print message, error details, and halt after begin() fails.
@@ -194,7 +194,8 @@ public:
     * \param[in] msg Message to print.
     */
     void initErrorHalt(const __FlashStringHelper* msg) {
-        Com::printFLN(reinterpret_cast<const char*>(msg));
+        Com::printF(reinterpret_cast<const char*>(msg));
+        Com::printF(PSTR("\n"));
         initErrorHalt();
     }
     /**Print message and error details and halt after begin() fails.
@@ -202,7 +203,8 @@ public:
    * \param[in] msg Message to print.
    */
     void initErrorPrint(const __FlashStringHelper* msg) {
-        Com::printFLN(reinterpret_cast<const char*>(msg));
+        Com::printF(reinterpret_cast<const char*>(msg));
+        Com::printF(PSTR("\n"));
         initErrorPrint();
     }
 #endif // defined(ARDUINO) || defined(DOXYGEN)

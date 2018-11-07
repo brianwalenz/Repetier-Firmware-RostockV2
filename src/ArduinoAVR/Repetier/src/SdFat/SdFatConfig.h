@@ -35,12 +35,6 @@
 #endif // __AVR__
 //------------------------------------------------------------------------------
 /**
- * Set INCLUDE_SDIOS nonzero to include sdios.h in SdFat.h.
- * sdios.h provides C++ style IO Streams.
- */
-#define INCLUDE_SDIOS 1
-//------------------------------------------------------------------------------
-/**
  * Set USE_LONG_FILE_NAMES nonzero to use long file names (LFN).
  * Long File Name are limited to a maximum length of 255 characters.
  *

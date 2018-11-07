@@ -502,55 +502,6 @@ fail:
   return false;
 }
 //------------------------------------------------------------------------------
-void FatFile::printName() {
-  FatFile dirFile;
-  uint16_t u;
-  size_t n = 0;
-  ldir_t* ldir;
-
-  if (!isLFN()) {
-    printSFN();
-    return;
-  }
-  if (!dirFile.openCluster(this)) {
-    DBG_FAIL_MACRO;
-    return;
-  }
-  for (uint8_t ord = 1; ord <= m_lfnOrd; ord++) {
-    if (!dirFile.seekSet(32UL*(m_dirIndex - ord))) {
-      DBG_FAIL_MACRO;
-      return;
-    }
-    ldir = reinterpret_cast<ldir_t*>(dirFile.readDirCache());
-    if (!ldir) {
-      DBG_FAIL_MACRO;
-      return;
-    }
-    if (ldir->attr != DIR_ATT_LONG_NAME ||
-        ord != (ldir->ord & 0X1F)) {
-      DBG_FAIL_MACRO;
-      return;
-    }
-    for (uint8_t i = 0; i < 13; i++) {
-      u = lfnGetChar(ldir, i);
-      if (u == 0) {
-        // End of name.
-        break;
-      }
-      if (u > 0X7E) {
-        u = '?';
-      }
-      Com::print(static_cast<char>(u));
-      n++;
-    }
-    if (ldir->ord & LDIR_ORD_LAST_LONG_ENTRY) {
-      return;
-    }
-  }
-  // Fall into fail;
-  DBG_FAIL_MACRO;
-}
-//------------------------------------------------------------------------------
 bool FatFile::remove() {
   bool last;
   uint8_t chksum;
