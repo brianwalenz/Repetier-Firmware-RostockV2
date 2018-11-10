@@ -28,39 +28,121 @@ enum FirmwareState {
   WaitHeater
 };
 
-class SDCard;
+#include "SDCard.h"
+
 class Commands;
+
+
+
+
+
+
+
+#ifndef MAX_DATA_SOURCES
+#define MAX_DATA_SOURCES 4
+#endif
+
+/** This class defines the general interface to handle gcode communication with the firmware. This
+    allows it to connect to different data sources and handle them all inside the same data structure.
+    If several readers are active, the first one sending a byte pauses all other inputs until the command
+    is complete. Only then the next reader will be queried. New queries are started in round robin fashion
+    so every channel gets the same chance to send commands.
+
+    Available source types are:
+    - serial communication port
+    - sd card
+    - flash memory
+*/
+
+class GCodeSource {
+  static fast8_t      numSources;
+  static GCodeSource *sources[MAX_DATA_SOURCES];
+
+public:
+  static GCodeSource *activeSource;
+
+  static void registerSource(GCodeSource *newSource);
+  static void removeSource(GCodeSource *delSource);
+  static void rotateSource();
+
+
+  uint32_t lastLineNumber;
+  uint8_t  wasLastCommandReceivedAsBinary; ///< Was the last successful command in binary mode?
+  millis_t timeOfLastDataPacket;
+  int8_t   waitingForResend; ///< Waiting for line to be resend. -1 = no wait.
+
+  GCodeSource() {
+    lastLineNumber                 = 0;
+    wasLastCommandReceivedAsBinary = false;
+    timeOfLastDataPacket           = 0;
+    waitingForResend               = -1;
+  };
+  virtual ~GCodeSource() {}
+
+  virtual bool isOpen(void) = 0;
+  virtual bool closeOnError(void) = 0; // return true if the channel can not interactively correct errors.
+  virtual bool dataAvailable(void) = 0; // would read return a new byte?
+  virtual int  readByte(void) = 0;
+  virtual void close(void) = 0;
+};
 
 
 
 class SerialGCodeSource: public GCodeSource {
   Stream *stream;
 public:
-  SerialGCodeSource(Stream *p);
-  virtual bool isOpen();
-  virtual bool supportsWrite(); ///< true if write is a non dummy function
-  virtual bool closeOnError(); // return true if the channel can not interactively correct errors.
-  virtual bool dataAvailable(); // would read return a new byte?
-  virtual int  readByte();
-  virtual void writeByte(uint8_t byte);
-  virtual void close();
+  SerialGCodeSource(Stream *p)      { stream = p;                  };
+  virtual bool isOpen(void)         { return(true);                };
+  virtual bool closeOnError(void)   { return(false);               };
+  virtual bool dataAvailable(void)  { return(stream->available()); };
+  virtual int  readByte(void)       { return(stream->read());      };
+  virtual void close(void)          { return;                      };
 };
 
 
 class SDCardGCodeSource: public GCodeSource {
 public:
-  virtual bool isOpen();
-  virtual bool supportsWrite(); ///< true if write is a non dummy function
-  virtual bool closeOnError(); // return true if the channel can not interactively correct errors.
-  virtual bool dataAvailable(); // would read return a new byte?
-  virtual int  readByte();
-  virtual void writeByte(uint8_t byte);
-  virtual void close();
+  virtual bool isOpen(void)          { return(sd.isOpen()); };
+  virtual bool closeOnError(void)    { return(true); };
+  virtual bool dataAvailable(void) {
+    if (sd.isPrinting() == false)
+      return(false);
+
+    if (sd.isFinished() == false)
+      return(true);
+
+    close();
+    return(false);
+  };
+  virtual int  readByte(void) {
+    int8_t n = sd.file.read();
+
+    if (n == -1)
+      close();
+
+    return(n);
+  };
+  virtual void close(void) {
+    sd.stopPrint();
+
+    //  stopPrint() removes the source too.
+    //GCodeSource::removeSource(this);  
+
+    Com::printF(PSTR("Done printing file.\n"));
+  };
 };
 
 
 extern SerialGCodeSource serial0Source;
 extern SDCardGCodeSource sdSource;
+
+
+
+
+
+
+
+
 
 
 

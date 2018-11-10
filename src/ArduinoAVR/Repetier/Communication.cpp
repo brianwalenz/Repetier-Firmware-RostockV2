@@ -23,18 +23,25 @@
 
 
 
+
+
+
 void Com::printF(FSTRINGPARAM(ptr)) {
   while (pgm_read_byte(ptr) != 0)
-    GCodeSource::writeToAll(pgm_read_byte(ptr++));
+    RFSERIAL.write(pgm_read_byte(ptr++));
 }
 
 
 
 void Com::print(const char *text) {
-  while (*text != 0) {
-    GCodeSource::writeToAll(*text++);
-  }
+  while (*text != 0)
+    RFSERIAL.write(*text++);
 }
+
+void Com::print(const char c) {
+  RFSERIAL.write(c);
+}
+
 
 
 

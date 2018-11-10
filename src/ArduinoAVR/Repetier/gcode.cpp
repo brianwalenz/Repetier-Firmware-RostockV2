@@ -1069,154 +1069,69 @@ void GCode::resetFatalError() {
 	Com::printF(PSTR("info:Continue from fatal state\n"));
 }
 
+
+
+
+
+
+
+
+
+
 SerialGCodeSource serial0Source(&RFSERIAL);
 
-fast8_t GCodeSource::numSources = 1; ///< Number of data sources available
-fast8_t GCodeSource::numWriteSources = 1;
+
+fast8_t      GCodeSource::numSources = 1; ///< Number of data sources available
 GCodeSource *GCodeSource::sources[MAX_DATA_SOURCES] = {&serial0Source};      
-GCodeSource *GCodeSource::writeableSources[MAX_DATA_SOURCES] = {&serial0Source};
 GCodeSource *GCodeSource::activeSource = &serial0Source;
 
-void GCodeSource::registerSource(GCodeSource *newSource) {
-  for(fast8_t i = 0; i < numSources; i++) { // skip register if already contained
-    if(sources[i] == newSource) {
-      return;
-    }
-  }      
-  //printF(PSTR("AddSource:"),numSources);
-  //printF(PSTR("\n"));
-  sources[numSources++] = newSource;
-  if(newSource->supportsWrite())
-    writeableSources[numWriteSources++] = newSource;  
-}
 
-void GCodeSource::removeSource(GCodeSource *delSource) {
-  fast8_t i;
-  for(i = 0; i < numSources; i++) {
-    if(sources[i] == delSource) {
-      //printF(PSTR("DelSource:"),i);
-      //printF(PSTR("\n"));
+void
+GCodeSource::registerSource(GCodeSource *newSource) {
+  for (uint8_t i=0; i<numSources; i++)
+    if (sources[i] == newSource)
+      return;
+
+  sources[numSources++] = newSource;
+};
+
+void
+GCodeSource::removeSource(GCodeSource *delSource) {
+  for (uint8_t i=0; i<numSources; i++) {
+    if (sources[i] == delSource) {
       sources[i] = sources[--numSources];
       break;
     }
-  }  
-  for(i = 0; i < numWriteSources; i++) {
-    if(writeableSources[i] == delSource) {
-      writeableSources[i] = writeableSources[--numWriteSources];
-      break;
-    }
   }
+
   if(activeSource == delSource)
     rotateSource();
 }
 
-void GCodeSource::rotateSource() { ///< Move active to next source
-  fast8_t bestIdx = 0; //,oldIdx = 0;
-  fast8_t i;
-  for(i = 0; i < numSources; i++) {
+void
+GCodeSource::rotateSource() {
+  uint8_t bestIdx = 0;
+
+  for (uint8_t i=0; i<numSources; i++) {
     if(sources[i] == activeSource) {
-      //oldIdx = 
       bestIdx = i;
       break;
     }
   }    
-  for(i = 0; i < numSources; i++) {
-    if(++bestIdx >= numSources)
+
+  for (uint8_t i=0; i<numSources; i++) {
+
+    if (++bestIdx >= numSources)
       bestIdx = 0;
-    if(sources[bestIdx]->dataAvailable()) break;
+
+    if (sources[bestIdx]->dataAvailable())
+      break;
   }
-  //if(oldIdx != bestIdx) {
-  //    Com::printF(PSTR("Rotate:"),(int32_t)bestIdx);
-  //    Com::printF(PSTR("\n");
-  //}
+
   activeSource = sources[bestIdx];
+
   GCode::commandsReceivingWritePosition = 0;
 }   
- 
 
 
-GCodeSource::GCodeSource() {
-  lastLineNumber = 0;
-  wasLastCommandReceivedAsBinary = false;
-  waitingForResend = -1;
-}
-
-// ----- serial connection source -----
-
-SerialGCodeSource::SerialGCodeSource(Stream *p) {
-  stream = p;
-}
-bool SerialGCodeSource::isOpen() {
-  return true;    
-}
-bool SerialGCodeSource::supportsWrite() { ///< true if write is a non dummy function
-  return true;
-}    
-bool SerialGCodeSource::closeOnError() { // return true if the channel can not interactively correct errors.
-  return false;
-}    
-bool SerialGCodeSource::dataAvailable() { // would read return a new byte?
-  return stream->available();
-}    
-int SerialGCodeSource::readByte() {
-  return stream->read();
-}
-void SerialGCodeSource::writeByte(uint8_t byte) {
-  stream->write(byte);
-}
-void SerialGCodeSource::close() {
-}    
-
-
-
-
-
-// ----- SD card source -----
-
-
-bool SDCardGCodeSource::isOpen() {
-  return (sd.isOpen());
-}
-
-bool SDCardGCodeSource::supportsWrite() { ///< true if write is a non dummy function
-  return false;
-}
-
-bool SDCardGCodeSource::closeOnError() { // return true if the channel can not interactively correct errors.
-  return true;
-}
-
-bool SDCardGCodeSource::dataAvailable() { // would read return a new byte?
-  if (sd.isPrinting() == false)
-    return(false);
-
-  if (sd.isFinished() == false)
-    return(true);
-
-  close();
-  return(false);
-}
-
-int SDCardGCodeSource::readByte() {
-  int n = sd.file.read();
-
-  if (n == -1) {
-    close();
-  }
-
-  return(n);
-}
-
-void SDCardGCodeSource::writeByte(uint8_t byte) {
-  // dummy
-}
-
-void SDCardGCodeSource::close() {
-  sd.stopPrint();
-
-  //  stopPrint() removes the source too.
-  //GCodeSource::removeSource(this);  
-
-  Com::printF(PSTR("Done printing file.\n"));
-}
 
