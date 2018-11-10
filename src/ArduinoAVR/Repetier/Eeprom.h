@@ -158,11 +158,11 @@
 
 class EEPROM
 {
-  static void writeExtruderPrefix(uint pos);
-  static void writeFloat(uint pos,PGM_P text,uint8_t digits = 3);
-  static void writeLong(uint pos,PGM_P text);
-  static void writeInt(uint pos,PGM_P text);
-  static void writeByte(uint pos,PGM_P text);
+  static void writeExtruderPrefix(uint16_t pos);
+  static void writeFloat(uint16_t pos,PGM_P text,uint8_t digits = 3);
+  static void writeLong(uint16_t pos,PGM_P text);
+  static void writeInt(uint16_t pos,PGM_P text);
+  static void writeByte(uint16_t pos,PGM_P text);
 public:
   static uint8_t computeChecksum();
   static void updateChecksum();

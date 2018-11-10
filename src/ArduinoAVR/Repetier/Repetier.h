@@ -152,14 +152,6 @@ typedef uint8_t secondspeed_t;
 #endif
 
 
-inline void memcopy2(void *dest,void *source) {
-	*((int16_t*)dest) = *((int16_t*)source);
-}
-inline void memcopy4(void *dest,void *source) {
-	*((int32_t*)dest) = *((int32_t*)source);
-}
-
-
 #if FEATURE_Z_PROBE && Z_PROBE_PIN < 0
 #error You need to define Z_PROBE_PIN to use z probe!
 #endif
@@ -246,7 +238,7 @@ inline void memcopy4(void *dest,void *source) {
 #define ANALOG_INPUT_CHANNELS {EXT0_TEMPSENSOR_PIN, HEATED_BED_SENSOR_PIN}
 
 
-#include "HAL.h"
+//#include "HAL.h"
 
 #define MAX_VFAT_ENTRIES (2)
 /** Total size of the buffer used to store the long filenames */
@@ -259,12 +251,6 @@ inline void memcopy4(void *dest,void *source) {
 #include "src/SdFat/SdFat.h"
 
 #include "gcode.h"
-
-#define uint uint16_t
-#define uint8 uint8_t
-#define int8 int8_t
-#define uint32 uint32_t
-#define int32 int32_t
 
 
 #undef min
@@ -519,13 +505,13 @@ inline RVector3 operator*(float lhs,const RVector3 &rhs) {
 #define TRIM_FAN_PWM(x) static_cast<uint8_t>(static_cast<unsigned int>(x) * MAX_FAN_PWM / 255)
 #endif
 
-extern const uint8 osAnalogInputChannels[] PROGMEM;
-//extern uint8 osAnalogInputCounter[ANALOG_INPUTS];
-//extern uint osAnalogInputBuildup[ANALOG_INPUTS];
-//extern uint8 osAnalogInputPos; // Current sampling position
+extern const uint8_t osAnalogInputChannels[] PROGMEM;
+//extern uint8_t osAnalogInputCounter[ANALOG_INPUTS];
+//extern uint16_t osAnalogInputBuildup[ANALOG_INPUTS];
+//extern uint8_t osAnalogInputPos; // Current sampling position
 
 #if ANALOG_INPUTS > 0
-extern volatile uint osAnalogInputValues[ANALOG_INPUTS];
+extern volatile uint16_t osAnalogInputValues[ANALOG_INPUTS];
 #endif
 
 #define PWM_HEATED_BED    NUM_EXTRUDER

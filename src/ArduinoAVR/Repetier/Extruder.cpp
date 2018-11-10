@@ -27,8 +27,8 @@ volatile uint8_t executePeriodical = 0;
 uint8_t counter500ms = 5;
 
 #if ANALOG_INPUTS > 0
-const uint8 osAnalogInputChannels[] PROGMEM = ANALOG_INPUT_CHANNELS;
-volatile uint osAnalogInputValues[ANALOG_INPUTS];
+const uint8_t osAnalogInputChannels[] PROGMEM = ANALOG_INPUT_CHANNELS;
+volatile uint16_t osAnalogInputValues[ANALOG_INPUTS];
 #endif
 
 #ifdef USE_GENERIC_THERMISTORTABLE_1

@@ -608,7 +608,7 @@ void EEPROM::updateChecksum()
     HAL::eprSetByte(EPR_INTEGRITY_BYTE,newcheck);
 }
 
-void EEPROM::writeExtruderPrefix(uint pos)
+void EEPROM::writeExtruderPrefix(uint16_t pos)
 {
   if(pos < EEPROM_EXTRUDER_OFFSET || pos >= 800) return;
   int n = (pos - EEPROM_EXTRUDER_OFFSET) / EEPROM_EXTRUDER_LENGTH + 1;
@@ -616,7 +616,7 @@ void EEPROM::writeExtruderPrefix(uint pos)
   Com::print(' ');
 }
 
-void EEPROM::writeFloat(uint pos,PGM_P text,uint8_t digits)
+void EEPROM::writeFloat(uint16_t pos,PGM_P text,uint8_t digits)
 {
   Com::printF(PSTR("EPR:3 "), static_cast<int>(pos));
   Com::print(' ');
@@ -628,7 +628,7 @@ void EEPROM::writeFloat(uint pos,PGM_P text,uint8_t digits)
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 
-void EEPROM::writeLong(uint pos,PGM_P text)
+void EEPROM::writeLong(uint16_t pos,PGM_P text)
 {
   Com::printF(PSTR("EPR:2 "), static_cast<int>(pos));
   Com::print(' ');
@@ -640,7 +640,7 @@ void EEPROM::writeLong(uint pos,PGM_P text)
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 
-void EEPROM::writeInt(uint pos,PGM_P text)
+void EEPROM::writeInt(uint16_t pos,PGM_P text)
 {
   Com::printF(PSTR("EPR:1 "), static_cast<int>(pos));
   Com::print(' ');
@@ -652,7 +652,7 @@ void EEPROM::writeInt(uint pos,PGM_P text)
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 
-void EEPROM::writeByte(uint pos,PGM_P text)
+void EEPROM::writeByte(uint16_t pos,PGM_P text)
 {
   Com::printF(PSTR("EPR:0 "), static_cast<int>(pos));
   Com::print(' ');

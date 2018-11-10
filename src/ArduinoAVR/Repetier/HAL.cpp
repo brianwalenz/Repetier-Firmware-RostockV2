@@ -2,9 +2,9 @@
 #include <compat/twi.h>
 
 #if ANALOG_INPUTS > 0
-uint8 osAnalogInputCounter[ANALOG_INPUTS];
-uint osAnalogInputBuildup[ANALOG_INPUTS];
-uint8 osAnalogInputPos = 0; // Current sampling position
+uint8_t osAnalogInputCounter[ANALOG_INPUTS];
+uint16_t osAnalogInputBuildup[ANALOG_INPUTS];
+uint8_t osAnalogInputPos = 0; // Current sampling position
 #endif
 #if FEATURE_WATCHDOG
 bool HAL::wdPinged = false;
@@ -264,7 +264,7 @@ void HAL::analogStart() {
   //ADCSRA |= _BV(ADSC);                  // start ADC-conversion
   while (ADCSRA & _BV(ADSC) ) {} // wait for conversion
   /* ADCW must be read once, otherwise the next result is wrong. */
-  //uint dummyADCResult;
+  //uint16_t dummyADCResult;
   //dummyADCResult = ADCW;
   // Enable interrupt driven conversion loop
   uint8_t channel = pgm_read_byte(&osAnalogInputChannels[osAnalogInputPos]);
