@@ -119,7 +119,7 @@ public:
         Com::print((int32_t)cardErrorCode());
         Com::printF(PSTR(",0X"));
         Com::print((int32_t)cardErrorData());
-        Com::println();
+        Com::printF(PSTR("\n"));
     }
     /** %Print msg, any SD error code.
    *

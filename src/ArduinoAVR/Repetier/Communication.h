@@ -37,19 +37,30 @@
     - sd card
     - flash memory
 */
+
 class GCodeSource {
   static fast8_t numSources; ///< Number of data sources available
   static fast8_t numWriteSources;
   static GCodeSource *sources[MAX_DATA_SOURCES];
   static GCodeSource *writeableSources[MAX_DATA_SOURCES];
+
 public:
   static GCodeSource *activeSource;
+
   static void registerSource(GCodeSource *newSource);
   static void removeSource(GCodeSource *delSource);
   static void rotateSource(); ///< Move active to next source
-  static void writeToAll(uint8_t byte); ///< Write to all listening sources
-  static void printAllFLN(FSTRINGPARAM(text) );
-  static void printAllFLN(FSTRINGPARAM(text), int32_t v);
+
+  static void writeToAll(uint8_t byte) { ///< Write to all listening sources 
+    fast8_t i;
+
+    for(i = 0; i < numWriteSources; i++) {
+      writeableSources[i]->writeByte(byte);
+    }
+  };
+
+
+
   uint32_t lastLineNumber;
   uint8_t wasLastCommandReceivedAsBinary; ///< Was the last successful command in binary mode?
   millis_t timeOfLastDataPacket;
@@ -70,56 +81,56 @@ public:
 
 class Com {
 public:
-  static void cap(FSTRINGPARAM(text));
+  static void printF(FSTRINGPARAM(text));
+  static void print(const char *text);
 
-  static void config(FSTRINGPARAM(text));
-  static void config(FSTRINGPARAM(text),int value);
-  static void config(FSTRINGPARAM(text),const char *msg);
-  static void config(FSTRINGPARAM(text),int32_t value);
-  static void config(FSTRINGPARAM(text),uint32_t value);
-  static void config(FSTRINGPARAM(text),float value,uint8_t digits=2);
+  static void printF(FSTRINGPARAM(text), const char *msg) {
+    printF(text);
+    print(msg);
+  };
+  static void printF(FSTRINGPARAM(text), int value) {
+    printF(text);
+    print((int32_t)value);
+  };
+  static void printF(FSTRINGPARAM(text), int32_t value) {
+    printF(text);
+    print(value);
+  };
+  static void printF(FSTRINGPARAM(text), uint32_t value) {
+    printF(text);
+    printNumber(value);
+  };
+  static void printF(FSTRINGPARAM(text), float value, uint8_t digits=2) {
+    printF(text);
+    printFloat(value, digits);
+  };
+
+  static void print(char c)          { GCodeSource::writeToAll(c); }
+
+  static void print(uint8_t value)   { print((uint32_t)value); };
+  static void print( int8_t value)   { print(( int32_t)value); };
+
+  static void print(uint16_t value)  { print((uint32_t)value); };
+  static void print( int16_t value)  { print(( int32_t)value); };
+
+  static void print(uint32_t value)  { printNumber(value);     };
+  static void print( int32_t value)  {
+    if (value < 0) {
+      print('-');
+      value = -value;
+    }
+    printNumber((uint32_t)value);
+  };
+
+  static void print(float number)    { printFloat(number, 6); }
+
+
 
   static void printNumber(uint32_t n);
   static void printFloat(float number, uint8_t digits);
 
-  static void printWarningF(FSTRINGPARAM(text));
-  static void printInfoF(FSTRINGPARAM(text));
-  static void printErrorF(FSTRINGPARAM(text));
-
-  static void printWarningFLN(FSTRINGPARAM(text));
-  static void printInfoFLN(FSTRINGPARAM(text));
-  static void printErrorFLN(FSTRINGPARAM(text));
-
-  static void printF(FSTRINGPARAM(text));
-  static void printF(FSTRINGPARAM(text),const char *msg);
-  static void printF(FSTRINGPARAM(text),int value);
-  static void printF(FSTRINGPARAM(text),int32_t value);
-  static void printF(FSTRINGPARAM(text),uint32_t value);
-  static void printF(FSTRINGPARAM(text),float value, uint8_t digits=2);
-
-  static void printFLN(FSTRINGPARAM(text));
-  static void printFLN(FSTRINGPARAM(text),const char *msg);
-  static void printFLN(FSTRINGPARAM(text),int value);
-  static void printFLN(FSTRINGPARAM(text),int32_t value);
-  static void printFLN(FSTRINGPARAM(text),uint32_t value);
-  static void printFLN(FSTRINGPARAM(text),float value, uint8_t digits=2);
-
-  static void printArrayFLN(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
-  static void printArrayFLN(FSTRINGPARAM(text),long *arr,uint8_t n=4);
-
-  static void print(int16_t value)   { print((int32_t)value); };
-  static void print(uint16_t value)  { print((uint32_t)value); };
-
-  static void print(int32_t value);
-  static void print(uint32_t value);
-  static void print(const char *text);
-  static void print(char c) {GCodeSource::writeToAll(c);}
-
-  static void print(float number) {printFloat(number, 6);}
-
-  static void println() {GCodeSource::writeToAll('\r');GCodeSource::writeToAll('\n');}
-
-  static bool writeToAll;    
+  static void printArrayF(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
+  static void printArrayF(FSTRINGPARAM(text),long *arr,uint8_t n=4);
 };
 
 #endif // COMMUNICATION_H

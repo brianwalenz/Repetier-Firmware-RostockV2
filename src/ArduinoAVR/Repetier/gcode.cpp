@@ -155,11 +155,11 @@ void GCode::keepAlive(enum FirmwareState state) {
 		if(now - lastBusySignal < keepAliveInterval)
 			return;
 		if(state == Paused) {
-			GCodeSource::printAllFLN(PSTR("busy:paused for user interaction"));	
+      Com::printF(PSTR("busy:paused for user interaction\n"));	
 		} else if(state == WaitHeater) {
-			GCodeSource::printAllFLN(PSTR("busy:heating"));	
+      Com::printF(PSTR("busy:heating\n"));	
 		} else { // processing and uncaught cases
-			GCodeSource::printAllFLN(PSTR("busy:processing"));
+      Com::printF(PSTR("busy:processing\n"));
 		}
 	}
 	lastBusySignal = now;
@@ -173,9 +173,10 @@ void GCode::requestResend()
     GCodeSource::activeSource->waitingForResend = 30;
   else
     GCodeSource::activeSource->waitingForResend = 14;
-  Com::println();
-  Com::printFLN(PSTR("Resend:"),GCodeSource::activeSource->lastLineNumber + 1);
-  Com::printFLN(PSTR("ok"));
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Resend:"),GCodeSource::activeSource->lastLineNumber + 1);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("ok\n"));
 }
 
 /**
@@ -189,7 +190,7 @@ void GCode::checkAndPushCommand()
       if(M == 110)   // Reset line number
         {
           GCodeSource::activeSource->lastLineNumber = actLineNumber;
-          Com::printFLN(PSTR("ok"));
+          Com::printF(PSTR("ok\n"));
           GCodeSource::activeSource->waitingForResend = -1;
           return;
         }
@@ -215,15 +216,17 @@ void GCode::checkAndPushCommand()
             {
               // we have seen that line already. So we assume it is a repeated resend and we ignore it
               commandsReceivingWritePosition = 0;
-              Com::printFLN(PSTR("skip "),actLineNumber);
-              Com::printFLN(PSTR("ok"));
+              Com::printF(PSTR("skip "),actLineNumber);
+              Com::printF(PSTR("\n"));
+              Com::printF(PSTR("ok\n"));
             }
           else if(GCodeSource::activeSource->waitingForResend < 0)  // after a resend, we have to skip the garbage in buffers, no message for this
             {
               if(Printer::debugErrors())
                 {
                   Com::printF(PSTR("Error:expected line "), GCodeSource::activeSource->lastLineNumber + 1);
-                  Com::printFLN(PSTR(" got "), actLineNumber);
+                  Com::printF(PSTR(" got "), actLineNumber);
+                  Com::printF(PSTR("\n"));
                 }
               requestResend(); // Line missing, force resend
             }
@@ -231,8 +234,9 @@ void GCode::checkAndPushCommand()
             {
               --GCodeSource::activeSource->waitingForResend;
               commandsReceivingWritePosition = 0;
-              Com::printFLN(PSTR("skip "), actLineNumber);
-              Com::printFLN(PSTR("ok"));
+              Com::printF(PSTR("skip "), actLineNumber);
+              Com::printF(PSTR("\n"));
+              Com::printF(PSTR("ok\n"));
             }
           return;
         }
@@ -242,7 +246,7 @@ void GCode::checkAndPushCommand()
         else if(lastLineNumber && !(hasM() && M == 117)) { // once line number always line number!
         if(Printer::debugErrors())
         {
-        Com::printErrorFLN(PSTR("Missing linenumber"));
+        Com::printF(PSTR("ERROR: Missing linenumber\n"));
         }
         requestResend();
         return;
@@ -257,9 +261,10 @@ void GCode::checkAndPushCommand()
     return; // omit ok
 #endif
 #if ACK_WITH_LINENUMBER
-  Com::printFLN(PSTR("ok "), actLineNumber);
+  Com::printF(PSTR("ok "), actLineNumber);
+  Com::printF(PSTR("\n"));
 #else
-  Com::printFLN(PSTR("ok"));
+  Com::printF(PSTR("ok\n"));
 #endif
   GCodeSource::activeSource->wasLastCommandReceivedAsBinary = sendAsBinary;
 	keepAlive(NotBusy);
@@ -310,12 +315,13 @@ void GCode::debugCommandBuffer()
   Com::printF(PSTR("CommandBuffer"));
   for(int i = 0; i < commandsReceivingWritePosition; i++)
     Com::printF(PSTR(":"),(int)commandReceiving[i]);
-  Com::println();
-  Com::printFLN(PSTR("Binary:"), (int)sendAsBinary);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Binary:"), (int)sendAsBinary);
+  Com::printF(PSTR("\n"));
   if(!sendAsBinary)
     {
       Com::print((char*)commandReceiving);
-      Com::println();
+      Com::printF(PSTR("\n"));
     }
 }
 
@@ -377,28 +383,30 @@ void GCode::readFromSerial()
   waitUntilAllCommandsAreParsed = false;
   millis_t time = HAL::timeInMilliseconds();
     
-  bool lastWTA = Com::writeToAll;
-  Com::writeToAll = false;
   if(!GCodeSource::activeSource->dataAvailable())
     {
       if(GCodeSource::activeSource->closeOnError()) { // this device does not support resends so all errors are final and we always expect there is a new char!
         if(commandsReceivingWritePosition > 0) { // it's only an error if we have started reading a command
           GCodeSource::activeSource->close();
           GCodeSource::rotateSource();
-          Com::writeToAll = lastWTA;
           return;
         }            
       } else {
         if((GCodeSource::activeSource->waitingForResend >= 0 || commandsReceivingWritePosition > 0) && time - GCodeSource::activeSource->timeOfLastDataPacket > 200) // only if we get no further data after 200ms it is a problem
           {
-            // Com::printF(PSTR("WFR:"),waitingForResend);Com::printF(PSTR(" CRWP:"),commandsReceivingWritePosition);commandReceiving[commandsReceivingWritePosition] = 0;Com::printFLN(PSTR(" GOT:"),(char*)commandReceiving);
+            //Com::printF(PSTR("WFR:"),waitingForResend);
+            //Com::printF(PSTR(" CRWP:"),commandsReceivingWritePosition);
+            //commandReceiving[commandsReceivingWritePosition] = 0;
+            //Com::printF(PSTR(" GOT:"),(char*)commandReceiving);
+            //Com::printF(PSTR("\n"));
             requestResend(); // Something is wrong, a started line was not continued in the last second
             GCodeSource::activeSource->timeOfLastDataPacket = time;
           }
 #ifdef WAITING_IDENTIFIER
         else if(bufferLength == 0 && time - GCodeSource::activeSource->timeOfLastDataPacket > 1000)   // Don't do it if buffer is not empty. It may be a slow executing command.
           {
-            Com::printFLN(PSTR(WAITING_IDENTIFIER)); // Unblock communication in case the last ok was not received correct.
+            Com::printF(PSTR(WAITING_IDENTIFIER)); // Unblock communication in case the last ok was not received correct.
+            Com::printF(PSTR("\n"));
             GCodeSource::activeSource->timeOfLastDataPacket = time;
           }
 #endif
@@ -426,7 +434,6 @@ void GCode::readFromSerial()
             {
               commandsReceivingWritePosition = 0;
               GCodeSource::rotateSource(); // could also be end of file, so let's rotate source if it closed it self
-              Com::writeToAll = lastWTA;
               return;
             }
           sendAsBinary = (commandReceiving[0] & 128) != 0;
@@ -450,7 +457,6 @@ void GCode::readFromSerial()
                 }                    
               }
               GCodeSource::rotateSource();
-              Com::writeToAll = lastWTA;
               return;
             }
         }
@@ -461,7 +467,7 @@ void GCode::readFromSerial()
             {
               commandReceiving[commandsReceivingWritePosition - 1] = 0;
 #ifdef DEBUG_ECHO_ASCII
-              Com::printF(PSTR("Got:"));Com::print((char*)commandReceiving);Com::println();
+              Com::printF(PSTR("Got:"));Com::print((char*)commandReceiving);Com::printf(PSTR("\n"));
 #endif
               commentDetected = false;
               if(commandsReceivingWritePosition == 1)   // empty line ignore
@@ -482,7 +488,6 @@ void GCode::readFromSerial()
               }
               GCodeSource::rotateSource();
               commandsReceivingWritePosition = 0;
-              Com::writeToAll = lastWTA;
               return;
             }
           else
@@ -501,7 +506,6 @@ void GCode::readFromSerial()
           }            
         }
     } // while
-  Com::writeToAll = lastWTA;
 }
 
 /**
@@ -535,7 +539,7 @@ bool GCode::parseBinary(uint8_t *buffer,bool fromSerial)
     {
       if(Printer::debugErrors())
         {
-          Com::printErrorFLN(PSTR("Wrong checksum"));
+          Com::printF(PSTR("ERROR: Wrong checksum\n"));
         }
       return false;
     }
@@ -907,7 +911,7 @@ bool GCode::parseAscii(char *line,bool fromSerial)
                 {
                   if(Printer::debugErrors())
                     {
-                      Com::printErrorFLN(PSTR("Wrong checksum"));
+                      Com::printF(PSTR("ERROR: Wrong checksum\n"));
                     }
                   return false; // mismatch
                 }
@@ -919,14 +923,14 @@ bool GCode::parseAscii(char *line,bool fromSerial)
         }// end switch
     }// end while
 	if(GCodeSource::activeSource->wasLastCommandReceivedAsBinary && !hasChecksum && fromSerial && !waitUntilAllCommandsAreParsed) {
-		Com::printErrorFLN(PSTR("Checksum required when switching back to ASCII protocol."));
+		Com::printF(PSTR("ERROR: Checksum required when switching back to ASCII protocol.\n"));
 		return false;
 	}
   if(hasFormatError() /*|| (params & 518) == 0*/)   // Must contain G, M or T command and parameter need to have variables!
     {
       formatErrors++;
       if(Printer::debugErrors())
-        Com::printErrorFLN(PSTR("Format error"));
+        Com::printF(PSTR("ERROR: Format error\n"));
       if(formatErrors < 3) return false;
     }
   else formatErrors = 0;
@@ -1035,7 +1039,7 @@ void GCode::printCommand()
     {
       Com::print(text);
     }
-  Com::println();
+  Com::printF(PSTR("\n"));
 }
 
 void GCode::fatalError(FSTRINGPARAM(message)) {
@@ -1049,22 +1053,20 @@ void GCode::fatalError(FSTRINGPARAM(message)) {
 }
 
 void GCode::reportFatalError() {
-  Com::writeToAll = true;
 	Com::printF(PSTR("fatal:"));
 	Com::printF(fatalErrorMsg);
-	Com::printFLN(PSTR(" - Printer stopped and heaters disabled due to this error. Fix error and restart with M999."));
-	uid.setStatusP(fatalErrorMsg);
+	Com::printF(PSTR(" - Printer stopped and heaters disabled due to this error. Fix error and restart with M999.\n"));
+  uid.setStatusP(fatalErrorMsg);
   uid.refreshPage();
     }
 
 void GCode::resetFatalError() {
-  Com::writeToAll = true;
 	TemperatureController::resetAllErrorStates();
 	Printer::debugReset(8); // disable dry run
 	fatalErrorMsg = NULL;
 	uid.setStatusP(PSTR(""), true);
 	Printer::setUIErrorMessage(false); // allow overwrite
-	Com::printFLN(PSTR("info:Continue from fatal state"));
+	Com::printF(PSTR("info:Continue from fatal state\n"));
 }
 
 SerialGCodeSource serial0Source(&RFSERIAL);
@@ -1081,7 +1083,8 @@ void GCodeSource::registerSource(GCodeSource *newSource) {
       return;
     }
   }      
-  //printAllFLN(PSTR("AddSource:"),numSources);
+  //printF(PSTR("AddSource:"),numSources);
+  //printF(PSTR("\n"));
   sources[numSources++] = newSource;
   if(newSource->supportsWrite())
     writeableSources[numWriteSources++] = newSource;  
@@ -1091,7 +1094,8 @@ void GCodeSource::removeSource(GCodeSource *delSource) {
   fast8_t i;
   for(i = 0; i < numSources; i++) {
     if(sources[i] == delSource) {
-      //printAllFLN(PSTR("DelSource:"),i);
+      //printF(PSTR("DelSource:"),i);
+      //printF(PSTR("\n"));
       sources[i] = sources[--numSources];
       break;
     }
@@ -1121,35 +1125,14 @@ void GCodeSource::rotateSource() { ///< Move active to next source
       bestIdx = 0;
     if(sources[bestIdx]->dataAvailable()) break;
   }
-  //if(oldIdx != bestIdx)
-  //    printAllFLN(PSTR("Rotate:"),(int32_t)bestIdx);
+  //if(oldIdx != bestIdx) {
+  //    Com::printF(PSTR("Rotate:"),(int32_t)bestIdx);
+  //    Com::printF(PSTR("\n");
+  //}
   activeSource = sources[bestIdx];
   GCode::commandsReceivingWritePosition = 0;
 }   
  
-void GCodeSource::writeToAll(uint8_t byte) { ///< Write to all listening sources 
-  if(Com::writeToAll) {
-    fast8_t i;
-    for(i = 0; i < numWriteSources; i++) {
-      writeableSources[i]->writeByte(byte);
-    }
-  } else {
-    activeSource->writeByte(byte);
-  }
-}
-
-void GCodeSource::printAllFLN(FSTRINGPARAM(text) ) {
-  bool old = Com::writeToAll;
-  Com::writeToAll = true;
-  Com::printFLN(text);
-  Com::writeToAll = old;
-}
-void GCodeSource::printAllFLN(FSTRINGPARAM(text), int32_t v) {
-  bool old = Com::writeToAll;
-  Com::writeToAll = true;
-  Com::printFLN(text,v);
-  Com::writeToAll = old;    
-}
 
 
 GCodeSource::GCodeSource() {
@@ -1234,6 +1217,6 @@ void SDCardGCodeSource::close() {
   //  stopPrint() removes the source too.
   //GCodeSource::removeSource(this);  
 
-  Com::printFLN(PSTR("Done printing file"));
+  Com::printF(PSTR("Done printing file.\n"));
 }
 

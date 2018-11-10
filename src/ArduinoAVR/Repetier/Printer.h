@@ -46,9 +46,6 @@
 union floatLong {
   float f;
   uint32_t l;
-#ifdef SUPPORT_64_BIT_MATH
-  uint64_t L;
-#endif
 };
 
 union wizardVar {
@@ -579,9 +576,9 @@ public:
   static INLINE void setColdExtrusionAllowed(uint8_t b) {
     flag1 = (b ? flag1 | PRINTER_FLAG1_ALLOW_COLD_EXTRUSION : flag1 & ~PRINTER_FLAG1_ALLOW_COLD_EXTRUSION);
     if(b)
-      Com::printFLN(PSTR("Cold extrusion allowed"));
+      Com::printF(PSTR("Cold extrusion allowed\n"));
     else
-      Com::printFLN(PSTR("Cold extrusion disallowed"));
+      Com::printF(PSTR("Cold extrusion disallowed\n"));
   }
 
   static INLINE uint8_t isBlockingReceive() {
@@ -590,7 +587,7 @@ public:
 
   static INLINE void setBlockingReceive(uint8_t b) {
     flag2 = (b ? flag2 | PRINTER_FLAG2_BLOCK_RECEIVING : flag2 & ~PRINTER_FLAG2_BLOCK_RECEIVING);
-    Com::printFLN(b ? PSTR("// action:pause") : PSTR("// action:resume"));
+    Com::printF(b ? PSTR("// action:pause\n") : PSTR("// action:resume\n"));
   }
 
   static INLINE uint8_t isPrinting() {
@@ -838,14 +835,19 @@ public:
     return wizardStack[--wizardStackPos];
   }
 #endif
-  static void showConfiguration();
+
+  //static void showConfiguration();
+
   static void homeXAxis();
   static void homeYAxis();
   static void homeZAxis();
   static void pausePrint();
   static void continuePrint();
   static void stopPrint();
+
 	static void moveToParkPosition();
+
+
 #if FEATURE_Z_PROBE || defined(DOXYGEN)
   /** \brief Prepares printer for probing commands.
 

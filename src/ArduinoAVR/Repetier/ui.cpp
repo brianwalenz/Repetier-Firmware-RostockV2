@@ -1033,8 +1033,6 @@ void UIDisplay::slowAction(bool allowMoves) {
     //  If the encoder changed, update whaever we're doing.
 
     if(encodeChange) {
-      Com::writeToAll = true;
-
       doEncoderChange(encodeChange, allowMoves);
 
       //uiChirp();
@@ -1053,7 +1051,6 @@ void UIDisplay::slowAction(bool allowMoves) {
       } else if(time - lastButtonStart > UI_KEY_BOUNCETIME) { // New key pressed
         lastAction = lastButtonAction;
         uiChirp();
-        Com::writeToAll = true;
         if((newAction = executeAction(lastAction, allowMoves)) == 0) {
           nextRepeat = time + UI_KEY_FIRST_REPEAT;
           repeatDuration = UI_KEY_FIRST_REPEAT;

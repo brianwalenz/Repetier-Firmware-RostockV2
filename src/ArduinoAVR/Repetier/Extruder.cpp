@@ -46,11 +46,12 @@ short temptable_generic3[GENERIC_THERM_NUM_ENTRIES][2];
 */
 static uint8_t extruderTempErrors = 0;
 static uint8_t extrSecondFlag = 0;
+
 void Extruder::manageTemperatures() {
   extrSecondFlag++;
   if(extrSecondFlag == 10)
     extrSecondFlag = 0;
-  Com::writeToAll = true;
+
 #if FEATURE_WATCHDOG
   HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
@@ -102,7 +103,7 @@ void Extruder::manageTemperatures() {
         extruderTempErrors++;
       else {
         act->flags |= TEMPERATURE_CONTROLLER_FLAG_SENSDEFECT;
-        Com::printErrorFLN(PSTR("Heated bed exceeded max temperature!"));
+        Com::printF(PSTR("ERROR: Heated bed exceeded max temperature!\n"));
         if(!Printer::isAnyTempsensorDefect()) {
           newDefectFound = true;
           Printer::setAnyTempsensorDefect();
@@ -141,10 +142,10 @@ void Extruder::manageTemperatures() {
             }
             uid.setStatusP(PSTR("!!Heater decoupled!!"), true);
             uid.refreshPage();
-            Com::printErrorFLN(PSTR("One heater seems decoupled from thermistor - disabling all for safety!"));
+            Com::printF(PSTR("ERROR: One heater seems decoupled from thermistor - disabling all for safety!\n"));
             Com::printF(PSTR("Error:Temp. raised to slow. Rise = "), act->currentTemperatureC - act->lastDecoupleTemp);
             Com::printF(PSTR(" after "), (int32_t)(time - act->lastDecoupleTest));
-            Com::printFLN(PSTR(" ms"));
+            Com::printF(PSTR(" ms\n"));
           }
         } else {
           act->stopDecouple();
@@ -165,10 +166,10 @@ void Extruder::manageTemperatures() {
             }
             uid.setStatusP(PSTR("!!Heater decoupled!!"), true);
             uid.refreshPage();
-            Com::printErrorFLN(PSTR("One heater seems decoupled from thermistor - disabling all for safety!"));
+            Com::printF(PSTR("ERROR: One heater seems decoupled from thermistor - disabling all for safety!\n"));
             Com::printF(PSTR("Error:Could not hold temperature "), act->lastDecoupleTemp);
             Com::printF(PSTR(" measured "), act->currentTemperatureC);
-            Com::printFLN(PSTR(" deg. C"));
+            Com::printF(PSTR(" deg. C\n"));
           }
         } else {
           act->lastDecoupleTest = time - act->decoupleTestPeriod + 1000; // once running test every second
@@ -194,7 +195,7 @@ void Extruder::manageTemperatures() {
     else { // control range handle by heat manager
       if(act->heatManager == HTR_PID) {
         act->startHoldDecouple(time);
-        // Com::printF(PSTR(" CUR:"),act->currentTemperatureC); Com::printFLN(PSTR(" IST:"),(act->pidIGain * act->tempIState * 0.1),1);
+        //BAD Com::printF(PSTR(" CUR:"),act->currentTemperatureC); Com::printF(PSTR(" IST:"),(act->pidIGain * act->tempIState * 0.1),1);
         float pidTerm = act->pidPGain * error;
         act->tempIState = constrain(act->tempIState + error, act->tempIStateLimitMin, act->tempIStateLimitMax);
         pidTerm += act->pidIGain * act->tempIState * 0.1; // 0.1 = 10Hz
@@ -216,15 +217,15 @@ void Extruder::manageTemperatures() {
             act->tempIStateLimitMax = constrain(act->tempIStateLimitMax - 10, act->tempIStateLimitMin, act->pidDriveMax);
           else
             act->tempIStateLimitMax = constrain(act->tempIStateLimitMax + 10, act->tempIStateLimitMin, act->pidDriveMax);
-          // Com::printF(PSTR("Raise:"), raising);Com::printF(PSTR(" er:"),error,2);Com::printFLN(PSTR(" LimitMax:"),act->tempIStateLimitMax,0);
+          //BAD Com::printF(PSTR("Raise:"), raising);Com::printF(PSTR(" er:"),error,2);Com::printF(PSTR(" LimitMax:"),act->tempIStateLimitMax,0);
         } else if(raising > 0 && act->tempIState <= 0) { // bottom reached
           if(error > 0.5)
             act->tempIStateLimitMin = constrain(act->tempIStateLimitMin + 10, 0, act->tempIStateLimitMax - 20);
           else
             act->tempIStateLimitMin = constrain(act->tempIStateLimitMin - 10, 0, act->tempIStateLimitMax - 20);
-          // Com::printFLN(PSTR("LimitMin:"),act->tempIStateLimitMin,0);
+          //BAD Com::printF(PSTR("LimitMin:"),act->tempIStateLimitMin,0);
         }
-        // Com::printFLN(PSTR("Raise:"), raising);
+        //BAD Com::printF(PSTR("Raise:"), raising);
 #endif
         output = static_cast<uint8_t>(act->currentTemperatureC + raising * act->deadTime > act->targetTemperatureC ? act->tempIStateLimitMin : act->tempIStateLimitMax /* pidDriveMax */);
         act->tempIState = raising;
@@ -261,7 +262,7 @@ void Extruder::manageTemperatures() {
   if(errorDetected == 0 && extruderTempErrors > 0)
     extruderTempErrors--;
   if(newDefectFound) {
-    Com::printFLN(PSTR("Disabling all heaters due to detected sensor defect."));
+    Com::printF(PSTR("Disabling all heaters due to detected sensor defect.\n"));
     for(uint8_t i = 0; i < NUM_TEMPERATURE_LOOPS; i++) {
       tempController[i]->targetTemperatureC = 0;
       pwm_pos[tempController[i]->pwmIndex] = 0;
@@ -392,8 +393,11 @@ void createGenericTable(short table[GENERIC_THERM_NUM_ENTRIES][2], short minTemp
     table[i][0] = (adc >> (ANALOG_REDUCE_BITS));
     table[i][1] = static_cast<int>(t);
 #ifdef DEBUG_GENERIC
-    Com::printF(PSTR("GenTemp:"), table[i][0]);
-    Com::printFLN(PSTR(","), table[i][1]);
+    Com::printF(PSTR("GenTemp:"));
+    Com::printF(table[i][0]);
+    Com::printF(PSTR(","));
+    Com::printF(table[i][1]);
+    Com::printF(PSTR("\n"));
 #endif
   }
 }
@@ -469,7 +473,9 @@ void Extruder::selectExtruderById(uint8_t extruderId) {
   bool executeSelect = extruderId != current->id;
 
 
-  Com::printFLN(PSTR("SelectExtruder:"), static_cast<int>(extruderId));
+  Com::printF(PSTR("SelectExtruder:"));
+  Com::print(extruderId);
+  Com::printF(PSTR("\n"));
 
   float oldfeedrate = Printer::feedrate;
   current->extrudePosition = Printer::currentPositionSteps[E_AXIS];
@@ -544,8 +550,12 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
   if(beep && temperatureInCelsius > MAX_ROOM_TEMPERATURE)
     tc->setAlarm(true);
   if(temperatureInCelsius >= EXTRUDER_FAN_COOL_TEMP) extruder[extr].coolerPWM = extruder[extr].coolerSpeed;
-  Com::printF(PSTR("TargetExtr"), extr, 0);
-  Com::printFLN(PSTR(":"), temperatureInCelsius, 0);
+  Com::printF(PSTR("TargetExtr"));
+  Com::print(extr);
+  Com::printF(PSTR(":"));
+  Com::print(temperatureInCelsius);
+  Com::printF(PSTR("\n"));
+
   if(wait && temperatureInCelsius > MAX_ROOM_TEMPERATURE
 #if defined(SKIP_M109_IF_WITHIN) && SKIP_M109_IF_WITHIN > 0
      && !(abs(tc->currentTemperatureC - tc->targetTemperatureC) < (SKIP_M109_IF_WITHIN))// Already in range
@@ -629,7 +639,11 @@ void Extruder::setHeatedBedTemperature(float temperatureInCelsius, bool beep) {
   if(heatedBedController.targetTemperatureC == temperatureInCelsius) return; // don't flood log with messages if killed
   heatedBedController.setTargetTemperature(temperatureInCelsius);
   if(beep && temperatureInCelsius > 30) heatedBedController.setAlarm(true);
-  Com::printFLN(PSTR("TargetBed:"), heatedBedController.targetTemperatureC, 0);
+
+  Com::printF(PSTR("TargetBed:"));
+  Com::printFloat(heatedBedController.targetTemperatureC, 0);
+  Com::printF(PSTR("\n"));
+
   if(temperatureInCelsius > 15)
     pwm_pos[PWM_BOARD_FAN] = BOARD_FAN_SPEED;    // turn on the mainboard cooling fan
   else if(Printer::areAllSteppersDisabled())
@@ -1098,7 +1112,7 @@ void TemperatureController::autotunePID(float temp, uint8_t controllerId, int ma
     maxCycles = 5;
   if(maxCycles > 20)
     maxCycles = 20;
-  Com::printInfoFLN(PSTR("PID Autotune start"));
+  Com::printF(PSTR("INFO: PID Autotune start\n"));
 
   //Extruder::disableAllHeater(); // switch off all heaters.
   autotuneIndex = controllerId;
@@ -1141,46 +1155,57 @@ void TemperatureController::autotunePID(float temp, uint8_t controllerId, int ma
           Com::printF(PSTR(" bias: "), bias);
           Com::printF(PSTR(" d: "), d);
           Com::printF(PSTR(" min: "), minTemp);
-          Com::printFLN(PSTR(" max: "), maxTemp);
+          Com::printF(PSTR(" max: "), maxTemp);
+          Com::printF(PSTR("\n"));
+
           if(cycles > 2) {
             // Parameter according Ziegler¡§CNichols method: http://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
             Ku = (4.0 * d) / (3.14159 * (maxTemp - minTemp));
             Tu = static_cast<float>(t_low + t_high) / 1000.0;
             Com::printF(PSTR(" Ku: "), Ku);
-            Com::printFLN(PSTR(" Tu: "), Tu);
+            Com::printF(PSTR(" Tu: "), Tu);
+            Com::printF(PSTR("\n"));
             if(method == 0) {
               Kp = 0.6 * Ku;
               Ki = Kp * 2.0 / Tu;
               Kd = Kp * Tu * 0.125;
-              Com::printFLN(PSTR(" Classic PID"));
+              Com::printF(PSTR(" Classic PID"));
+              Com::printF(PSTR("\n"));
             }
             if(method == 1) {
               Kp = 0.33 * Ku;
               Ki = Kp * 2.0 / Tu;
               Kd = Kp * Tu / 3.0;
-              Com::printFLN(PSTR(" Some Overshoot PID"));
+              Com::printF(PSTR(" Some Overshoot PID"));
+              Com::printF(PSTR("\n"));
             }
             if(method == 2) {
               Kp = 0.2 * Ku;
               Ki = Kp * 2.0 / Tu;
               Kd = Kp * Tu / 3;
-              Com::printFLN(PSTR(" No Overshoot PID"));
+              Com::printF(PSTR(" No Overshoot PID"));
+              Com::printF(PSTR("\n"));
             }
             if(method == 3) {
               Kp = 0.7 * Ku;
               Ki = Kp * 2.5 / Tu;
               Kd = Kp * Tu * 3.0 / 20.0;
-              Com::printFLN(PSTR(" Pessen Integral Rule PID"));
+              Com::printF(PSTR(" Pessen Integral Rule PID"));
+              Com::printF(PSTR("\n"));
             }
 						if(method == 4) { //Tyreus-Lyben
               Kp = 0.4545f*Ku;      //1/2.2 KRkrit
               Ki = Kp/Tu/2.2f;        //2.2 Tkrit
               Kd = Kp*Tu/6.3f;      //1/6.3 Tkrit[/code]
-              Com::printFLN(PSTR(" Tyreus-Lyben PID"));
+              Com::printF(PSTR(" Tyreus-Lyben PID"));
+              Com::printF(PSTR("\n"));
 						}
-            Com::printFLN(PSTR(" Kp: "), Kp);
-            Com::printFLN(PSTR(" Ki: "), Ki);
-            Com::printFLN(PSTR(" Kd: "), Kd);
+            Com::printF(PSTR(" Kp: "), Kp);
+            Com::printF(PSTR("\n"));
+            Com::printF(PSTR(" Ki: "), Ki);
+            Com::printF(PSTR("\n"));
+            Com::printF(PSTR(" Kd: "), Kd);
+            Com::printF(PSTR("\n"));
           }
         }
         pwm_pos[pwmIndex] = (bias + d);
@@ -1189,7 +1214,7 @@ void TemperatureController::autotunePID(float temp, uint8_t controllerId, int ma
       }
     }
     if(currentTemp > (temp + 40)) {
-      Com::printErrorFLN(PSTR("PID Autotune failed! Temperature too high"));
+      Com::printF(PSTR("ERROR: PID Autotune failed! Temperature too high\n"));
       //Extruder::disableAllHeater();
       autotuneIndex = 255;
       return;
@@ -1199,13 +1224,13 @@ void TemperatureController::autotunePID(float temp, uint8_t controllerId, int ma
       Commands::printTemperatures();
     }
     if(((time - t1) + (time - t2)) > (10L * 60L * 1000L * 2L)) { // 20 Minutes
-      Com::printErrorFLN(PSTR("PID Autotune failed! timeout"));
+      Com::printF(PSTR("ERROR: PID Autotune failed! timeout\n"));
       //Extruder::disableAllHeater();
       autotuneIndex = 255;
       return;
     }
     if(cycles > maxCycles) {
-      Com::printInfoFLN(PSTR("PID Autotune finished ! Place the Kp, Ki and Kd constants in the Configuration.h or EEPROM"));
+      Com::printF(PSTR("INFO: PID Autotune finished ! Place the Kp, Ki and Kd constants in the Configuration.h or EEPROM\n"));
       //Extruder::disableAllHeater();
       autotuneIndex = 255;
       if(storeValues) {
@@ -1249,9 +1274,9 @@ bool reportTempsensorError() {
       Com::printF(PSTR(" marked defect"));
     if(act->flags & TEMPERATURE_CONTROLLER_FLAG_SENSDECOUPLED)
       Com::printF(PSTR(" marked decoupled"));
-    Com::println();
+    Com::printF(PSTR("\n"));
   }
-  Com::printErrorFLN(PSTR("Printer set into dry run mode until restart!"));
+  Com::printF(PSTR("ERROR: Printer set into dry run mode until restart!\n"));
   return true;
 #else
   return false;

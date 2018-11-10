@@ -489,7 +489,6 @@ public:
   static inline void backwardPlanner(ufast8_t p, ufast8_t last);
   static void updateTrapezoids();
   static uint8_t insertWaitMovesIfNeeded(uint8_t pathOptimize, uint8_t waitExtraLines);
-  static void LaserWarmUp(uint32_t wait);
 
   static void moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool check_endstop, bool pathOptimize = true);
   static void moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool pathOptimize = true);

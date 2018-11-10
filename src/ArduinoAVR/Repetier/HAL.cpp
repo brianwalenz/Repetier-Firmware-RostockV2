@@ -235,16 +235,6 @@ void HAL::setupTimer() {
   TIMSK1 |= (1 << OCIE1A); // Enable interrupt
 }
 
-void HAL::showStartReason() {
-  // Check startup - does nothing if bootloader sets MCUSR to 0
-  uint8_t mcu = MCUSR;
-  if(mcu & 1) Com::printInfoFLN(PSTR("PowerUp"));
-  if(mcu & 2) Com::printInfoFLN(PSTR("External Reset"));
-  if(mcu & 4) Com::printInfoFLN(PSTR("Brown out Reset"));
-  if(mcu & 8) Com::printInfoFLN(PSTR("Watchdog Reset"));
-  if(mcu & 32) Com::printInfoFLN(PSTR("Software Reset"));
-  MCUSR = 0;
-}
 int HAL::getFreeRam() {
   int freeram = 0;
   InterruptProtectedBlock noInts;

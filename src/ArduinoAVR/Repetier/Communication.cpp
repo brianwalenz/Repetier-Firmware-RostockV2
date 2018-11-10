@@ -22,136 +22,22 @@
 #include "Repetier.h"
 
 
-bool Com::writeToAll = true; // transmit start messages to all devices!
-
-
-void Com::cap(FSTRINGPARAM(text)) {
-  printF("Cap:");
-  printFLN(text);
-}
-void Com::config(FSTRINGPARAM(text)) {
-  printF("Config:");
-  printFLN(text);
-}
-void Com::config(FSTRINGPARAM(text), int value) {
-  printF("Config:");
-  printFLN(text, value);
-}
-void Com::config(FSTRINGPARAM(text), const char *msg) {
-  printF("Config:");
-  printF(text);
-  print(msg);
-  println();
-}
-void Com::config(FSTRINGPARAM(text), int32_t value) {
-  printF("Config:");
-  printFLN(text, value);
-}
-void Com::config(FSTRINGPARAM(text), uint32_t value) {
-  printF("Config:");
-  printFLN(text, value);
-}
-void Com::config(FSTRINGPARAM(text), float value, uint8_t digits) {
-  printF("Config:");
-  printFLN(text, value, digits);
-}
-void Com::printWarningF(FSTRINGPARAM(text)) {
-  printF("Warning:");
-  printF(text);
-}
-void Com::printWarningFLN(FSTRINGPARAM(text)) {
-  printF("Warning:");
-  printFLN(text);
-}
-void Com::printInfoF(FSTRINGPARAM(text)) {
-  printF("Info:");
-  printF(text);
-}
-void Com::printInfoFLN(FSTRINGPARAM(text)) {
-  printF("Info:");
-  printFLN(text);
-}
-
-void Com::printErrorF(FSTRINGPARAM(text)) {
-  printF("Error:");
-  printF(text);
-}
-void Com::printErrorFLN(FSTRINGPARAM(text)) {
-  printF("Error:");
-  printFLN(text);
-}
-void Com::printFLN(FSTRINGPARAM(text)) {
-  printF(text);
-  println();
-}
-void Com::printFLN(FSTRINGPARAM(text), const char *msg) {
-  printF(text);
-  print(msg);
-  println();
-}
 
 void Com::printF(FSTRINGPARAM(ptr)) {
-  char c;
-  while ((c = pgm_read_byte(ptr++)) != 0)
-    GCodeSource::writeToAll(c);
-}
-void Com::printF(FSTRINGPARAM(text), const char *msg) {
-  printF(text);
-  print(msg);
+  while (pgm_read_byte(ptr) != 0)
+    GCodeSource::writeToAll(pgm_read_byte(ptr++));
 }
 
-void Com::printF(FSTRINGPARAM(text), int value) {
-  printF(text);
-  print((int32_t)value);
-}
-void Com::printF(FSTRINGPARAM(text), int32_t value) {
-  printF(text);
-  print(value);
-}
-void Com::printF(FSTRINGPARAM(text), uint32_t value) {
-  printF(text);
-  printNumber(value);
-}
-void Com::printFLN(FSTRINGPARAM(text), int value) {
-  printF(text);
-  print((int32_t)value);
-  println();
-}
-void Com::printFLN(FSTRINGPARAM(text), int32_t value) {
-  printF(text);
-  print(value);
-  println();
-}
-void Com::printFLN(FSTRINGPARAM(text), uint32_t value) {
-  printF(text);
-  printNumber(value);
-  println();
-}
-void Com::printFLN(FSTRINGPARAM(text), float value, uint8_t digits) {
-  printF(text);
-  printFloat(value, digits);
-  println();
-}
-void Com::printF(FSTRINGPARAM(text), float value, uint8_t digits) {
-  printF(text);
-  printFloat(value, digits);
-}
+
 
 void Com::print(const char *text) {
-  while(*text) {
+  while (*text != 0) {
     GCodeSource::writeToAll(*text++);
   }
 }
-void Com::print(int32_t value) {
-  if(value < 0) {
-    GCodeSource::writeToAll('-');
-    value = -value;
-  }
-  printNumber(value);
-}
-void Com::print(uint32_t value) {
-  printNumber(value);
-}
+
+
+
 void Com::printNumber(uint32_t n) {
   char buf[11]; // Assumes 8-bit chars plus zero byte.
   char *str = &buf[10];
@@ -164,18 +50,8 @@ void Com::printNumber(uint32_t n) {
 
   print(str);
 }
-void Com::printArrayFLN(FSTRINGPARAM(text), float *arr, uint8_t n, uint8_t digits) {
-  printF(text);
-  for(uint8_t i = 0; i < n; i++)
-    printF(PSTR(" "), arr[i], digits);
-  println();
-}
-void Com::printArrayFLN(FSTRINGPARAM(text), int32_t *arr, uint8_t n) {
-  printF(text);
-  for(uint8_t i = 0; i < n; i++)
-    printF(PSTR(" "), arr[i]);
-  println();
-}
+
+
 
 void Com::printFloat(float number, uint8_t digits) {
   if (isnan(number)) {
@@ -214,5 +90,23 @@ void Com::printFloat(float number, uint8_t digits) {
     print(toPrint);
     remainder -= toPrint;
   }
+}
+
+
+
+void Com::printArrayF(FSTRINGPARAM(text), float *arr, uint8_t n, uint8_t digits) {
+  printF(text);
+  for(uint8_t i = 0; i < n; i++)
+    printF(PSTR(" "), arr[i], digits);
+  printF(PSTR("\n"));
+}
+
+
+
+void Com::printArrayF(FSTRINGPARAM(text), int32_t *arr, uint8_t n) {
+  printF(text);
+  for(uint8_t i = 0; i < n; i++)
+    printF(PSTR(" "), arr[i]);
+  printF(PSTR("\n"));
 }
 

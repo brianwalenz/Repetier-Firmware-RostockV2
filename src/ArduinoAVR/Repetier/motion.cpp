@@ -99,7 +99,7 @@ void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int
   Printer::destinationSteps[E_AXIS] = Printer::currentPositionSteps[E_AXIS] + e;
   Printer::feedrate = feedrate;
   if (!queueNonlinearMove(checkEndstop, pathOptimize, false)) {
-    Com::printWarningFLN(PSTR("moveRelativeDistanceInSteps / queueDeltaMove returns error"));
+    Com::printF(PSTR("WARNING: moveRelativeDistanceInSteps / queueDeltaMove returns error\n"));
   }
   Printer::feedrate = savedFeedrate;
   Printer::updateCurrentPosition(false);
@@ -167,7 +167,8 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
     //Com::printF(PSTR("L:"),(int)linesCount);
     //Com::printF(PSTR(" Old "),timeForMove);
     timeForMove += (3 * (LOW_TICKS_PER_MOVE - timeForMove)) / (linesCount + 1); // Increase time if queue gets empty. Add more time if queue gets smaller.
-    //Com::printFLN(PSTR("Slow "),timeForMove);
+    //Com::printF(PSTR("Slow "),timeForMove);
+    //Com::printF(PSTR("\n"));
     //critical = true;
   }
   timeInTicks = timeForMove;
@@ -313,10 +314,10 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
 #ifdef DEBUG_QUEUE_MOVE
   if(Printer::debugEcho()) {
     logLine();
-    Com::printFLN(PSTR("LimitInterval:"), limitInterval);
-    Com::printFLN(PSTR("Move distance on the XYZ space:"), distance);
-    Com::printFLN(PSTR("Commanded feedrate:"), Printer::feedrate);
-    Com::printFLN(PSTR("Constant full speed move time:"), timeForMove);
+    Com::printF(PSTR("LimitInterval:"), limitInterval);
+    Com::printF(PSTR("Move distance on the XYZ space:"), distance);
+    Com::printF(PSTR("Commanded feedrate:"), Printer::feedrate);
+    Com::printF(PSTR("Constant full speed move time:"), timeForMove);
   }
 #endif
   // Make result permanent
@@ -421,7 +422,7 @@ void PrintLine::updateTrapezoids() {
       Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
       Com::printF(PSTR(","), (int)lines[first].joinFlags);
 #ifdef DEBUG_QUEUE_MOVE
-      Com::println();
+      Com::print(PSTR("\n"));
 #endif
     }
 #endif
@@ -438,7 +439,8 @@ void PrintLine::updateTrapezoids() {
     Com::printF(PSTR(" / "), lines[first].startSpeed, 1);
     Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
     Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
-    Com::printFLN(PSTR(","), (int)lines[first].joinFlags);
+    Com::printF(PSTR(","), (int)lines[first].joinFlags);
+    Com::printF(PSTR("\n"));
   }
 #endif
 }
@@ -519,7 +521,8 @@ inline void PrintLine::computeMaxJunctionSpeed(PrintLine *previous, PrintLine *c
 #ifdef DEBUG_QUEUE_MOVE
   if(Printer::debugEcho()) {
     Com::printF(PSTR("ID:"), (int)previous);
-    Com::printFLN(PSTR(" MJ:"), previous->maxJunctionSpeed);
+    Com::printF(PSTR(" MJ:"), previous->maxJunctionSpeed);
+    Com::printF(PSTR("\n"));
   }
 #endif // DEBUG_QUEUE_MOVE
 }
@@ -553,16 +556,22 @@ void PrintLine::updateStepsParameter() {
   setParameterUpToDate();
 #ifdef DEBUG_QUEUE_MOVE
   if(Printer::debugEcho()) {
-    Com::printFLN(PSTR("ID:"), (int)this);
+    Com::printF(PSTR("ID:"), (int)this);
+    Com::printF(PSTR("\n"));
     Com::printF(PSTR("vStart/End:"), (long)vStart);
-    Com::printFLN(PSTR("/"), (long)vEnd);
+    Com::printF(PSTR("/"), (long)vEnd);
+    Com::printF(PSTR("\n"));
     Com::printF(PSTR("accel/decel steps:"), (long)accelSteps);
     Com::printF(PSTR("/"), (long)decelSteps);
-    Com::printFLN(PSTR("/"), (long)stepsRemaining);
+    Com::printF(PSTR("/"), (long)stepsRemaining);
+    Com::printF(PSTR("\n"));
     Com::printF(PSTR("st./end speed:"), startSpeed, 1);
-    Com::printFLN(PSTR("/"), endSpeed, 1);
-    Com::printFLN(PSTR("Flags:"), (uint32_t)flags);
-    Com::printFLN(PSTR("joinFlags:"), (uint32_t)joinFlags);
+    Com::printF(PSTR("/"), endSpeed, 1);
+    Com::printF(PSTR("\n"));
+    Com::printF(PSTR("Flags:"), (uint32_t)flags);
+    Com::printF(PSTR("\n"));
+    Com::printF(PSTR("joinFlags:"), (uint32_t)joinFlags);
+    Com::printF(PSTR("\n"));
   }
 #endif
 }
@@ -685,38 +694,38 @@ uint8_t PrintLine::insertWaitMovesIfNeeded(uint8_t pathOptimize, uint8_t waitExt
       p->moveID = lastMoveID++;
       pushLine();
     }
-    //Com::printFLN(PSTR("InsertWait"));
+    //Com::printF(PSTR("InsertWait"));
+    //Com::printF(PSTR("\n"));
     return 1;
   }
   return 0;
 }
 
-void PrintLine::LaserWarmUp( uint32_t wait) {
-  PrintLine *p = getNextWriteLine();
-  p->flags = FLAG_WARMUP;
-  p->joinFlags = FLAG_JOIN_STEPPARAMS_COMPUTED | FLAG_JOIN_END_FIXED | FLAG_JOIN_START_FIXED;
-  p->dir = 1;
-  p->setWaitForXLinesFilled(1);
-  p->setWaitTicks(long(wait * (F_CPU / 1000))); //in ms
-  pushLine();
-  Com::printFLN(PSTR("Laser Warmup"));
-}
-
 void PrintLine::logLine() {
 #ifdef DEBUG_QUEUE_MOVE
-  Com::printFLN(PSTR("ID:"), (int)this);
-  Com::printArrayFLN(PSTR("Delta"), delta);
-  Com::printFLN(PSTR("Dir:"), (uint32_t)dir);
-  Com::printFLN(PSTR("Flags:"), (uint32_t)flags);
-  Com::printFLN(PSTR("fullSpeed:"), fullSpeed);
-  Com::printFLN(PSTR("vMax:"), (int32_t)vMax);
-  Com::printFLN(PSTR("Acceleration:"), accelerationDistance2);
-  Com::printFLN(PSTR("Acceleration Prim:"), (int32_t)accelerationPrim);
-  Com::printFLN(PSTR("Remaining steps:"), stepsRemaining);
+  Com::printF(PSTR("ID:"), (int)this);
+  Com::printF(PSTR("\n"));
+  Com::printArrayF(PSTR("Delta"), delta, 4);
+  Com::printF(PSTR("Dir:"), (uint32_t)dir);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Flags:"), (uint32_t)flags);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("fullSpeed:"), fullSpeed);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("vMax:"), (int32_t)vMax);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Acceleration:"), accelerationDistance2);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Acceleration Prim:"), (int32_t)accelerationPrim);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Remaining steps:"), stepsRemaining);
+  Com::printF(PSTR("\n"));
 #if USE_ADVANCE
 #if ENABLE_QUADRATIC_ADVANCE
-  Com::printFLN(PSTR("advanceFull:"), advanceFull >> 16);
-  Com::printFLN(PSTR("advanceRate:"), advanceRate);
+  Com::printF(PSTR("advanceFull:"), advanceFull >> 16);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("advanceRate:"), advanceRate);
+  Com::printF(PSTR("\n"));
 #endif
 #endif
 #endif // DEBUG_QUEUE_MOVE
@@ -730,10 +739,7 @@ void PrintLine::waitForXFreeLines(uint8_t b, bool allowMoves) {
 }
 
 
-#if DRIVE_SYSTEM == DELTA
 
-// pick one for verbose the other silent
-#define RETURN_0(s) { Com::printErrorFLN(PSTR(s)); return 0; }
 /**
    Calculate the delta tower position from a Cartesian position
    @param cartesianPosSteps Array containing Cartesian coordinates.
@@ -742,6 +748,7 @@ void PrintLine::waitForXFreeLines(uint8_t b, bool allowMoves) {
 */
 uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t deltaPosSteps[]) {
   int32_t zSteps = cartesianPosSteps[Z_AXIS];
+
 #if DISTORTION_CORRECTION
   static int cnt = 0;
   static int32_t lastZSteps = 9999999;
@@ -754,68 +761,13 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
   }
   zSteps += lastZCorrection;
 #endif
+
   if(Printer::isLargeMachine()) {
-#ifdef SUPPORT_64_BIT_MATH
-    // 64 bit is better for precision, so we use that if available.
-    // A TOWER height
-    uint64_t temp = RMath::absLong(Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS]);
-    uint64_t opt = Printer::deltaDiagonalStepsSquaredA.L;
-
-    temp *= temp;
-    if (opt < temp)
-      RETURN_0("Apos y square ");
-    opt -= temp;
-
-    temp = RMath::absLong(Printer::deltaAPosXSteps - cartesianPosSteps[X_AXIS]);
-    temp *= temp;
-    if (opt < temp)
-      RETURN_0("Apos x square ");
-
-    deltaPosSteps[A_TOWER] = HAL::integer64Sqrt(opt - temp) + zSteps;
-    if (deltaPosSteps[A_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive())
-      RETURN_0("A hit floor");
-
-    // B TOWER height
-    temp = RMath::absLong(Printer::deltaBPosYSteps - cartesianPosSteps[Y_AXIS]);
-    opt = Printer::deltaDiagonalStepsSquaredB.L;
-    temp *= temp;
-    if (opt < temp)
-      RETURN_0("Bpos y square ");
-    opt -= temp;
-
-    temp = RMath::absLong(Printer::deltaBPosXSteps - cartesianPosSteps[X_AXIS]);
-    temp *= temp;
-    if (opt < temp)
-      RETURN_0("Bpos x square ");
-
-    deltaPosSteps[B_TOWER] = HAL::integer64Sqrt(opt - temp) + zSteps ;
-    if (deltaPosSteps[B_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive())
-      RETURN_0("B hit floor");
-
-    // C TOWER height
-    temp = RMath::absLong(Printer::deltaCPosYSteps - cartesianPosSteps[Y_AXIS]);
-    opt = Printer::deltaDiagonalStepsSquaredC.L ;
-
-    temp = temp * temp;
-    if ( opt < temp )
-      RETURN_0("Cpos y square ");
-    opt -= temp;
-
-    temp = RMath::absLong(Printer::deltaCPosXSteps - cartesianPosSteps[X_AXIS]);
-    temp = temp * temp;
-    if ( opt < temp )
-      RETURN_0("Cpos x square ");
-
-    deltaPosSteps[C_TOWER] = HAL::integer64Sqrt(opt - temp) + zSteps;
-    if (deltaPosSteps[C_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive())
-      RETURN_0("C hit floor");
-#else
     float temp = Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS];
     float opt = Printer::deltaDiagonalStepsSquaredA.f - temp * temp;
     float temp2 = Printer::deltaAPosXSteps - cartesianPosSteps[X_AXIS];
     if ((temp = opt - temp2 * temp2) >= 0)
-      deltaPosSteps[A_TOWER] = floor(0.5 + sqrt(temp)
-                                     + zSteps);
+      deltaPosSteps[A_TOWER] = floor(0.5 + sqrt(temp) + zSteps);
     else
       return 0;
     if (deltaPosSteps[A_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) return 0;
@@ -824,8 +776,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
     opt = Printer::deltaDiagonalStepsSquaredB.f - temp * temp;
     temp2 = Printer::deltaBPosXSteps - cartesianPosSteps[X_AXIS];
     if ((temp = opt - temp2 * temp2) >= 0)
-      deltaPosSteps[B_TOWER] = floor(0.5 + sqrt(temp)
-                                     + zSteps);
+      deltaPosSteps[B_TOWER] = floor(0.5 + sqrt(temp) + zSteps);
     else
       return 0;
     if (deltaPosSteps[B_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) return 0;
@@ -834,14 +785,13 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
     opt = Printer::deltaDiagonalStepsSquaredC.f - temp * temp;
     temp2 = Printer::deltaCPosXSteps - cartesianPosSteps[X_AXIS];
     if ((temp = opt - temp2 * temp2) >= 0)
-      deltaPosSteps[C_TOWER] = floor(0.5 + sqrt(temp)
-                                     + zSteps);
+      deltaPosSteps[C_TOWER] = floor(0.5 + sqrt(temp) + zSteps);
     else
       return 0;
     if (deltaPosSteps[C_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) return 0;
 
     return 1;
-#endif
+
   } else {
     // As we are right on the edge of many printers arm lengths, this is rewritten to use unsigned long
     // This allows 52% longer arms to be used without performance penalty
@@ -855,107 +805,121 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
     uint32_t temp = RMath::absLong(Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS]);
     uint32_t opt = Printer::deltaDiagonalStepsSquaredA.l;
 
-    if (temp > LIMIT)
-      RETURN_0("Apos y steps ");
+    if (temp > LIMIT) {
+      Com::printF(PSTR("Apos y steps\n"));
+      return(0);
+    }
+
     temp *= temp;
-    if (opt < temp)
-      RETURN_0("Apos y square ");
+
+    if (opt < temp) {
+      Com::printF(PSTR("Apos y square\n"));
+      return(0);
+    }
+
     opt -= temp;
 
     temp = RMath::absLong(Printer::deltaAPosXSteps - cartesianPosSteps[X_AXIS]);
-    if (temp > LIMIT)
-      RETURN_0("Apos x steps ");
+
+    if (temp > LIMIT) {
+      Com::printF(PSTR("Apos x steps\n"));
+      return(0);
+    }
+
     temp *= temp;
-    if (opt < temp)
-      RETURN_0("Apos x square ");
+
+    if (opt < temp) {
+      Com::printF(PSTR("Apos x square\n"));
+      return(0);
+    }
 
     deltaPosSteps[A_TOWER] = SQRT(opt - temp) + zSteps;
-    if (deltaPosSteps[A_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive())
-      RETURN_0("A hit floor");
+
+    if (deltaPosSteps[A_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) {
+      Com::printF(PSTR("A hit floor\n"));
+      return(0);
+    }
 
     // B TOWER height
     temp = RMath::absLong(Printer::deltaBPosYSteps - cartesianPosSteps[Y_AXIS]);
     opt = Printer::deltaDiagonalStepsSquaredB.l;
 
-    if (temp > LIMIT)
-      RETURN_0("Bpos y steps ");
+    if (temp > LIMIT) {
+      Com::printF(PSTR("Bpos y steps\n"));
+      return(0);
+    }
+
     temp *= temp;
-    if (opt < temp)
-      RETURN_0("Bpos y square ");
+
+    if (opt < temp) {
+      Com::printF(PSTR("Bpos y square\n"));
+      return(0);
+    }
+
     opt -= temp;
 
     temp = RMath::absLong(Printer::deltaBPosXSteps - cartesianPosSteps[X_AXIS]);
-    if (temp > LIMIT )
-      RETURN_0("Bpos x steps ");
+
+    if (temp > LIMIT ) {
+      Com::printF(PSTR("Bpos x steps\n"));
+      return(0);
+    }
     temp *= temp;
-    if (opt < temp)
-      RETURN_0("Bpos x square ");
+
+    if (opt < temp) {
+      Com::printF(PSTR("Bpos x square\n"));
+      return(0);
+    }
 
     deltaPosSteps[B_TOWER] = SQRT(opt - temp) + zSteps ;
-    if (deltaPosSteps[B_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive())
-      RETURN_0("B hit floor");
+
+    if (deltaPosSteps[B_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) {
+      Com::printF(PSTR("B hit floor\n"));
+      return(0);
+    }
 
     // C TOWER height
     temp = RMath::absLong(Printer::deltaCPosYSteps - cartesianPosSteps[Y_AXIS]);
     opt = Printer::deltaDiagonalStepsSquaredC.l ;
 
-    if (temp > LIMIT)
-      RETURN_0("Cpos y steps ");
+    if (temp > LIMIT) {
+      Com::printF(PSTR("Cpos y steps\n"));
+      return(0);
+    }
+
     temp = temp * temp;
-    if ( opt < temp )
-      RETURN_0("Cpos y square ");
+
+    if ( opt < temp ) {
+      Com::printF(PSTR("Cpos y square\n"));
+      return(0);
+    }
+
     opt -= temp;
 
     temp = RMath::absLong(Printer::deltaCPosXSteps - cartesianPosSteps[X_AXIS]);
-    if (temp > LIMIT)
-      RETURN_0("Cpos x steps ");
+
+    if (temp > LIMIT) {
+      Com::printF(PSTR("Cpos x steps\n"));
+      return(0);
+    }
+
     temp = temp * temp;
-    if ( opt < temp )
-      RETURN_0("Cpos x square ");
+
+    if ( opt < temp ) {
+      Com::printF(PSTR("Cpos x square\n"));
+      return(0);
+    }
 
     deltaPosSteps[C_TOWER] = SQRT(opt - temp) + zSteps;
-    if (deltaPosSteps[C_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive())
-      RETURN_0("C hit floor");
-    /*
-      long temp = Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS];
-      long opt = Printer::deltaDiagonalStepsSquaredA.l - temp * temp;
-      long temp2 = Printer::deltaAPosXSteps - cartesianPosSteps[X_AXIS];
-      if ((temp = opt - temp2 * temp2) >= 0)
-      #ifdef FAST_INTEGER_SQRT
-      deltaPosSteps[A_TOWER] = HAL::integerSqrt(temp) + cartesianPosSteps[Z_AXIS];
-      #else
-      deltaPosSteps[A_TOWER] = sqrt(temp) + cartesianPosSteps[Z_AXIS];
-      #endif
-      else
-      return 0;
 
-      temp = Printer::deltaBPosYSteps - cartesianPosSteps[Y_AXIS];
-      opt = Printer::deltaDiagonalStepsSquaredB.l - temp * temp;
-      temp2 = Printer::deltaBPosXSteps - cartesianPosSteps[X_AXIS];
-      if ((temp = opt - temp2*temp2) >= 0)
-      #ifdef FAST_INTEGER_SQRT
-      deltaPosSteps[B_TOWER] = HAL::integerSqrt(temp) + cartesianPosSteps[Z_AXIS];
-      #else
-      deltaPosSteps[B_TOWER] = sqrt(temp) + cartesianPosSteps[Z_AXIS];
-      #endif
-      else
-      return 0;
-
-      temp = Printer::deltaCPosYSteps - cartesianPosSteps[Y_AXIS];
-      opt = Printer::deltaDiagonalStepsSquaredC.l - temp * temp;
-      temp2 = Printer::deltaCPosXSteps - cartesianPosSteps[X_AXIS];
-      if ((temp = opt - temp2*temp2) >= 0)
-      #ifdef FAST_INTEGER_SQRT
-      deltaPosSteps[C_TOWER] = HAL::integerSqrt(temp) + cartesianPosSteps[Z_AXIS];
-      #else
-      deltaPosSteps[C_TOWER] = sqrt(temp) + cartesianPosSteps[Z_AXIS];
-      #endif
-      else
-      return 0;*/
+    if (deltaPosSteps[C_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) {
+      Com::printF(PSTR("C hit floor\n"));
+      return(0);
+    }
   }
   return 1;
 }
-#endif
+
 
 
 
@@ -1094,7 +1058,7 @@ inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
     dx[i] = static_cast<float>(Printer::destinationSteps[i] - Printer::currentPositionSteps[i]) / static_cast<float>(numNonlinearSegments);
 #endif
 
-  //  out.println_byte_P(PSTR("Calculate delta segments:"), p->numDeltaSegments);
+  //  out.print_byte_P(PSTR("Calculate delta segments:"), p->numDeltaSegments);
 #ifdef DEBUG_STEPCOUNT
   totalStepsRemaining = 0;
 #endif
@@ -1139,15 +1103,19 @@ inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
         if (delta > 0) {
           d->setPositiveMoveOfAxis(i);
 #ifdef DEBUG_DELTA_OVERFLOW
-          if (delta > 65535)
-            Com::printFLN(PSTR("Delta overflow:"), delta);
+          if (delta > 65535) {
+            Com::printF(PSTR("Delta overflow:"), delta);
+            Com::printF(PSTR("\n"));
+          }
 #endif
           d->deltaSteps[i] = static_cast<uint16_t>(delta);
         } else {
           d->setMoveOfAxis(i);
 #ifdef DEBUG_DELTA_OVERFLOW
-          if (-delta > 65535)
-            Com::printFLN(PSTR("Delta overflow:"), delta);
+          if (-delta > 65535) {
+            Com::printF(PSTR("Delta overflow:"), delta);
+            Com::printF(PSTR("\n"));
+          }
 #endif
           d->deltaSteps[i] = static_cast<uint16_t>(-delta);
         }
@@ -1160,17 +1128,18 @@ inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
       }
     } else {
       // Illegal position - ignore move
-      Com::printWarningF(PSTR("Invalid delta coordinate - move ignored"));
+      Com::printF(PSTR("WARNING: Invalid delta coordinate - move ignored"));
       Com::printF(PSTR(" x:"), destinationSteps[X_AXIS]);
       Com::printF(PSTR(" y:"), destinationSteps[Y_AXIS]);
-      Com::printFLN(PSTR(" z:"), destinationSteps[Z_AXIS]);
+      Com::printF(PSTR(" z:"), destinationSteps[Z_AXIS]);
+      Com::printF(PSTR("\n"));
       d->dir = 0;
       d->deltaSteps[A_TOWER] = d->deltaSteps[B_TOWER] = d->deltaSteps[C_TOWER] = 0;
       return 65535; // flag error
     }
   }
 #ifdef DEBUG_STEPCOUNT
-  //      out.println_long_P(PSTR("initial StepsRemaining:"), p->totalStepsRemaining);
+  //      out.print_long_P(PSTR("initial StepsRemaining:"), p->totalStepsRemaining);
 #endif
   return maxAxisSteps;
 }
@@ -1293,7 +1262,8 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
     //float seconds = 100 * cartesianDistance / (Printer::feedrate * Printer::feedrateMultiply); multiply in feedrate included
     float seconds = cartesianDistance / feedrate;
 #ifdef DEBUG_SPLIT
-    Com::printFLN(PSTR("Seconds:"), seconds);
+    Com::printF(PSTR("Seconds:"), seconds);
+    Com::printF(PSTR("\n"));
 #endif
     float sps = static_cast<float>((cartesianDir & ESTEP) == ESTEP ? Printer::printMovesPerSecond : Printer::travelMovesPerSecond);
     segmentCount = RMath::max(1, static_cast<int16_t>(sps * seconds));
@@ -1301,16 +1271,20 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
     float segDist = cartesianDistance / (float)segmentCount;
     if(segDist > Printer::maxRealSegmentLength) {
       Printer::maxRealSegmentLength = segDist;
-      Com::printFLN(PSTR("SegmentsPerSecond:"), sps);
-      Com::printFLN(PSTR("New max. segment length:"), segDist);
+      Com::printF(PSTR("SegmentsPerSecond:"), sps);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("New max. segment length:"), segDist);
+      Com::printF(PSTR("\n"));
     }
 #endif
-    //Com::printFLN(PSTR("Segments:"),segmentCount);
+    //Com::printF(PSTR("Segments:"),segmentCount);
+    //Com::printF(PSTR("\n"));
   } else {
     // Optimize pure Z axis move. Since a pure Z axis move is linear all we have to watch out for is unsigned integer overruns in
     // the queued moves;
 #ifdef DEBUG_SPLIT
-    Com::printFLN(PSTR("Z delta:"), cartesianDeltaSteps[Z_AXIS]);
+    Com::printF(PSTR("Z delta:"), cartesianDeltaSteps[Z_AXIS]);
+    Com::printF(PSTR("\n"));
 #endif
     segmentCount = (cartesianDeltaSteps[Z_AXIS] + (uint32_t)43680) / (uint32_t)43679; // can not go to 65535 for rounding issues causing overflow later in some cases!
   }
@@ -1328,9 +1302,12 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
   }
 
 #ifdef DEBUG_SPLIT
-  Com::printFLN(PSTR("Segments:"), segmentCount);
-  Com::printFLN(PSTR("Num lines:"), numLines);
-  Com::printFLN(PSTR("segments_per_line:"), segmentsPerLine);
+  Com::printF(PSTR("Segments:"), segmentCount);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Num lines:"), numLines);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("segments_per_line:"), segmentsPerLine);
+  Com::printF(PSTR("\n"));
 #endif
   Printer::unsetAllSteppersDisabled(); // Motor is enabled now
   waitForXFreeLines(1);
@@ -1376,16 +1353,17 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
 
     uint16_t maxStepsPerSegment = p->calculateNonlinearSubSegments(softEndstop);
     if (maxStepsPerSegment == 65535) {
-      Com::printWarningFLN(PSTR("in queueDeltaMove to calculateDeltaSubSegments returns error."));
+      Com::printF(PSTR("WARNING: in queueDeltaMove to calculateDeltaSubSegments returns error.\n"));
       return false;
     }
 #ifdef DEBUG_SPLIT
-    Com::printFLN(PSTR("Max DS:"), (int32_t)maxStepsPerSegment);
+    Com::printF(PSTR("Max DS:"), (int32_t)maxStepsPerSegment);
+    Com::printF(PSTR("\n"));
 #endif
     int32_t virtualAxisSteps = static_cast<int32_t>(maxStepsPerSegment) * segmentsPerLine;
     if (virtualAxisSteps == 0 && p->delta[E_AXIS] == 0) {
       if (numLines != 1) {
-        Com::printErrorFLN(PSTR("No move in delta segment with > 1 segment. This should never happen and may cause a problem!"));
+        Com::printF(PSTR("ERROR: No move in delta segment with > 1 segment. This should never happen and may cause a problem!\n"));
         return false;  // Line too short in low precision area
       }
     }
@@ -1404,8 +1382,10 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
       drivingAxis = E_AXIS;
     }
 #ifdef DEBUG_SPLIT
-    Com::printFLN(PSTR("Steps Per Segment:"), p->numPrimaryStepPerSegment);
-    Com::printFLN(PSTR("Virtual axis steps:"), p->stepsRemaining);
+    Com::printF(PSTR("Steps Per Segment:"), p->numPrimaryStepPerSegment);
+    Com::printF(PSTR("\n"));
+    Com::printF(PSTR("Virtual axis steps:"), p->stepsRemaining);
+    Com::printF(PSTR("\n"));
 #endif
     p->calculateMove(axisDistanceMM, pathOptimize, drivingAxis);
     for (fast8_t i = 0; i < E_AXIS_ARRAY; i++) {
@@ -1442,7 +1422,8 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         if(lastblk != (int)cur) {
           HAL::allowInterrupts();
           lastblk = (int)cur;
-          Com::printFLN(PSTR("BLK "), (int32_t)linesCount);
+          Com::printF(PSTR("BLK "), (int32_t)linesCount);
+          Com::printF(PSTR("\n"));
         }
         cur = NULL;
         return 2000;
@@ -1715,9 +1696,12 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     // Release remaining delta segments
 #ifdef DEBUG_STEPCOUNT
     if(cur->totalStepsRemaining || cur->numNonlinearSegments) {
-      Com::printFLN(PSTR("Missed steps:"), cur->totalStepsRemaining);
-      Com::printFLN(PSTR("Step/seg r:"), stepsPerSegRemaining);
-      Com::printFLN(PSTR("NDS:"), (int) cur->numNonlinearSegments);
+      Com::printF(PSTR("Missed steps:"), cur->totalStepsRemaining);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("Step/seg r:"), stepsPerSegRemaining);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("NDS:"), (int) cur->numNonlinearSegments);
+      Com::printF(PSTR("\n"));
     }
 #endif
     removeCurrentLineForbidInterrupt();

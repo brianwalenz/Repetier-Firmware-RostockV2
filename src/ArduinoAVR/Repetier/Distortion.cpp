@@ -79,7 +79,8 @@ void Distortion::init() {
   resetCorrection();
 #endif
   enabled = EEPROM::isZCorrectionEnabled();
-  Com::printFLN(PSTR("zDistortionCorrection:"), (int)enabled);
+  Com::printF(PSTR("zDistortionCorrection:"), (int)enabled);
+  Com::printF(PSTR("\n"));
 }
 
 void Distortion::updateDerived() {
@@ -103,7 +104,7 @@ void Distortion::enable(bool permanent) {
   if(permanent)
     EEPROM::setZCorrectionEnabled(enabled);
 #endif
-  Com::printFLN(PSTR("Z correction enabled"));
+  Com::printF(PSTR("Z correction enabled\n"));
 }
 
 void Distortion::disable(bool permanent) {
@@ -116,15 +117,15 @@ void Distortion::disable(bool permanent) {
   Printer::zCorrectionStepsIncluded = 0;
 #endif
   Printer::updateCurrentPosition(false);
-  Com::printFLN(PSTR("Z correction disabled"));
+  Com::printF(PSTR("Z correction disabled\n"));
 }
 
 void Distortion::reportStatus() {
-  Com::printFLN(enabled ? PSTR("Z correction enabled") : PSTR("Z correction disabled"));
+  Com::printF(enabled ? PSTR("Z correction enabled\n") : PSTR("Z correction disabled\n"));
 }
 
 void Distortion::resetCorrection(void) {
-  Com::printInfoFLN(PSTR("Resetting Z correction"));
+  Com::printF(PSTR("INFO: Resetting Z correction\n"));
   for(int i = 0; i < DISTORTION_CORRECTION_POINTS * DISTORTION_CORRECTION_POINTS; i++)
     setMatrix(0, i);
 }
@@ -179,7 +180,8 @@ bool Distortion::measure(void) {
   disable(false);
 	Printer::prepareForProbing();
   float z = RMath::max(EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0), static_cast<float>(ZHOME_HEAT_HEIGHT)); //EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0);
-  Com::printFLN(PSTR("Reference Z for measurement:"), z, 3);
+  Com::printF(PSTR("Reference Z for measurement:"), z, 3);
+  Com::printF(PSTR("\n"));
   updateDerived();
   /*
     #if DRIVE_SYSTEM == DELTA
@@ -195,8 +197,10 @@ bool Distortion::measure(void) {
     Printer::moveTo(Printer::invAxisStepsPerMM[X_AXIS] * ((isCorner(0, 0) ? 1 : 0) * xCorrectionSteps + xOffsetSteps), Printer::invAxisStepsPerMM[Y_AXIS] * ((DISTORTION_CORRECTION_POINTS - 1) * yCorrectionSteps + yOffsetSteps), IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
     #endif
   */
-  //Com::printFLN(PSTR("radiusCorr:"), radiusCorrectionSteps);
-  //Com::printFLN(PSTR("steps:"), step);
+  //Com::printF(PSTR("radiusCorr:"), radiusCorrectionSteps);
+  //Com::printF(PSTR("\n"));
+  //Com::printF(PSTR("steps:"), step);
+  //Com::printF(PSTR("\n"));
   int32_t zCorrection = 0;
 
   Printer::startProbing(true);
@@ -216,7 +220,9 @@ bool Distortion::measure(void) {
       //Com::printF(PSTR("mx "),mtx);
       //Com::printF(PSTR("my "),mty);
       //Com::printF(PSTR("ix "),(int)ix);
-      //Com::printFLN(PSTR("iy "),(int)iy);
+      //Com::printF(PSTR("iy "),(int)iy);
+      //Com::printF(PSTR("\n"));
+
       Printer::moveToReal(mtx, mty, z, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
       float zp = Printer::runZProbe(false, false, Z_PROBE_REPETITIONS);
 #if defined(DISTORTION_LIMIT_TO) && DISTORTION_LIMIT_TO != 0
@@ -224,7 +230,7 @@ bool Distortion::measure(void) {
 #else
         if(zp == ILLEGAL_Z_PROBE) {
 #endif
-          Com::printErrorFLN(PSTR("Stopping distortion measurement due to errors."));
+          Com::printF(PSTR("Stopping distortion measurement due to errors.\n"));
           Printer::finishProbing();
           return false;
         }
@@ -249,11 +255,11 @@ bool Distortion::measure(void) {
       */
       EEPROM::storeDataIntoEEPROM();
       // print matrix
-      Com::printInfoFLN(PSTR("Distortion correction matrix:"));
+      Com::printF(PSTR("INFO: Distortion correction matrix:\n"));
       for (iy = DISTORTION_CORRECTION_POINTS - 1; iy >= 0 ; iy--) {
         for(ix = 0; ix < DISTORTION_CORRECTION_POINTS; ix++)
           Com::printF(ix ? PSTR(", ") : PSTR(""), getMatrix(matrixIndex(ix, iy)));
-        Com::println();
+        Com::printF(PSTR("\n"));
       }
       showMatrix();
       enable(true);
@@ -271,7 +277,8 @@ bool Distortion::measure(void) {
       /* Com::printF(PSTR("NoCor z:"),z);
          Com::printF(PSTR(" zEnd:"),zEnd);
          Com::printF(PSTR(" en:"),(int)enabled);
-         Com::printFLN(PSTR(" zp:"),(int)Printer::isZProbingActive());*/
+         Com::printF(PSTR(" zp:"),(int)Printer::isZProbingActive());*/
+      //Com::printF(PSTR("\n"));
       return 0;
     }
     x -= Printer::offsetX * Printer::axisStepsPerMM[X_AXIS]; // correct active tool offset
@@ -331,7 +338,8 @@ bool Distortion::measure(void) {
       Com::printF(PSTR(" XP:"),x-radiusCorrectionSteps);
       Com::printF(PSTR(" Yp:"),y-radiusCorrectionSteps);
       Com::printF(PSTR(" STEP:"),step);
-      Com::printFLN(PSTR(" ZCOR:"),correction_z);
+      Com::printF(PSTR(" ZCOR:"),correction_z);
+      Com::printF(PSTR("\n"));
       }*/
 #else
     int32_t fx = x - fxFloor * xCorrectionSteps; // Grid normalized coordinates
@@ -361,25 +369,31 @@ bool Distortion::measure(void) {
 #endif
     /* if(false) {
        Com::printF(PSTR(") by "), correction_z);
-       Com::printF(PSTR(" ix= "), fxFloor); Com::printF(PSTR(" fx= "), (float)fx/(float)xCorrectionSteps,3);
-       Com::printF(PSTR(" iy= "), fyFloor); Com::printFLN(PSTR(" fy= "), (float)fy/(float)yCorrectionSteps,3);
+       Com::printF(PSTR(" ix= "), fxFloor);
+       Com::printF(PSTR(" fx= "), (float)fx/(float)xCorrectionSteps,3);
+       Com::printF(PSTR(" iy= "), fyFloor);
+       Com::printF(PSTR(" fy= "), (float)fy/(float)yCorrectionSteps,3);
+       Com::printF(PSTR("\n"));
        }*/
     if (z > zStart && z > Printer::zMinSteps)
       //All variables are type int. For calculation we need float values
       correction_z = (correction_z * static_cast<float>(zEnd - z) / (zEnd - zStart));
     /* if(correction_z > 20 || correction_z < -20) {
-       Com::printFLN(PSTR("Corr. error too big:"),correction_z);
+       Com::printF(PSTR("Corr. error too big:"),correction_z);
+       Com::printF(PSTR("\n"));
        Com::printF(PSTR("fxf"),(int)fxFloor);
        Com::printF(PSTR(" fyf"),(int)fyFloor);
        Com::printF(PSTR(" fx"),fx);
        Com::printF(PSTR(" fy"),fy);
        Com::printF(PSTR(" x"),x);
-       Com::printFLN(PSTR(" y"),y);
+       Com::printF(PSTR(" y"),y);
+       Com::printF(PSTR("\n"));
        Com::printF(PSTR(" m11:"),m11);
        Com::printF(PSTR(" m12:"),m12);
        Com::printF(PSTR(" m21:"),m21);
        Com::printF(PSTR(" m22:"),m22);
-       Com::printFLN(PSTR(" step:"),step);
+       Com::printF(PSTR(" step:"),step);
+       Com::printF(PSTR("\n"));
        correction_z = 0;
        }*/
     return correction_z;
@@ -388,7 +402,7 @@ bool Distortion::measure(void) {
   void Distortion::set(float x, float y, float z) {
 #if defined(DISTORTION_LIMIT_TO) && DISTORTION_LIMIT_TO != 0
     if(fabs(z) > DISTORTION_LIMIT_TO) {
-      Com::printWarningFLN(PSTR("Max. distortion value exceeded - not setting this value."));
+      Com::printF(PSTR("WARNING: Max. distortion value exceeded - not setting this value.\n"));
       return;
     }
 #endif
@@ -421,7 +435,8 @@ bool Distortion::measure(void) {
         float z = getMatrix(idx) * Printer::invAxisStepsPerMM[Z_AXIS];
         Com::printF(PSTR("G33 X"), x, 2);
         Com::printF(PSTR(" Y"), y, 2);
-        Com::printFLN(PSTR(" Z"), z, 3);
+        Com::printF(PSTR(" Z"), z, 3);
+        Com::printF(PSTR("\n"));
       }
     }
   }

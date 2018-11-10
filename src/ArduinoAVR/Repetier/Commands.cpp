@@ -123,7 +123,8 @@ void Commands::printCurrentPosition() {
   Com::printF(PSTR("X:"), x * (Printer::unitIsInches ? 0.03937 : 1), 2);
   Com::printF(PSTR(" Y:"), y * (Printer::unitIsInches ? 0.03937 : 1), 2);
   Com::printF(PSTR(" Z:"), z * (Printer::unitIsInches ? 0.03937 : 1), 3);
-  Com::printFLN(PSTR(" E:"), Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS] * (Printer::unitIsInches ? 0.03937 : 1), 4);
+  Com::printF(PSTR(" E:"), Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS] * (Printer::unitIsInches ? 0.03937 : 1), 4);
+  Com::printF(PSTR("\n"));
 #ifdef DEBUG_POS
   Com::printF(PSTR("OffX:"), Printer::offsetX); // to debug offset handling
   Com::printF(PSTR(" OffY:"), Printer::offsetY);
@@ -131,8 +132,8 @@ void Commands::printCurrentPosition() {
   Com::printF(PSTR(" OffZ2:"), Printer::offsetZ2);
   Com::printF(PSTR(" XS:"), Printer::currentPositionSteps[X_AXIS]);
   Com::printF(PSTR(" YS:"), Printer::currentPositionSteps[Y_AXIS]);
-  Com::printFLN(PSTR(" ZS:"), Printer::currentPositionSteps[Z_AXIS]);
-
+  Com::printF(PSTR(" ZS:"), Printer::currentPositionSteps[Z_AXIS]);
+  Com::printF(PSTR("\n"));
 #endif
 }
 
@@ -164,7 +165,7 @@ void Commands::printTemperatures(bool showRaw) {
     Com::printF(PSTR(" RAW"), (int)0);
     Com::printF(PSTR(":"), (1023 << (2 - ANALOG_REDUCE_BITS)) - extruder[0].tempControl.currentTemperature);
   }
-  Com::println();
+  Com::printF(PSTR("\n"));
 }
 
 
@@ -179,7 +180,8 @@ Commands::changeFeedrateMultiply(int factor) {
   Printer::feedrate *= (float)factor / (float)Printer::feedrateMultiply;
   Printer::feedrateMultiply = factor;
 
-  Com::printFLN(PSTR("SpeedMultiply:"), factor);
+  Com::printF(PSTR("SpeedMultiply:"), factor);
+  Com::printF(PSTR("\n"));
 }
 
 //  Change the flow of filament to the nozzle, leaving the speed of the printhead constant.
@@ -195,7 +197,8 @@ Commands::changeFlowrateMultiply(int factor) {
   else
     Printer::extrusionFactor = 0.04f * factor / (Extruder::current->diameter * Extruder::current->diameter * 3.141592654f);
 
-  Com::printFLN(PSTR("FlowMultiply:"), factor);
+  Com::printF(PSTR("FlowMultiply:"), factor);
+  Com::printF(PSTR("\n"));
 }
 
 
@@ -221,14 +224,16 @@ void Commands::setFanSpeed(int speed, bool immediately) {
     }
     Printer::setFanSpeedDirectly(speed);
   }
-  Com::printFLN(PSTR("Fanspeed:"), speed); // send only new values to break update loops!
+  Com::printF(PSTR("Fanspeed:"), speed); // send only new values to break update loops!
+  Com::printF(PSTR("\n"));
 #endif
 }
 void Commands::setFan2Speed(int speed) {
 #if FAN2_PIN >- 1 && FEATURE_FAN2_CONTROL
   speed = constrain(speed, 0, 255);
   Printer::setFan2SpeedDirectly(speed);
-  Com::printFLN(PSTR("Fanspeed2:"), speed); // send only new values to break update loops!
+  Com::printF(PSTR("Fanspeed2:"), speed); // send only new values to break update loops!
+  Com::printF(PSTR("\n"));
 #endif
 }
 
@@ -248,7 +253,8 @@ void Commands::reportPrinterUsage() {
   seconds -= tmp * 3600;
   tmp = seconds / 60;
   Com::printF(PSTR(" hours "), tmp);
-  Com::printFLN(PSTR(" min"));
+  Com::printF(PSTR(" min"));
+  Com::printF(PSTR("\n"));
 }
 
 
@@ -323,22 +329,27 @@ void microstepMode(uint8_t driver, uint8_t stepping_mode) {
 }
 
 void microstepReadings() {
-  Com::printFLN(PSTR("MS1,MS2 Pins"));
+  Com::printF(PSTR("MS1,MS2 Pins\n"));
 
   Com::printF(PSTR("X:"), READ(X_MS1_PIN));
-  Com::printFLN(PSTR(","), READ(X_MS2_PIN));
+  Com::printF(PSTR(","), READ(X_MS2_PIN));
+  Com::printF(PSTR("\n"));
 
   Com::printF(PSTR("Y:"), READ(Y_MS1_PIN));
-  Com::printFLN(PSTR(","), READ(Y_MS2_PIN));
+  Com::printF(PSTR(","), READ(Y_MS2_PIN));
+  Com::printF(PSTR("\n"));
 
   Com::printF(PSTR("Z:"), READ(Z_MS1_PIN));
-  Com::printFLN(PSTR(","), READ(Z_MS2_PIN));
+  Com::printF(PSTR(","), READ(Z_MS2_PIN));
+  Com::printF(PSTR("\n"));
 
   Com::printF(PSTR("E0:"), READ(E0_MS1_PIN));
-  Com::printFLN(PSTR(","), READ(E0_MS2_PIN));
+  Com::printF(PSTR(","), READ(E0_MS2_PIN));
+  Com::printF(PSTR("\n"));
 
   Com::printF(PSTR("E1:"), READ(E1_MS1_PIN));
-  Com::printFLN(PSTR(","), READ(E1_MS2_PIN));
+  Com::printF(PSTR(","), READ(E1_MS2_PIN));
+  Com::printF(PSTR("\n"));
 }
 
 
@@ -375,7 +386,7 @@ void Commands::processGCode(GCode *com) {
       if(com->hasS()) Printer::setNoDestinationCheck(com->S != 0);
       if(Printer::setDestinationStepsFromGCode(com)) // For X Y Z E F
         if (!PrintLine::queueNonlinearMove(ALWAYS_CHECK_ENDSTOPS, true, true)) {
-          Com::printWarningFLN(PSTR("executeGCode / queueDeltaMove returns error"));
+          Com::printF(PSTR("WARNING: executeGCode / queueDeltaMove returns error\n"));
         }
 
       // ui can only execute motion commands if we are not waiting inside a move for an
@@ -394,7 +405,7 @@ void Commands::processGCode(GCode *com) {
         if(n < 0) n += PRINTLINE_CACHE_SIZE;
         noInts.unprotect();
         if(n != lc)
-          Com::printFLN(PSTR("Buffer corrupted"));
+          Com::printF(PSTR("Buffer corrupted\n"));
       }
 #endif
 
@@ -476,7 +487,8 @@ void Commands::processGCode(GCode *com) {
       }
       if(ok) {
         sum *= 0.33333333333333;
-        Com::printFLN(PSTR("Z-probe average height:"), sum);
+        Com::printF(PSTR("Z-probe average height:"), sum);
+        Com::printF(PSTR("\n"));
         if(com->hasS() && com->S) {
 #if MAX_HARDWARE_ENDSTOP_Z
 #if DRIVE_SYSTEM == DELTA
@@ -492,11 +504,13 @@ void Commands::processGCode(GCode *com) {
           } else
             Printer::zLength = zup + sum - ENDSTOP_Z_BACK_ON_HOME;
 #endif // DELTA
-          Com::printInfoFLN(PSTR("Reset Z height"));
-          Com::printFLN(PSTR("Printer height:"), Printer::zLength);
+          Com::printF(PSTR("INFO Reset Z height\n"));
+          Com::printF(PSTR("Printer height:"), Printer::zLength);
+          Com::printF(PSTR("\n"));
 #else
           Printer::currentPositionSteps[Z_AXIS] = sum * Printer::axisStepsPerMM[Z_AXIS];
-          Com::printFLN(PSTR("Adjusted z origin"));
+          Com::printF(PSTR("Adjusted z origin"));
+          Com::printF(PSTR("\n"));
 #endif // max z endstop
         }
         Printer::feedrate = oldFeedrate;
@@ -569,7 +583,7 @@ void Commands::processGCode(GCode *com) {
       Endstops::update();
       Com::printF(PSTR("Z-probe state:"));
       Com::printF(Endstops::zProbe() ? PSTR("H ") : PSTR("L "));
-      Com::println();
+      Com::printF(PSTR("\n"));
       break;
 #if FEATURE_AUTOLEVEL
     case 32: // G32 Auto-Bed leveling
@@ -588,7 +602,7 @@ void Commands::processGCode(GCode *com) {
         if(com->hasX() && com->hasY() && com->hasZ()) {
           Printer::distortion.set(com->X, com->Y, com->Z);
         } else {
-          Com::printErrorFLN(PSTR("You need to define X, Y and Z to set a point!"));
+          Com::printF(PSTR("ERROR You need to define X, Y and Z to set a point!\n"));
         }
       } else { // G33
         Printer::measureDistortion();
@@ -600,12 +614,12 @@ void Commands::processGCode(GCode *com) {
     case 90: // G90
       Printer::relativeCoordinateMode = false;
       if(com->internalCommand)
-        Com::printInfoFLN(PSTR("Absolute positioning"));
+        Com::printF(PSTR("INFO: Absolute positioning\n"));
       break;
     case 91: // G91
       Printer::relativeCoordinateMode = true;
       if(com->internalCommand)
-        Com::printInfoFLN(PSTR("Relative positioning"));
+        Com::printF(PSTR("INFO: Relative positioning\n"));
       break;
     case 92: { // G92
       float xOff = Printer::coordinateOffset[X_AXIS];
@@ -621,7 +635,8 @@ void Commands::processGCode(GCode *com) {
       if(com->hasX() || com->hasY() || com->hasZ()) {
         Com::printF(PSTR("X_OFFSET:"), Printer::coordinateOffset[X_AXIS], 3);
         Com::printF(PSTR(" Y_OFFSET:"), Printer::coordinateOffset[Y_AXIS], 3);
-        Com::printFLN(PSTR(" Z_OFFSET:"), Printer::coordinateOffset[Z_AXIS], 3);
+        Com::printF(PSTR(" Z_OFFSET:"), Printer::coordinateOffset[Z_AXIS], 3);
+        Com::printF(PSTR("\n"));
       }
     }
       break;
@@ -635,16 +650,16 @@ void Commands::processGCode(GCode *com) {
       // G100 R[0] set radius based on current z measurement. Moves to (0,0,0)
       float currentZmm = Printer::currentPosition[Z_AXIS];
       if (currentZmm / Printer::zLength > 0.1) {
-        Com::printErrorFLN(PSTR("Calibration code is limited to bottom 10% of Z height"));
+        Com::printF(PSTR("ERROR: Calibration code is limited to bottom 10% of Z height\n"));
         break;
       }
       if (com->hasR()) {
         if (com->hasX() || com->hasY() || com->hasZ())
-          Com::printErrorFLN(PSTR("Cannot set radius and floor at same time."));
+          Com::printF(PSTR("ERROR: Cannot set radius and floor at same time.\n"));
         else if (com->R != 0) {
           //add r to radius
           if (abs(com->R) <= 10) EEPROM::incrementRodRadius(com->R);
-          else Com::printErrorFLN(PSTR("Calibration movement is limited to 10mm."));
+          else Com::printF(PSTR("ERROR: Calibration movement is limited to 10mm.\n"));
         } else {
           // auto set radius. Head must be at 0,0 and touching
           // Z offset will be corrected for.
@@ -678,7 +693,7 @@ void Commands::processGCode(GCode *com) {
               EEPROM::setRodRadius(h * Printer::invAxisStepsPerMM[Z_AXIS]);
             }
           } else
-            Com::printErrorFLN(PSTR("First move to touch at x,y=0,0 to auto-set radius."));
+            Com::printF(PSTR("ERROR: First move to touch at x,y=0,0 to auto-set radius.\n"));
         }
       } else {
         bool tooBig = false;
@@ -698,7 +713,7 @@ void Commands::processGCode(GCode *com) {
           else tooBig = true;
         }
         if (tooBig)
-          Com::printErrorFLN(PSTR("Calibration movement is limited to 10mm."));
+          Com::printF(PSTR("ERROR: Calibration movement is limited to 10mm.\n"));
       }
       // after adjusting zero, physical position is out of sync with memory position
       // this could cause jerky movement or push head into print surface.
@@ -734,9 +749,14 @@ void Commands::processGCode(GCode *com) {
       int32_t offx = m - Printer::stepsRemainingAtXHit;
       int32_t offy = m - Printer::stepsRemainingAtYHit;
       int32_t offz = m - Printer::stepsRemainingAtZHit;
-      Com::printFLN(PSTR("Tower 1:"), offx);
-      Com::printFLN(PSTR("Tower 2:"), offy);
-      Com::printFLN(PSTR("Tower 3:"), offz);
+
+      Com::printF(PSTR("Tower 1:"), offx);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("Tower 2:"), offy);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("Tower 3:"), offz);
+      Com::printF(PSTR("\n"));
+
       if(com->hasS() && com->S > 0) {
         EEPROM::setDeltaTowerXOffsetSteps(offx);
         EEPROM::setDeltaTowerYOffsetSteps(offy);
@@ -764,9 +784,14 @@ void Commands::processGCode(GCode *com) {
       int32_t offx = HOME_DISTANCE_STEPS - Printer::stepsRemainingAtXHit;
       int32_t offy = HOME_DISTANCE_STEPS - Printer::stepsRemainingAtYHit;
       int32_t offz = HOME_DISTANCE_STEPS - Printer::stepsRemainingAtZHit;
-      Com::printFLN(PSTR("Tower 1:"), offx);
-      Com::printFLN(PSTR("Tower 2:"), offy);
-      Com::printFLN(PSTR("Tower 3:"), offz);
+
+      Com::printF(PSTR("Tower 1:"), offx);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("Tower 2:"), offy);
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("Tower 3:"), offz);
+      Com::printF(PSTR("\n"));
+
       Printer::setAutolevelActive(oldAuto);
       PrintLine::moveRelativeDistanceInSteps(0, 0, Printer::axisStepsPerMM[Z_AXIS] * -ENDSTOP_Z_BACK_MOVE, 0, Printer::homingFeedrate[Z_AXIS] / ENDSTOP_X_RETEST_REDUCTION_FACTOR, true, false);
       Printer::homeAxis(true, true, true);
@@ -775,11 +800,13 @@ void Commands::processGCode(GCode *com) {
     case 135: // G135
       Com::printF(PSTR("CompDelta:"), Printer::currentNonlinearPositionSteps[A_TOWER]);
       Com::printF(PSTR(","), Printer::currentNonlinearPositionSteps[B_TOWER]);
-      Com::printFLN(PSTR(","), Printer::currentNonlinearPositionSteps[C_TOWER]);
+      Com::printF(PSTR(","), Printer::currentNonlinearPositionSteps[C_TOWER]);
+      Com::printF(PSTR("\n"));
 #ifdef DEBUG_REAL_POSITION
       Com::printF(PSTR("RealDelta:"), Printer::realDeltaPositionSteps[A_TOWER]);
       Com::printF(PSTR(","), Printer::realDeltaPositionSteps[B_TOWER]);
-      Com::printFLN(PSTR(","), Printer::realDeltaPositionSteps[C_TOWER]);
+      Com::printF(PSTR(","), Printer::realDeltaPositionSteps[C_TOWER]);
+      Com::printF(PSTR("\n"));
 #endif
       Printer::updateCurrentPosition();
       Com::printF(PSTR("PosFromSteps:"));
@@ -818,16 +845,18 @@ void Commands::processMCode(GCode *com) {
               digitalWrite(pin_number, com->S);
               analogWrite(pin_number, com->S);
               Com::printF(PSTR("Set output: "), pin_number);
-              Com::printFLN(PSTR(" to "), (int)com->S);
+              Com::printF(PSTR(" to "), (int)com->S);
+              Com::printF(PSTR("\n"));
             } else
-              Com::printErrorFLN(PSTR("Illegal S value for M42"));
+              Com::printF(PSTR("ERROR: Illegal S value for M42\n"));
           } else {
             pinMode(pin_number, INPUT_PULLUP);
             Com::printF(PSTR(" to "), pin_number);
-            Com::printFLN(PSTR(" is "), digitalRead(pin_number));
+            Com::printF(PSTR(" is "), digitalRead(pin_number));
+            Com::printF(PSTR("\n"));
           }
         } else {
-          Com::printErrorFLN(PSTR("Pin can not be set by M42, is in sensitive pins! "));
+          Com::printF(PSTR("ERROR: Pin can not be set by M42, is in sensitive pins!\n"));
         }
       }
       break;
@@ -962,7 +991,6 @@ void Commands::processMCode(GCode *com) {
       else if(com->hasH()) Extruder::setHeatedBedTemperature(heatedBedController.preheatTemperature + (com->hasO() ? com->O : 0), com->hasF() && com->F > 0);
       break;
     case 105: // M105  get temperature. Always returns the current temperature, doesn't wait until move stopped
-      Com::writeToAll = false;
       printTemperatures(com->hasX());
       break;
     case 109: // M109 - Wait for extruder heater to reach target.
@@ -1042,31 +1070,31 @@ void Commands::processMCode(GCode *com) {
       }
       break;
     case 115: // M115
-      Com::writeToAll = false;
-      Com::printFLN(PSTR("Repetier_1.0.2(bri)"));
-      Com::cap(PSTR("AUTOREPORT_TEMP:1"));
-      Com::cap(PSTR("EEPROM:1"));
+      Com::printF(PSTR("Repetier_1.0.2(bri)"));
+      Com::printF(PSTR("\n"));
+      Com::printF(PSTR("CAP: AUTOREPORT_TEMP:1\n"));
+      Com::printF(PSTR("CAP: EEPROM:1\n"));
 #if FEATURE_AUTOLEVEL && FEATURE_Z_PROBE
-      Com::cap(PSTR("AUTOLEVEL:1"));
+      Com::printF(PSTR("CAP: AUTOLEVEL:1\n"));
 #else
-      Com::cap(PSTR("AUTOLEVEL:0"));
+      Com::printF(PSTR("CAP: AUTOLEVEL:0\n"));
 #endif
 #if FEATURE_Z_PROBE
-      Com::cap(PSTR("Z_PROBE:1"));
+      Com::printF(PSTR("CAP: Z_PROBE:1\n"));
 #else
-      Com::cap(PSTR("Z_PROBE:0"));
+      Com::printF(PSTR("CAP: Z_PROBE:0\n"));
 #endif
-      Com::cap(PSTR("PAUSESTOP:1"));
-      Com::cap(PSTR("PREHEAT:1"));
+      Com::printF(PSTR("CAP: PAUSESTOP:1\n"));
+      Com::printF(PSTR("CAP: PREHEAT:1\n"));
       reportPrinterUsage();
       break;
     case 114: // M114
-      Com::writeToAll = false;
       printCurrentPosition();
       if(com->hasS() && com->S) {
         Com::printF(PSTR("XS:"), Printer::currentPositionSteps[X_AXIS]);
         Com::printF(PSTR(" YS:"), Printer::currentPositionSteps[Y_AXIS]);
-        Com::printFLN(PSTR(" ZS:"), Printer::currentPositionSteps[Z_AXIS]);
+        Com::printF(PSTR(" ZS:"), Printer::currentPositionSteps[Z_AXIS]);
+        Com::printF(PSTR("\n"));
       }
       break;
     case 117: // M117 message to lcd
@@ -1076,7 +1104,6 @@ void Commands::processMCode(GCode *com) {
       }
       break;
     case 119: // M119
-      Com::writeToAll = false;
       Commands::waitUntilEndOfAllMoves();
       Endstops::update();
       Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
@@ -1107,7 +1134,7 @@ void Commands::processMCode(GCode *com) {
             Com::printF(PSTR(" PREHEAT"), i);
             Com::printF(PSTR(":"), extruder[i].tempControl.preheatTemperature);
           }
-          Com::println();
+          Com::printF(PSTR("\n"));
         }
         if(mod) {
           HAL::eprSetInt16(EPR_BED_PREHEAT_TEMP, heatedBedController.preheatTemperature);
@@ -1133,10 +1160,12 @@ void Commands::processMCode(GCode *com) {
       if(extruderId == Extruder::current->id)
         changeFlowrateMultiply(Printer::extrudeMultiply);
       if(d == 0) {
-        Com::printFLN(PSTR("Disabled volumetric extrusion for extruder "), static_cast<int>(extruderId));
+        Com::printF(PSTR("Disabled volumetric extrusion for extruder "), static_cast<int>(extruderId));
+        Com::printF(PSTR("\n"));
       } else {
         Com::printF(PSTR("Set volumetric extrusion for extruder "), static_cast<int>(extruderId));
-        Com::printFLN(PSTR(" to "), d);
+        Com::printF(PSTR(" to "), d);
+        Com::printF(PSTR("\n"));
       }
     }
       break;
@@ -1176,11 +1205,9 @@ void Commands::processMCode(GCode *com) {
     }
       break;
     case 205: // M205 Show EEPROM settings
-      Com::writeToAll = false;
       EEPROM::writeSettings();
       break;
     case 206: // M206 T[type] P[pos] [Sint(long] [Xfloat]  Set eeprom value
-      Com::writeToAll = false;
       EEPROM::update(com);
       break;
     case 207: // M207 X<XY jerk> Z<Z Jerk>
@@ -1194,9 +1221,11 @@ void Commands::processMCode(GCode *com) {
       if(com->hasZ())
         Printer::maxZJerk = com->Z;
       Com::printF(PSTR("Jerk:"), Printer::maxJerk);
-      Com::printFLN(PSTR(" ZJerk:"), Printer::maxZJerk);
+      Com::printF(PSTR(" ZJerk:"), Printer::maxZJerk);
+      Com::printF(PSTR("\n"));
 #else
-      Com::printFLN(PSTR("Jerk:"), Printer::maxJerk);
+      Com::printF(PSTR("Jerk:"), Printer::maxJerk);
+      Com::printF(PSTR("\n"));
 #endif
       break;
     case 220: // M220 S<Feedrate multiplier in percent>
@@ -1234,7 +1263,8 @@ void Commands::processMCode(GCode *com) {
 #if ENABLE_QUADRATIC_ADVANCE
       Com::printF(PSTR(" quadratic steps:"), maxadv);
 #endif
-      Com::printFLN(PSTR(", speed="), maxadvspeed);
+      Com::printF(PSTR(", speed="), maxadvspeed);
+      Com::printF(PSTR("\n"));
 #if ENABLE_QUADRATIC_ADVANCE
       maxadv = 0;
 #endif
@@ -1252,7 +1282,7 @@ void Commands::processMCode(GCode *com) {
         Extruder::current->advanceK = com->X;
       Com::printF(PSTR(" quadratic K:"), Extruder::current->advanceK);
 #endif
-      Com::println();
+      Com::printF(PSTR("\n"));
       Printer::updateAdvanceFlags();
       break;
 #endif
@@ -1263,9 +1293,10 @@ void Commands::processMCode(GCode *com) {
       Printer::updateDerivedParameter();
       transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
       Printer::updateCurrentPosition();
-      Com::printFLN(PSTR("Printer height:"), Printer::zLength);
+      Com::printF(PSTR("Printer height:"), Printer::zLength);
+      Com::printF(PSTR("\n"));
       EEPROM::storeDataIntoEEPROM(false);
-      Com::printFLN(PSTR("EEPROM updated"));
+      Com::printF(PSTR("EEPROM updated\n"));
       Commands::printCurrentPosition();
       break;
 #endif
@@ -1274,10 +1305,10 @@ void Commands::processMCode(GCode *com) {
       {
         if(com->hasX()) {
           HAL::stopWatchdog();
-          Com::printFLN(PSTR("Watchdog disabled"));
+          Com::printF(PSTR("Watchdog disabled\n"));
           break;
         }
-        Com::printInfoFLN(PSTR("Triggering watchdog. If activated, the printer will reset."));
+        Com::printF(PSTR("INFO: Triggering watchdog. If activated, the printer will reset.\n"));
         Printer::kill(false);
         HAL::delayMilliseconds(200); // write output, make sure heaters are off for safety
 #if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__)
@@ -1286,7 +1317,7 @@ void Commands::processMCode(GCode *com) {
         while(1) {} // Endless loop
       }
 #else
-      Com::printInfoFLN(PSTR("Watchdog feature was not compiled into this version!"));
+      Com::printF(PSTR("INFO Watchdog feature was not compiled into this version!\n"));
 #endif
       break;
 #if FEATURE_BABYSTEPPING
@@ -1364,16 +1395,15 @@ void Commands::processMCode(GCode *com) {
 #endif
     }
       break;
-    case 360: // M360 - show configuration
-      Com::writeToAll = false;
-      Printer::showConfiguration();
-      break;
+
     case 400: // M400 Finish all moves
       Commands::waitUntilEndOfAllMoves();
       break;
+
     case 401: // M401 Memory position
       Printer::MemoryPosition();
       break;
+
     case 402: // M402 Go to stored position
       Printer::GoToMemoryPosition(com->hasX(), com->hasY(), com->hasZ(), com->hasE(), (com->hasF() ? com->F : Printer::feedrate));
       break;
@@ -1405,36 +1435,42 @@ void Commands::processMCode(GCode *com) {
       if(n < 0) n += PRINTLINE_CACHE_SIZE;
       noInts.unprotect();
       if(n != lc)
-        Com::printFLN(PSTR("Buffer corrupted"));
+        Com::printF(PSTR("Buffer corrupted\n"));
       Com::printF(PSTR("Buf:"), lc);
       Com::printF(PSTR(",LP:"), lp);
-      Com::printFLN(PSTR(",WP:"), wp);
+      Com::printF(PSTR(",WP:"), wp);
+      Com::printF(PSTR("\n"));
       if(PrintLine::cur == NULL) {
-        Com::printFLN(PSTR("No move"));
+        Com::printF(PSTR("No move\n"));
         if(PrintLine::linesCount > 0) {
           PrintLine &cur = PrintLine::lines[PrintLine::linesPos];
           Com::printF(PSTR("JFlags:"), (int)cur.joinFlags);
-          Com::printFLN(PSTR(" Flags:"), (int)cur.flags);
+          Com::printF(PSTR(" Flags:"), (int)cur.flags);
+          Com::printF(PSTR("\n"));
           if(cur.isWarmUp()) {
-            Com::printFLN(PSTR(" warmup:"), (int)cur.getWaitForXLinesFilled());
+            Com::printF(PSTR(" warmup:"), (int)cur.getWaitForXLinesFilled());
+            Com::printF(PSTR("\n"));
           }
         }
       } else {
         Com::printF(PSTR("Rem:"), PrintLine::cur->stepsRemaining);
-        Com::printFLN(PSTR(" Int:"), Printer::interval);
+        Com::printF(PSTR(" Int:"), Printer::interval);
+        Com::printF(PSTR("\n"));
       }
     }
       break;
 #endif // DEBUG_QUEUE_MOVE
 #ifdef DEBUG_SEGMENT_LENGTH
     case 534: // M534
-      Com::printFLN(PSTR("Max. segment size:"), Printer::maxRealSegmentLength);
+      Com::printF(PSTR("Max. segment size:"), Printer::maxRealSegmentLength);
+      Com::printF(PSTR("\n"));
       if(com->hasS())
         Printer::maxRealSegmentLength = 0;
       break;
 #endif
 #ifdef DEBUG_REAL_JERK
-      Com::printFLN(PSTR("Max. jerk measured:"), Printer::maxRealJerk);
+      Com::printF(PSTR("Max. jerk measured:"), Printer::maxRealJerk);
+      Com::printF(PSTR("\n"));
       if(com->hasS())
         Printer::maxRealJerk = 0;
       break;
@@ -1486,7 +1522,8 @@ void Commands::processMCode(GCode *com) {
         float c = Printer::bendingCorrectionAt(com->X, com->Y);
         Com::printF(PSTR("Bending at ("), com->X);
         Com::printF(PSTR(","), com->Y);
-        Com::printFLN(PSTR(") = "), c);
+        Com::printF(PSTR(") = "), c);
+        Com::printF(PSTR("\n"));
       }
     }
       break;
@@ -1499,7 +1536,6 @@ void Commands::processMCode(GCode *com) {
       break;
     default:
       if(Printer::debugErrors()) {
-        Com::writeToAll = false;
         Com::printF(PSTR("Unknown command:"));
         com->printCommand();
       }
@@ -1513,7 +1549,6 @@ void Commands::executeGCode(GCode *com) {
   // Set return channel for private commands. By default all commands send to all receivers.
   GCodeSource *actSource = GCodeSource::activeSource;
   GCodeSource::activeSource = com->source;
-  Com::writeToAll = true;
 
   if (INCLUDE_DEBUG_COMMUNICATION) {
     if(Printer::debugCommunication()) {
@@ -1538,7 +1573,7 @@ void Commands::executeGCode(GCode *com) {
   }
 #ifdef DEBUG_DRYRUN_ERROR
   if(Printer::debugDryrun()) {
-    Com::printFLN(PSTR("Dryrun was enabled"));
+    Com::printF(PSTR("Dryrun was enabled\n"));
     com->printCommand();
     Printer::debugReset(8);
   }
@@ -1584,6 +1619,7 @@ void Commands::checkFreeMemory() {
 void Commands::writeLowestFreeRAM() {
   if(lowestRAMValueSend > lowestRAMValue) {
     lowestRAMValueSend = lowestRAMValue;
-    Com::printFLN(PSTR("Free RAM:"), lowestRAMValue);
+    Com::printF(PSTR("Free RAM:"), lowestRAMValue);
+    Com::printF(PSTR("\n"));
   }
 }

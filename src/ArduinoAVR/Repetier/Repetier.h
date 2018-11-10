@@ -90,10 +90,12 @@ enum debugFlags {
 // Uncomment the following line to enable debugging. You can better control debugging below the following line
 //#define DEBUG
 
+#if 0
 #define DEBUG_MSG(x)         { if(Printer::debugEcho()) { Com::printFLN(PSTR(x));   HAL::delayMilliseconds(20); }}
 #define DEBUG_MSG2(x,y)      { if(Printer::debugEcho()) { Com::printFLN(PSTR(x),y); HAL::delayMilliseconds(20); }}
 #define DEBUG_MSG_FAST(x)    { if(Printer::debugEcho()) { Com::printFLN(PSTR(x));   } }
 #define DEBUG_MSG2_FAST(x,y) { if(Printer::debugEcho()) { Com::printFLN(PSTR(x),y); } }
+#endif
 
 #define DELTA 3
 
@@ -383,17 +385,6 @@ public:
   {
     return a*a;
   }
-#ifdef SUPPORT_64_BIT_MATH
-  static inline int64_t sqr(int64_t a)
-  {
-    return a*a;
-  }
-  static inline uint64_t sqr(uint64_t a)
-  {
-    return a*a;
-  }
-#endif
-
   static inline float sqr(float a)
   {
     return a*a;
@@ -705,7 +696,8 @@ public:
 		if(!silent) {
 			Com::printF(PSTR("plane: a = "),plane.a,4);
 			Com::printF(PSTR(" b = "),plane.b,4);
-			Com::printFLN(PSTR(" c = "),plane.c,4);
+			Com::printF(PSTR(" c = "),plane.c,4);
+      Com::printF(PSTR("\n"));
 		}
 	}
 };

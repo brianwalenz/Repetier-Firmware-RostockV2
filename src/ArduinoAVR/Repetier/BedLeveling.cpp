@@ -260,8 +260,8 @@ bool runBedLeveling(int s) {
   //GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
   Plane plane;
   if(!measureAutolevelPlane(plane)) {
-    Com::printErrorFLN(PSTR("Probing had returned errors - autoleveling canceled."));
-  Printer::setUIErrorMessage(true);
+    Com::printF(PSTR("ERROR: Probing had returned errors - autoleveling canceled.\n"));
+    Printer::setUIErrorMessage(true);
     uid.setStatusP(PSTR("Levelling Error."));
     uid.refreshPage();
     return false;
@@ -276,17 +276,21 @@ bool runBedLeveling(int s) {
 #if MAX_HARDWARE_ENDSTOP_Z
   //float xRot,yRot,zRot;
   //Printer::transformFromPrinter(Printer::currentPosition[X_AXIS],Printer::currentPosition[Y_AXIS],Printer::currentPosition[Z_AXIS],xRot,yRot,zRot);
-  //Com::printFLN(PSTR("Z after rotation:"),zRot);
+  //Com::printF(PSTR("Z after rotation:"),zRot);
+  //Com::printF(PSTR("\n"));
   // With max z end stop we adjust z length so after next homing we have also a calibrated printer
   if(s != 0) {
     // at origin rotations have no influence so use values there to update
     Printer::zLength += currentZ - Printer::currentPosition[Z_AXIS];
     //Printer::zLength += /*currentZ*/ plane.z((float)Printer::currentPositionSteps[X_AXIS] * Printer::invAxisStepsPerMM[X_AXIS],(float)Printer::currentPositionSteps[Y_AXIS] * Printer::invAxisStepsPerMM[Y_AXIS]) - zRot;
-    Com::printFLN(PSTR("Printer height:"), Printer::zLength);
+    Com::printF(PSTR("Printer height:"), Printer::zLength);
+    Com::printF(PSTR("\n"));
   }
 #endif
   Com::printF(PSTR("CurrentZ:"), currentZ);
-  Com::printFLN(PSTR(" atZ:"), Printer::currentPosition[Z_AXIS]);
+  Com::printF(PSTR(" atZ:"), Printer::currentPosition[Z_AXIS]);
+  Com::printF(PSTR("\n"));
+
   Printer::currentPositionSteps[Z_AXIS] = currentZ * Printer::axisStepsPerMM[Z_AXIS];
   Printer::updateCurrentPosition(true); // set position based on steps position
   Printer::updateDerivedParameter();
@@ -335,9 +339,9 @@ void Printer::setAutolevelActive(bool on) {
   if(on == isAutolevelActive()) return;
   flag0 = (on ? flag0 | PRINTER_FLAG0_AUTOLEVEL_ACTIVE : flag0 & ~PRINTER_FLAG0_AUTOLEVEL_ACTIVE);
   if(on)
-    Com::printInfoFLN(PSTR("Autoleveling enabled"));
+    Com::printF(PSTR("INFO: Autoleveling enabled\n"));
   else
-    Com::printInfoFLN(PSTR("Autoleveling disabled"));
+    Com::printF(PSTR("INFO: Autoleveling disabled\n"));
   updateCurrentPosition(false);
 #endif // FEATURE_AUTOLEVEL
 }
@@ -353,7 +357,7 @@ float Printer::runZMaxProbe() {
   setZProbingActive(true);
   PrintLine::moveRelativeDistanceInSteps(0, 0, probeDepth, 0, homingFeedrate[Z_AXIS] / ENDSTOP_Z_RETEST_REDUCTION_FACTOR, true, true);
   if(stepsRemainingAtZHit < 0) {
-    Com::printErrorFLN(PSTR("z-max homing failed"));
+    Com::printF(PSTR("ERROR: z-max homing failed\n"));
     return ILLEGAL_Z_PROBE;
   }
   setZProbingActive(false);
@@ -363,7 +367,8 @@ float Printer::runZMaxProbe() {
   float distance = (float)probeDepth * invAxisStepsPerMM[Z_AXIS];
   Com::printF(PSTR("Z-probe max:"), distance);
   Com::printF(PSTR(" X:"), realXPosition());
-  Com::printFLN(PSTR(" Y:"), realYPosition());
+  Com::printF(PSTR(" Y:"), realYPosition());
+  Com::printF(PSTR("\n"));
   PrintLine::moveRelativeDistanceInSteps(0, 0, -probeDepth, 0, homingFeedrate[Z_AXIS], true, true);
   return distance;
 }
@@ -399,7 +404,8 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
       {
         Com::printErrorF(PSTR("Activating z-probe would lead to forbidden xy position: "));
         Com::print(Printer::currentPosition[X_AXIS] - ZPOffsetX);
-        Com::printFLN(PSTR(", "), Printer::currentPosition[Y_AXIS] - ZPOffsetY);
+        Com::printF(PSTR(", "), Printer::currentPosition[Y_AXIS] - ZPOffsetY);
+        Com::printF(PSTR("\n"));
         GCode::fatalError(PSTR("Could not activate z-probe offset due to coordinate constraints - result is inaccurate!"));
         return false;
       } else {
@@ -420,7 +426,8 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
       // we must not change z for the probe offset even if we are rotated, so add a correction for z
       float dx, dy;
       transformToPrinter(EEPROM::zProbeXOffset(), EEPROM::zProbeYOffset(), 0, dx, dy, offsetZ2);
-      //Com::printFLN(PSTR("ZPOffset2:"),offsetZ2,3);
+      //Com::printF(PSTR("ZPOffset2:"),offsetZ2,3);
+      //Com::printF(PSTR("\n"));
 #endif
     }
 #else
@@ -493,7 +500,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
   Endstops::update();
   Endstops::update(); // need to call twice for full update!
   if(Endstops::zProbe()) {
-    Com::printErrorFLN(PSTR("z-probe triggered before starting probing."));
+    Com::printF(PSTR("ERROR: z-probe triggered before starting probing.\n"));
     return ILLEGAL_Z_PROBE;
   }
 #if Z_PROBE_DISABLE_HEATERS
@@ -510,7 +517,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
     PrintLine::moveRelativeDistanceInSteps(0, 0, -probeDepth, 0, EEPROM::zProbeSpeed(), true, true);
     setZProbingActive(false);
     if(stepsRemainingAtZHit < 0) {
-      Com::printErrorFLN(PSTR("Z-probe failed"));
+      Com::printF(PSTR("ERROR: Z-probe failed\n"));
       return ILLEGAL_Z_PROBE;
     }
     stepsRemainingAtZHit = realDeltaPositionSteps[C_TOWER] - currentNonlinearPositionSteps[C_TOWER]; // nonlinear moves may split z so stepsRemainingAtZHit is only what is left from last segment not total move. This corrects the problem.
@@ -519,12 +526,13 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
     currentNonlinearPositionSteps[C_TOWER] += stepsRemainingAtZHit;
     currentPositionSteps[Z_AXIS] += stepsRemainingAtZHit; // now current position is correct
     sum += lastCorrection - currentPositionSteps[Z_AXIS];
-    //Com::printFLN(PSTR("ZHSteps:"),lastCorrection - currentPositionSteps[Z_AXIS]);
+    //Com::printF(PSTR("ZHSteps:"),lastCorrection - currentPositionSteps[Z_AXIS]);
+    //Com::printF(PSTR("\n"));
     if(r + 1 < repeat) {
       // go only shortest possible move up for repetitions
       PrintLine::moveRelativeDistanceInSteps(0, 0, shortMove, 0, 80, true, true);
       if(Endstops::zProbe()) {
-        Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!"));
+        Com::printF(PSTR("ERROR: z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!\n"));
   Printer::setUIErrorMessage(true);
     uid.setStatusP(PSTR("Levelling Error."));
     uid.refreshPage();
@@ -542,14 +550,15 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
   // Go back to start position
   PrintLine::moveRelativeDistanceInSteps(0, 0, lastCorrection - currentPositionSteps[Z_AXIS], 0, 80, true, true);
   if(Endstops::zProbe()) { // did we untrigger? If not don't trust result!
-    Com::printErrorFLN(PSTR("z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!")); 
+    Com::printF(PSTR("ERROR: z-probe did not untrigger on repetitive measurement - maybe you need to increase distance!\n")); 
   Printer::setUIErrorMessage(true);
     uid.setStatusP(PSTR("Levelling Error."));
     uid.refreshPage();
     return ILLEGAL_Z_PROBE;
   }
   updateCurrentPosition(false);
-  //Com::printFLN(PSTR("after probe"));
+  //Com::printF(PSTR("after probe"));
+  //Com::printF(PSTR("\n"));
   //Commands::printCurrentPosition();
   float distance = static_cast<float>(sum) * invAxisStepsPerMM[Z_AXIS] / static_cast<float>(repeat) + EEPROM::zProbeHeight();
 #if FEATURE_AUTOLEVEL
@@ -559,10 +568,12 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
   dz -= currentPosition[Z_AXIS];
   //Com::printF(PSTR("ZXO:"),dx,3);Com::printF(PSTR(" ZYO:"),dy,3);
   //transformToPrinter(dx,dy,0,dx,dy,dz); // how much changes z from x,y offset?
-  //Com::printFLN(PSTR(" Z from xy off:"), dz,7);
+  //Com::printF(PSTR(" Z from xy off:"), dz,7);
+  //Com::printF(PSTR("\n"));
   distance += dz;
 #endif
-  //Com::printFLN(PSTR("OrigDistance:"),distance);
+  //Com::printF(PSTR("OrigDistance:"),distance);
+  //Com::printF(PSTR("\n"));
 
 #if DISTORTION_CORRECTION
   float zCorr = 0;
@@ -580,15 +591,18 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
 #if DISTORTION_CORRECTION
   if(Printer::distortion.isEnabled()) {
     Com::printF(PSTR(" Y:"), realYPosition());
-    Com::printFLN(PSTR(" zCorr:"), zCorr, 3);
+    Com::printF(PSTR(" zCorr:"), zCorr, 3);
+    Com::printF(PSTR("\n"));
   } else {
-    Com::printFLN(PSTR(" Y:"), realYPosition());
+    Com::printF(PSTR(" Y:"), realYPosition());
+    Com::printF(PSTR("\n"));
   }
 #else
-  Com::printFLN(PSTR(" Y:"), realYPosition());
+  Com::printF(PSTR(" Y:"), realYPosition());
+  Com::printF(PSTR("\n"));
 #endif
   if(Endstops::zProbe()) {
-    Com::printErrorFLN(PSTR("z-probe did not untrigger after going back to start position."));
+    Com::printF(PSTR("ERROR: z-probe did not untrigger after going back to start position.\n"));
   Printer::setUIErrorMessage(true);
     uid.setStatusP(PSTR("Levelling Error."));
     uid.refreshPage();
@@ -619,7 +633,8 @@ void Printer::measureZProbeHeight(float curHeight) {
   float zProbeHeight = EEPROM::zProbeHeight() + startHeight -zheight;
 
   EEPROM::setZProbeHeight(zProbeHeight); // will also report on output
-  Com::printFLN(PSTR("Z-probe height [mm]:"), zProbeHeight);
+  Com::printF(PSTR("Z-probe height [mm]:"), zProbeHeight);
+  Com::printF(PSTR("\n"));
 #endif
 }
 
@@ -713,7 +728,7 @@ void Printer::resetTransformationMatrix(bool silent) {
   autolevelTransformation[1] = autolevelTransformation[2] = autolevelTransformation[3] =
     autolevelTransformation[5] = autolevelTransformation[6] = autolevelTransformation[7] = 0;
   if(!silent)
-    Com::printInfoFLN(PSTR("Autolevel matrix reset"));
+    Com::printF(PSTR("INFO: Autolevel matrix reset\n"));
 }
 
 void Printer::buildTransformationMatrix(Plane &plane) {
@@ -744,7 +759,7 @@ void Printer::buildTransformationMatrix(Plane &plane) {
   autolevelTransformation[4] /= len;
   autolevelTransformation[5] /= len;
 
-  Com::printArrayFLN(PSTR("Transformation matrix:"), autolevelTransformation, 9, 6);
+  Com::printArrayF(PSTR("Transformation matrix:"), autolevelTransformation, 9, 6);
 }
 /*
   void Printer::buildTransformationMatrix(float h1,float h2,float h3) {
@@ -777,7 +792,7 @@ void Printer::buildTransformationMatrix(Plane &plane) {
   len = sqrt(autolevelTransformation[4] * autolevelTransformation[4] + autolevelTransformation[5] * autolevelTransformation[5]);
   autolevelTransformation[4] /= len;
   autolevelTransformation[5] /= len;
-  Com::printArrayFLN(PSTR("Transformation matrix:"),autolevelTransformation, 9, 6);
+  Com::printArrayF(PSTR("Transformation matrix:"),autolevelTransformation, 9, 6);
   }
 */
 #endif

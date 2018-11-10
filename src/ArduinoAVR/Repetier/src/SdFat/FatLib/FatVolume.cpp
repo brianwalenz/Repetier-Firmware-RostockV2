@@ -563,9 +563,6 @@ bool FatVolume::wipe() {
   count = 2*m_blocksPerFat;
   lbn = m_fatStartBlock;
   for (uint32_t nb = 0; nb < count; nb++) {
-    if ((nb & 0XFF) == 0) {
-      Com::print('.');
-    }
     if (!writeBlock(lbn + nb, cache->data)) {
       DBG_FAIL_MACRO;
       goto fail;
@@ -596,7 +593,6 @@ bool FatVolume::wipe() {
       goto fail;
     }
   }
-  Com::println();
   m_fatType = 0;
   return true;
 

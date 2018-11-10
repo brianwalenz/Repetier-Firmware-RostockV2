@@ -126,7 +126,7 @@ void Endstops::report() {
   Com::printF(PSTR("Z-probe state:"));
   Com::printF(zProbe() ? PSTR("H ") : PSTR("L "));
 #endif
-  Com::println();
+  Com::printF(PSTR("\n"));
 }
 
 

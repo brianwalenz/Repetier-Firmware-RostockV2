@@ -204,7 +204,11 @@ void EEPROM::initalizeUncached()
 void EEPROM::readDataFromEEPROM(bool includeExtruder)
 {
   uint8_t version = HAL::eprGetByte(EPR_VERSION); // This is the saved version. Don't copy data nor set it to older versions!
-  Com::printFLN(PSTR("Detected EEPROM version:"),(int)version);
+
+  Com::printF(PSTR("Detected EEPROM version: "));
+  Com::printF(version);
+  Com::printF(PSTR("\n"));
+
   baudrate = HAL::eprGetInt32(EPR_BAUDRATE);
   maxInactiveTime = HAL::eprGetInt32(EPR_MAX_INACTIVE_TIME);
   stepperInactiveTime = HAL::eprGetInt32(EPR_STEPPER_INACTIVE_TIME);
@@ -261,7 +265,7 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
       if(sum < 2.7 || sum > 3.3)
         Printer::resetTransformationMatrix(false);
       Printer::setAutolevelActive(HAL::eprGetByte(EPR_AUTOLEVEL_ACTIVE));
-      Com::printArrayFLN(PSTR("Transformation matrix:"),Printer::autolevelTransformation, 9, 6);
+      Com::printArrayF(PSTR("Transformation matrix:"),Printer::autolevelTransformation, 9, 6);
     }
 #endif
   if(includeExtruder)
@@ -310,7 +314,7 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
     }
   if(version != EEPROM_PROTOCOL_VERSION)
     {
-      Com::printInfoFLN(PSTR("Protocol version changed, upgrading"));
+      Com::printF(PSTR("INFO: Protocol version changed, upgrading\n"));
       if(version < 3)
         {
           HAL::eprSetFloat(EPR_Z_PROBE_HEIGHT,Z_PROBE_HEIGHT);
@@ -426,8 +430,8 @@ void EEPROM::init()
               if(newcheck != HAL::eprGetByte(EPR_INTEGRITY_BYTE))
                 HAL::eprSetByte(EPR_INTEGRITY_BYTE,newcheck);
             }
-          Com::printFLN(PSTR("EEPROM baud rate restored from configuration."));
-          Com::printFLN(PSTR("RECOMPILE WITH USE_CONFIGURATION_BAUD_RATE == 0 to alter baud rate via EEPROM"));
+          Com::printF(PSTR("EEPROM baud rate restored from configuration.\n"));
+          Com::printF(PSTR("RECOMPILE WITH USE_CONFIGURATION_BAUD_RATE == 0 to alter baud rate via EEPROM\n"));
         }
     }
   else
@@ -619,7 +623,8 @@ void EEPROM::writeFloat(uint pos,PGM_P text,uint8_t digits)
   Com::printFloat(HAL::eprGetFloat(pos),digits);
   Com::print(' ');
   writeExtruderPrefix(pos);
-  Com::printFLN(text);
+  Com::printF(text);
+  Com::printF(PSTR("\n"));
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 
@@ -630,7 +635,8 @@ void EEPROM::writeLong(uint pos,PGM_P text)
   Com::print(HAL::eprGetInt32(pos));
   Com::print(' ');
   writeExtruderPrefix(pos);
-  Com::printFLN(text);
+  Com::printF(text);
+  Com::printF(PSTR("\n"));
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 
@@ -641,7 +647,8 @@ void EEPROM::writeInt(uint pos,PGM_P text)
   Com::print(HAL::eprGetInt16(pos));
   Com::print(' ');
   writeExtruderPrefix(pos);
-  Com::printFLN(text);
+  Com::printF(text);
+  Com::printF(PSTR("\n"));
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 
@@ -652,7 +659,8 @@ void EEPROM::writeByte(uint pos,PGM_P text)
   Com::print((int)HAL::eprGetByte(pos));
   Com::print(' ');
   writeExtruderPrefix(pos);
-  Com::printFLN(text);
+  Com::printF(text);
+  Com::printF(PSTR("\n"));
 	HAL::delayMilliseconds(4); // reduces somehow transmission errors
 }
 

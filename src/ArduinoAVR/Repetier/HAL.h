@@ -559,7 +559,7 @@ public:
     RFSERIAL.flush();
   }
   static void setupTimer();
-  static void showStartReason();
+
   static int getFreeRam();
   static void resetHardware();
 

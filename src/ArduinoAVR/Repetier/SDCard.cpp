@@ -127,7 +127,7 @@ SDCard::mount() {
     return;
   }
 
-  Com::printFLN(PSTR("Card successfully initialized."));
+  Com::printF(PSTR("Card successfully initialized.\n"));
 
   _sdActive = true;
 
@@ -249,7 +249,7 @@ SDCard::stopPrint() {
     return;
 
   if (_sdMode == SDMODE_PRINTING)
-    Com::printFLN(PSTR("SD print stopped by user."));
+    Com::printF(PSTR("SD print stopped by user.\n"));
 
   _sdMode = SDMODE_IDLE;
 
@@ -289,7 +289,7 @@ SDCard::selectFile(const char* filename, bool silent) {
 
   if (file.open(_fat.vwd(), filename, O_READ) == false) {
     if (!silent)
-      Com::printFLN(PSTR("file.open failed"));
+      Com::printF(PSTR("file.open failed.\n"));
     return false;
   }
 
@@ -299,14 +299,17 @@ SDCard::selectFile(const char* filename, bool silent) {
     oldP = filename;
 
   if (!silent) {
-    Com::printF(PSTR("File opened:"), oldP);
-    Com::printFLN(PSTR(" Size:"), file.fileSize());
+    Com::printF(PSTR("Opened '"));
+    Com::print(oldP);
+    Com::printF(PSTR("' of size "));
+    Com::print(file.fileSize());
+    Com::printF(PSTR(" bytes\n"));
   }
 
   sdpos = 0;
   filesize = file.fileSize();
 
-  Com::printFLN(PSTR("File selected"));
+  Com::printF(PSTR("File selected.\n"));
 
   return true;
 }

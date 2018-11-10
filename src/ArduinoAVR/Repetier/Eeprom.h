@@ -185,7 +185,8 @@ public:
 #if FEATURE_Z_PROBE
   static inline void setZProbeHeight(float mm) {
     HAL::eprSetFloat(EPR_Z_PROBE_HEIGHT, mm);
-    Com::printFLN(PSTR("Z-Probe height set to: "),mm,3);
+    Com::printF(PSTR("Z-Probe height set to: "),mm,3);
+    Com::printF(PSTR("\n"));
     EEPROM::updateChecksum();
   }
 #endif
@@ -266,21 +267,24 @@ public:
   static inline void setTowerXFloor(float newZ) {
     Printer::xMin = newZ;
     Printer::updateDerivedParameter();
-    Com::printFLN(PSTR("X (A) tower floor set to: "),Printer::xMin,3);
+    //Com::printF(PSTR("X (A) tower floor set to: "),Printer::xMin,3);
+    //Com::printF(PSTR("\n"));
     HAL::eprSetFloat(EPR_X_HOME_OFFSET,Printer::xMin);
     EEPROM::updateChecksum();
   }
   static inline void setTowerYFloor(float newZ) {
     Printer::yMin = newZ;
     Printer::updateDerivedParameter();
-    Com::printFLN(PSTR("Y (B) tower floor set to: "), Printer::yMin, 3);
+    //Com::printF(PSTR("Y (B) tower floor set to: "), Printer::yMin, 3);
+    //Com::printF(PSTR("\n"));
     HAL::eprSetFloat(EPR_Y_HOME_OFFSET,Printer::yMin);
     EEPROM::updateChecksum();
   }
   static inline void setTowerZFloor(float newZ) {
     Printer::zMin = newZ;
     Printer::updateDerivedParameter();
-    Com::printFLN(PSTR("Z (C) tower floor set to: "), Printer::zMin, 3);
+    //Com::printF(PSTR("Z (C) tower floor set to: "), Printer::zMin, 3);
+    //Com::printF(PSTR("\n"));
     HAL::eprSetFloat(EPR_Z_HOME_OFFSET,Printer::zMin);
     EEPROM::updateChecksum();
   }

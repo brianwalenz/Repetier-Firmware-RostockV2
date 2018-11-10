@@ -169,7 +169,6 @@ void Printer::setDebugLevel(uint8_t newLevel) {
       Extruder::disableAllHeater();
     }
   }
-  Com::printFLN(PSTR("DebugLevel:"), (int)newLevel);
 }
 
 void Printer::toggleEcho() {
@@ -272,15 +271,9 @@ void Printer::updateDerivedParameter() {
   deltaDiagonalStepsSquaredC.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionC() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
   if(deltaDiagonalStepsSquaredA.l > 65534 || 2 * radius0 * axisStepsPerMM[Z_AXIS] > 65534) {
     setLargeMachine(true);
-#ifdef SUPPORT_64_BIT_MATH
-    deltaDiagonalStepsSquaredA.L = RMath::sqr(static_cast<uint64_t>(deltaDiagonalStepsSquaredA.l));
-    deltaDiagonalStepsSquaredB.L = RMath::sqr(static_cast<uint64_t>(deltaDiagonalStepsSquaredB.l));
-    deltaDiagonalStepsSquaredC.L = RMath::sqr(static_cast<uint64_t>(deltaDiagonalStepsSquaredC.l));
-#else
     deltaDiagonalStepsSquaredA.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredA.l));
     deltaDiagonalStepsSquaredB.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredB.l));
     deltaDiagonalStepsSquaredC.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredC.l));
-#endif
   } else {
     setLargeMachine(false);
     deltaDiagonalStepsSquaredA.l = RMath::sqr(deltaDiagonalStepsSquaredA.l);
@@ -320,7 +313,9 @@ void Printer::updateDerivedParameter() {
 	}
   if(maxJerk < 2 * minimumSpeed) {// Enforce minimum start speed if target is faster and jerk too low
     maxJerk = 2 * minimumSpeed;
-    Com::printFLN(PSTR("XY jerk was too low, setting to "), maxJerk);
+    Com::printF(PSTR("XY jerk was too low, setting to "));
+    Com::print(maxJerk);
+    Com::printF(PSTR("\n"));
   }
   accel = RMath::max(maxAccelerationMMPerSquareSecond[Z_AXIS], maxTravelAccelerationMMPerSquareSecond[Z_AXIS]);
 #if DISTORTION_CORRECTION
@@ -407,7 +402,7 @@ uint8_t Printer::moveTo(float x, float y, float z, float e, float f) {
     feedrate = f;
   // Disable software end stop or we get wrong distances when length < real length
   if (!PrintLine::queueNonlinearMove(ALWAYS_CHECK_ENDSTOPS, true, false)) {
-    Com::printWarningFLN(PSTR("moveTo / queueDeltaMove returns error"));
+    Com::printF(PSTR("WARNING: moveTo / queueDeltaMove returns error\n"));
     return 0;
   }
   updateCurrentPosition(false);
@@ -446,12 +441,12 @@ uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pa
     feedrate = f;
 
   if (!PrintLine::queueNonlinearMove(ALWAYS_CHECK_ENDSTOPS, pathOptimize, true)) {
-    Com::printWarningFLN(PSTR("moveToReal / queueDeltaMove returns error"));
+    Com::printF(PSTR("WARNING: moveToReal / queueDeltaMove returns error\n"));
 
 #ifdef DEBUG
-    Com::printF(PSTR(" x=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printFLN(PSTR(" mm"));
-    Com::printF(PSTR(" y=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printFLN(PSTR(" mm"));
-    Com::printF(PSTR(" z=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printFLN(PSTR(" mm"));
+    Com::printF(PSTR(" x=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printF(PSTR(" mm\n"));
+    Com::printF(PSTR(" y=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printF(PSTR(" mm\n"));
+    Com::printF(PSTR(" z=")); Com::print((long)x*80); Com::print(" steps  "); Com::print(x); Com::printF(PSTR(" mm\n"));
 #endif
 
     return 0;
@@ -746,8 +741,7 @@ void Printer::setup() {
 #endif
   EEPROM::initBaudrate();
   HAL::serialSetBaudrate(baudrate);
-  Com::printFLN(PSTR("start"));
-  HAL::showStartReason();
+
   Extruder::initExtruder();
   // sets auto leveling in eeprom init
   EEPROM::init(); // Read settings from eeprom if wanted
@@ -846,14 +840,14 @@ void Printer::deltaMoveToTopEndstops(float feedrate) {
 void Printer::homeXAxis() {
   destinationSteps[X_AXIS] = 0;
   if (!PrintLine::queueNonlinearMove(true, false, false)) {
-    Com::printWarningFLN(PSTR("homeXAxis / queueDeltaMove returns error"));
+    Com::printF(PSTR("WARNING: homeXAxis / queueDeltaMove returns error\n"));
   }
 }
 
 void Printer::homeYAxis() {
   Printer::destinationSteps[Y_AXIS] = 0;
   if (!PrintLine::queueNonlinearMove(true, false, false)) {
-    Com::printWarningFLN(PSTR("homeYAxis / queueDeltaMove returns error"));
+    Com::printF(PSTR("WARNING: homeYAxis / queueDeltaMove returns error\n"));
   }
 }
 
@@ -899,7 +893,7 @@ void Printer::homeZAxis() { // Delta z homing
     setXHomed(false);
     setYHomed(false);
     setZHomed(false);
-    GCodeSource::printAllFLN(PSTR("RequestPause:Homing failed!"));
+    Com::printF(PSTR("RequestPause:Homing failed!\n"));
   } else {
     setXHomed(true);
     setYHomed(true);
@@ -913,9 +907,14 @@ void Printer::homeZAxis() { // Delta z homing
   long dy = -yMinSteps - EEPROM::deltaTowerYOffsetSteps();
   long dz = -zMinSteps - EEPROM::deltaTowerZOffsetSteps();
   long dm = RMath::min(dx, dy, dz);
-  //Com::printFLN(PSTR("Tower 1:"),dx);
-  //Com::printFLN(PSTR("Tower 2:"),dy);
-  //Com::printFLN(PSTR("Tower 3:"),dz);
+
+  //Com::printF(PSTR("Tower 1:"),dx);
+  //Com::printF(PSTR("\n"));
+  //Com::printF(PSTR("Tower 2:"),dy);
+  //Com::printF(PSTR("\n"));
+  //Com::printF(PSTR("Tower 3:"),dz);
+  //Com::printF(PSTR("\n"));
+
   dx -= dm; // now all dxyz are positive
   dy -= dm;
   dz -= dm;
@@ -957,7 +956,7 @@ void Printer::homeAxis(bool xaxis, bool yaxis, bool zaxis) { // Delta homing cod
   setAutolevelActive(false);
   if (!(X_MAX_PIN > -1 && Y_MAX_PIN > -1 && Z_MAX_PIN > -1
         && MAX_HARDWARE_ENDSTOP_X && MAX_HARDWARE_ENDSTOP_Y && MAX_HARDWARE_ENDSTOP_Z)) {
-    Com::printErrorFLN(PSTR("Hardware setup inconsistent. Delta cannot home without max endstops."));
+    Com::printF(PSTR("ERROR: Hardware setup inconsistent. Delta cannot home without max endstops.\n"));
   }
   // The delta has to have home capability to zero and set position,
   // so the redundant check is only an opportunity to
@@ -1035,76 +1034,6 @@ void Printer::handleInterruptEvent() {
   }
 }
 
-#define START_EXTRUDER_CONFIG(i)     Com::printF(PSTR("Config:"));Com::printF(PSTR("Extr."),i+1);Com::print(':');
-void Printer::showConfiguration() {
-  Com::config(PSTR("Baudrate:"), baudrate);
-#ifndef EXTERNALSERIAL
-  Com::config(PSTR("InputBuffer:"), SERIAL_BUFFER_SIZE - 1);
-#endif
-  Com::config(PSTR("NumExtruder:"), NUM_EXTRUDER);
-  Com::config(PSTR("HeatedBed:"), 1);
-  Com::config(PSTR("SDCard:"), 1);
-  Com::config(PSTR("Fan:"), FAN_PIN > -1 && FEATURE_FAN_CONTROL);
-#if FEATURE_FAN2_CONTROL && defined(FAN2_PIN) && FAN2_PIN > -1
-  Com::config(PSTR("Fan2:1"));
-#else
-  Com::config(PSTR("Fan2:0"));
-#endif
-  Com::config(PSTR("LCD:"), 1);
-  Com::config(PSTR("SoftwarePowerSwitch:"), PS_ON_PIN > -1);
-  Com::config(PSTR("XHomeDir:"), X_HOME_DIR);
-  Com::config(PSTR("YHomeDir:"), Y_HOME_DIR);
-  Com::config(PSTR("ZHomeDir:"), Z_HOME_DIR);
-  Com::config(PSTR("XHomePos:"), 0, 2);
-  Com::config(PSTR("YHomePos:"), 0, 2);
-  Com::config(PSTR("ZHomePos:"), zMin + zLength, 3);
-  Com::config(PSTR("SupportG10G11:"), FEATURE_RETRACTION);
-  Com::config(PSTR("SupportLocalFilamentchange:"), FEATURE_RETRACTION);
-  Com::config(PSTR("ZProbe:"), FEATURE_Z_PROBE);
-  Com::config(PSTR("Autolevel:"), FEATURE_AUTOLEVEL);
-  Com::config(PSTR("PrintlineCache:"), PRINTLINE_CACHE_SIZE);
-  Com::config(PSTR("JerkXY:"), maxJerk);
-  Com::config(PSTR("KeepAliveInterval:"), KEEP_ALIVE_INTERVAL);
-#if FEATURE_RETRACTION
-  Com::config(PSTR("RetractionLength:"), EEPROM_FLOAT(RETRACTION_LENGTH));
-  Com::config(PSTR("RetractionLongLength:"), EEPROM_FLOAT(RETRACTION_LONG_LENGTH));
-  Com::config(PSTR("RetractionSpeed:"), EEPROM_FLOAT(RETRACTION_SPEED));
-  Com::config(PSTR("RetractionZLift:"), EEPROM_FLOAT(RETRACTION_Z_LIFT));
-  Com::config(PSTR("RetractionUndoExtraLength:"), EEPROM_FLOAT(RETRACTION_UNDO_EXTRA_LENGTH));
-  Com::config(PSTR("RetractionUndoExtraLongLength:"), EEPROM_FLOAT(RETRACTION_UNDO_EXTRA_LONG_LENGTH));
-  Com::config(PSTR("RetractionUndoSpeed:"), EEPROM_FLOAT(RETRACTION_UNDO_SPEED));
-#endif // FEATURE_RETRACTION
-  Com::config(PSTR("XMin:"), xMin);
-  Com::config(PSTR("YMin:"), yMin);
-  Com::config(PSTR("ZMin:"), zMin);
-  Com::config(PSTR("XMax:"), xMin + xLength);
-  Com::config(PSTR("YMax:"), yMin + yLength);
-  Com::config(PSTR("ZMax:"), zMin + zLength);
-  Com::config(PSTR("XSize:"), xLength);
-  Com::config(PSTR("YSize:"), yLength);
-  Com::config(PSTR("ZSize:"), zLength);
-  Com::config(PSTR("XPrintAccel:"), maxAccelerationMMPerSquareSecond[X_AXIS]);
-  Com::config(PSTR("YPrintAccel:"), maxAccelerationMMPerSquareSecond[Y_AXIS]);
-  Com::config(PSTR("ZPrintAccel:"), maxAccelerationMMPerSquareSecond[Z_AXIS]);
-  Com::config(PSTR("XTravelAccel:"), maxTravelAccelerationMMPerSquareSecond[X_AXIS]);
-  Com::config(PSTR("YTravelAccel:"), maxTravelAccelerationMMPerSquareSecond[Y_AXIS]);
-  Com::config(PSTR("ZTravelAccel:"), maxTravelAccelerationMMPerSquareSecond[Z_AXIS]);
-  Com::config(PSTR("PrinterType:Delta"));
-  Com::config(PSTR("MaxBedTemp:"), HEATED_BED_MAX_TEMP);
-  for(fast8_t i = 0; i < NUM_EXTRUDER; i++) {
-    START_EXTRUDER_CONFIG(i)
-      Com::printFLN(PSTR("Jerk:"), extruder[i].maxStartFeedrate);
-    START_EXTRUDER_CONFIG(i)
-      Com::printFLN(PSTR("MaxSpeed:"), extruder[i].maxFeedrate);
-    START_EXTRUDER_CONFIG(i)
-      Com::printFLN(PSTR("Acceleration:"), extruder[i].maxAcceleration);
-    START_EXTRUDER_CONFIG(i)
-      Com::printFLN(PSTR("Diameter:"), extruder[i].diameter);
-    START_EXTRUDER_CONFIG(i)
-      Com::printFLN(PSTR("MaxTemp:"), MAXTEMP);
-  }
-}
-
 
 
 void Printer::pausePrint() {
@@ -1112,11 +1041,9 @@ void Printer::pausePrint() {
     sd.pausePrint(true);
   } else
     if(Printer::isMenuMode(MODE_PRINTING)) {
-      GCodeSource::printAllFLN(PSTR("RequestPause:"));
+      Com::printF(PSTR("RequestPause:\n"));
       Printer::setMenuMode(MODE_PAUSED, true);
-#if !defined(DISABLE_PRINTMODE_ON_PAUSE) || DISABLE_PRINTMODE_ON_PAUSE==1
       Printer::setPrinting(false);
-#endif
     }
 }
 
@@ -1125,7 +1052,7 @@ void Printer::continuePrint() {
     sd.continuePrint(true);
   } else
     if(Printer::isMenuMode(MODE_PAUSED)) {
-      GCodeSource::printAllFLN(PSTR("RequestContinue:"));
+      Com::printF(PSTR("RequestContinue:\n"));
     }
 	setMenuMode(MODE_PAUSED, false);
 }
@@ -1137,7 +1064,7 @@ void Printer::stopPrint() {
     sd.stopPrint();
   } else
     {
-      GCodeSource::printAllFLN(PSTR("RequestStop:"));
+      Com::printF(PSTR("RequestStop:\n"));
     }
 
 	//if(!isUIErrorMessage()) {
