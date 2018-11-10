@@ -22,30 +22,100 @@
 #include "Repetier.h"
 
 
-
-
-
-
-void Com::printF(FSTRINGPARAM(ptr)) {
+void
+Com::printF(FSTRINGPARAM(ptr)) {
   while (pgm_read_byte(ptr) != 0)
     RFSERIAL.write(pgm_read_byte(ptr++));
 }
 
 
 
-void Com::print(const char *text) {
+void
+Com::print(const char *text) {
   while (*text != 0)
     RFSERIAL.write(*text++);
 }
 
-void Com::print(const char c) {
+void
+Com::print(const char c) {
   RFSERIAL.write(c);
 }
 
 
 
 
-void Com::printNumber(uint32_t n) {
+
+void
+Com::printF(FSTRINGPARAM(text), const char *msg) {
+  Com::printF(text);
+  Com::print(msg);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), int value) {
+  Com::printF(text);
+  Com::print((int32_t)value);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), int32_t value) {
+  Com::printF(text);
+  Com::print(value);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), uint32_t value) {
+  Com::printF(text);
+  Com::print(value);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), float value, uint8_t digits=2) {
+  Com::printF(text);
+  Com::printFloat(value, digits);
+}
+
+
+
+void
+Com::print(uint8_t value)   { Com::print((uint32_t)value); }
+
+void
+Com::print( int8_t value)   { Com::print(( int32_t)value); }
+
+
+void
+Com::print(uint16_t value)  { Com::print((uint32_t)value); }
+
+void
+Com::print( int16_t value)  { Com::print(( int32_t)value); }
+
+
+void
+Com::print(uint32_t value)  { Com::printNumber(value);     }
+
+void
+Com::print( int32_t value)  {
+  if (value < 0) {
+    Com::print('-');
+    value = -value;
+  }
+  Com::printNumber((uint32_t)value);
+}
+
+
+
+void
+Com::print(float number)    { Com::printFloat(number, 6); }
+
+
+
+
+
+
+
+void
+Com::printNumber(uint32_t n) {
   char buf[11]; // Assumes 8-bit chars plus zero byte.
   char *str = &buf[10];
   *str = '\0';
@@ -55,23 +125,24 @@ void Com::printNumber(uint32_t n) {
     *--str = '0' + (m - 10 * n);
   } while(n);
 
-  print(str);
+  Com::print(str);
 }
 
 
 
-void Com::printFloat(float number, uint8_t digits) {
+void
+Com::printFloat(float number, uint8_t digits) {
   if (isnan(number)) {
-    printF(PSTR("NAN"));
+    Com::printF(PSTR("NAN"));
     return;
   }
   if (isinf(number)) {
-    printF(PSTR("INF"));
+    Com::printF(PSTR("INF"));
     return;
   }
   // Handle negative numbers
   if (number < 0.0) {
-    print('-');
+    Com::print('-');
     number = -number;
   }
   // Round correctly so that print(1.999, 2) prints as "2.00"
@@ -84,36 +155,38 @@ void Com::printFloat(float number, uint8_t digits) {
   // Extract the integer part of the number and print it
   unsigned long int_part = (unsigned long)number;
   float remainder = number - (float)int_part;
-  printNumber(int_part);
+  Com::printNumber(int_part);
 
   // Print the decimal point, but only if there are digits beyond
   if (digits > 0)
-    print('.');
+    Com::print('.');
 
   // Extract digits from the remainder one at a time
   while (digits-- > 0) {
     remainder *= 10.0;
     int toPrint = int(remainder);
-    print(toPrint);
+    Com::print(toPrint);
     remainder -= toPrint;
   }
 }
 
 
 
-void Com::printArrayF(FSTRINGPARAM(text), float *arr, uint8_t n, uint8_t digits) {
-  printF(text);
+void
+Com::printArrayF(FSTRINGPARAM(text), float *arr, uint8_t n, uint8_t digits) {
+  Com::printF(text);
   for(uint8_t i = 0; i < n; i++)
-    printF(PSTR(" "), arr[i], digits);
-  printF(PSTR("\n"));
+    Com::printF(PSTR(" "), arr[i], digits);
+  Com::printF(PSTR("\n"));
 }
 
 
 
-void Com::printArrayF(FSTRINGPARAM(text), int32_t *arr, uint8_t n) {
-  printF(text);
+void
+Com::printArrayF(FSTRINGPARAM(text), int32_t *arr, uint8_t n) {
+  Com::printF(text);
   for(uint8_t i = 0; i < n; i++)
-    printF(PSTR(" "), arr[i]);
-  printF(PSTR("\n"));
+    Com::printF(PSTR(" "), arr[i]);
+  Com::printF(PSTR("\n"));
 }
 

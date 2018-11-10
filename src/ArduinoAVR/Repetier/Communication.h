@@ -22,58 +22,34 @@
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
-class Com {
-public:
-  static void print(char c);
-  static void printF(FSTRINGPARAM(text));
-  static void print(const char *text);
+namespace Com {
+  void print(char c);
+  void printF(FSTRINGPARAM(text));
+  void print(const char *text);
 
-  static void printF(FSTRINGPARAM(text), const char *msg) {
-    printF(text);
-    print(msg);
-  };
-  static void printF(FSTRINGPARAM(text), int value) {
-    printF(text);
-    print((int32_t)value);
-  };
-  static void printF(FSTRINGPARAM(text), int32_t value) {
-    printF(text);
-    print(value);
-  };
-  static void printF(FSTRINGPARAM(text), uint32_t value) {
-    printF(text);
-    printNumber(value);
-  };
-  static void printF(FSTRINGPARAM(text), float value, uint8_t digits=2) {
-    printF(text);
-    printFloat(value, digits);
-  };
+  void printF(FSTRINGPARAM(text), const char *msg);
+  void printF(FSTRINGPARAM(text), int value);
+  void printF(FSTRINGPARAM(text), int32_t value);
+  void printF(FSTRINGPARAM(text), uint32_t value);
+  void printF(FSTRINGPARAM(text), float value, uint8_t digits=2);
 
 
-  static void print(uint8_t value)   { print((uint32_t)value); };
-  static void print( int8_t value)   { print(( int32_t)value); };
+  void print(uint8_t value);
+  void print( int8_t value);
 
-  static void print(uint16_t value)  { print((uint32_t)value); };
-  static void print( int16_t value)  { print(( int32_t)value); };
+  void print(uint16_t value);
+  void print( int16_t value);
 
-  static void print(uint32_t value)  { printNumber(value);     };
-  static void print( int32_t value)  {
-    if (value < 0) {
-      print('-');
-      value = -value;
-    }
-    printNumber((uint32_t)value);
-  };
+  void print(uint32_t value);
+  void print( int32_t value);
 
-  static void print(float number)    { printFloat(number, 6); }
+  void print(float number);
 
+  void printNumber(uint32_t n);
+  void printFloat(float number, uint8_t digits);
 
-
-  static void printNumber(uint32_t n);
-  static void printFloat(float number, uint8_t digits);
-
-  static void printArrayF(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
-  static void printArrayF(FSTRINGPARAM(text),long *arr,uint8_t n=4);
-};
+  void printArrayF(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
+  void printArrayF(FSTRINGPARAM(text),long *arr,uint8_t n=4);
+}
 
 #endif // COMMUNICATION_H
