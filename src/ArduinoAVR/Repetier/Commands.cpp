@@ -1550,15 +1550,18 @@ void Commands::executeGCode(GCode *com) {
   GCodeSource *actSource = GCodeSource::activeSource;
   GCodeSource::activeSource = com->source;
 
-  if (INCLUDE_DEBUG_COMMUNICATION) {
-    if(Printer::debugCommunication()) {
-      if(com->hasG() || (com->hasM() && com->M != 111)) {
-        previousMillisCmd = HAL::timeInMilliseconds();
-        GCodeSource::activeSource = actSource;
-        return;
-      }
+  //  Was a compile time option (enabled) - comment said:
+  //    Allows M111 to set bit 5 (16) which disables all commands except
+  //    M111. This can be used to test your data throughput or search for
+  //    communication problems.
+  if(Printer::debugCommunication()) {
+    if(com->hasG() || (com->hasM() && com->M != 111)) {
+      previousMillisCmd = HAL::timeInMilliseconds();
+      GCodeSource::activeSource = actSource;
+      return;
     }
   }
+
   if(com->hasG()) processGCode(com);
   else if(com->hasM()) processMCode(com);
   else if(com->hasT()) {    // Process T code

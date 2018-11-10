@@ -26,36 +26,14 @@
 #include <stdint.h>
 
 
-// ##########################################################################################
-// ##                                  Debug configuration                                 ##
-// ##########################################################################################
-// These are run time switchable debug flags
-enum debugFlags {
-  DEB_ECHO = 0x1,
-  DEB_INFO = 0x2,
-  DEB_ERROR = 0x4,
-  DEB_DRYRUN = 0x8,
-  DEB_COMMUNICATION = 0x10,
-  DEB_NOMOVES = 0x20,
-  DEB_DEBUG = 0x40
-};
-
 /** Uncomment, to see detailed data for every move. Only for debugging purposes! */
 //#define DEBUG_QUEUE_MOVE
 
 /** write infos about path planner changes */
 //#define DEBUG_PLANNER
 
-/** Allows M111 to set bit 5 (16) which disables all commands except M111. This can be used
-    to test your data throughput or search for communication problems. */
-#define INCLUDE_DEBUG_COMMUNICATION 1
-
 // Echo all ascii commands after receiving
 //#define DEBUG_ECHO_ASCII
-
-/** Allows M111 so set bit 6 (32) which disables moves, at the first tried step. In combination
-    with a dry run, you can test the speed of path computations, which are still performed. */
-#define INCLUDE_DEBUG_NO_MOVE 1
 
 /** Writes the free RAM to output, if it is less then at the last test. Should always return
     values >500 for safety, since it doesn't catch every function call. Nice to tweak cache
@@ -93,7 +71,6 @@ enum debugFlags {
 
 #define DELTA 3
 
-#define WIZARD_STACK_SIZE 8
 #define IGNORE_COORDINATE 999999
 
 #define HAS_PIN(x) (defined( x ## _PIN) && x > -1)

@@ -1430,7 +1430,12 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       }
       HAL::allowInterrupts();
       lastblk = -1;
-#if INCLUDE_DEBUG_NO_MOVE
+
+#if 1
+      // Allows M111 so set bit 6 (32) which disables moves, at the first tried
+      // step. In combination with a dry run, you can test the speed of path
+      // computations, which are still performed.
+
       if(Printer::debugNoMoves()) { // simulate a move, but do nothing in reality
         removeCurrentLineForbidInterrupt();
         if(linesCount == 0) {
@@ -1440,6 +1445,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         return 1000;
       }
 #endif
+
       if(cur->isWarmUp()) {
         // This is a warm up move to initialize the path planner correctly. Just waste
         // a bit of time to get the planning up to date.
