@@ -1,5 +1,7 @@
 
 
+#ifndef SDCARD_H
+#define SDCARD_H
 
 #define SDMODE_IDLE       0
 #define SDMODE_PRINTING   1
@@ -59,3 +61,6 @@ private:
 };
 
 extern SDCard sd;
+
+
+#endif  //  SDCARD_H
