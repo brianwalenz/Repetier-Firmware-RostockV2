@@ -90,12 +90,6 @@ enum debugFlags {
 // Uncomment the following line to enable debugging. You can better control debugging below the following line
 //#define DEBUG
 
-#if 0
-#define DEBUG_MSG(x)         { if(Printer::debugEcho()) { Com::printFLN(PSTR(x));   HAL::delayMilliseconds(20); }}
-#define DEBUG_MSG2(x,y)      { if(Printer::debugEcho()) { Com::printFLN(PSTR(x),y); HAL::delayMilliseconds(20); }}
-#define DEBUG_MSG_FAST(x)    { if(Printer::debugEcho()) { Com::printFLN(PSTR(x));   } }
-#define DEBUG_MSG2_FAST(x,y) { if(Printer::debugEcho()) { Com::printFLN(PSTR(x),y); } }
-#endif
 
 #define DELTA 3
 
@@ -103,27 +97,6 @@ enum debugFlags {
 #define IGNORE_COORDINATE 999999
 
 #define HAS_PIN(x) (defined( x ## _PIN) && x > -1)
-
-// Uncomment if no analyzer is connected
-//#define ANALYZER
-
-// Channel->pin assignments
-#define ANALYZER_CH0 63 // New move
-#define ANALYZER_CH1 40 // Step loop
-#define ANALYZER_CH2 53 // X Step
-#define ANALYZER_CH3 65 // Y Step
-#define ANALYZER_CH4 59 // X Direction
-#define ANALYZER_CH5 64 // Y Direction
-#define ANALYZER_CH6 58 // xsig
-#define ANALYZER_CH7 57 // ysig
-
-#ifdef ANALYZER
-#define ANALYZER_ON(a) {WRITE(a,HIGH);}
-#define ANALYZER_OFF(a) {WRITE(a,LOW);}
-#else
-#define ANALYZER_ON(a)
-#define ANALYZER_OFF(a)
-#endif
 
 #define X_AXIS 0
 #define Y_AXIS 1
