@@ -156,11 +156,6 @@ float Printer::maxRealJerk = 0;
 int debugWaitLoop = 0;
 #endif
 
-#if FEATURE_Z_PROBE
-fast8_t Printer::wizardStackPos;
-wizardVar Printer::wizardStack[WIZARD_STACK_SIZE];
-#endif
-
 void Printer::setDebugLevel(uint8_t newLevel) {
   if(newLevel != debugLevel) {
     debugLevel = newLevel;

@@ -42,29 +42,9 @@
 #ifndef PRINTER_H_INCLUDED
 #define PRINTER_H_INCLUDED
 
-
 union floatLong {
   float f;
   uint32_t l;
-};
-
-union wizardVar {
-  float f;
-  int32_t l;
-  uint32_t ul;
-  int16_t i;
-  uint16_t ui;
-  int8_t c;
-  uint8_t uc;
-
-  wizardVar(): i(0) {}
-  wizardVar(float _f): f(_f) {}
-  wizardVar(int32_t _f): l(_f) {}
-  wizardVar(uint32_t _f): ul(_f) {}
-  wizardVar(int16_t _f): i(_f) {}
-  wizardVar(uint16_t _f): ui(_f) {}
-  wizardVar(int8_t _f): c(_f) {}
-  wizardVar(uint8_t _f): uc(_f) {}
 };
 
 #define PRINTER_FLAG0_STEPPER_DISABLED      1
@@ -321,11 +301,6 @@ public:
   static int maxLayer; // -1 = unknown
   static char printName[21]; // max. 20 chars + 0
   static float progress;
-
-#if FEATURE_Z_PROBE
-  static fast8_t wizardStackPos;
-  static wizardVar wizardStack[WIZARD_STACK_SIZE];
-#endif
 
   static void handleInterruptEvent();
 
@@ -823,18 +798,6 @@ public:
   static void MemoryPosition();
   static void GoToMemoryPosition(bool x, bool y, bool z, bool e, float feed);
   static void zBabystep();
-
-#if FEATURE_Z_PROBE
-  static INLINE void resetWizardStack() {
-    wizardStackPos = 0;
-  }
-  static INLINE void pushWizardVar(wizardVar v) {
-    wizardStack[wizardStackPos++] = v;
-  }
-  static INLINE wizardVar popWizardVar() {
-    return wizardStack[--wizardStackPos];
-  }
-#endif
 
   //static void showConfiguration();
 
