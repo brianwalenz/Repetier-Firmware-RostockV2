@@ -2,7 +2,7 @@
 
 void
 UIDisplay::okAction_selectFile(uint8_t filePos) {
-  char    filename[LONG_FILENAME_LENGTH + 2];   //  Needs one extra byte for an appended '/', and nul terminator.
+  char    filename[MAX_FILENAME_LEN + 1 + 1];   //  Needs one extra byte for an appended '/', and nul terminator.
 
   //  Grab the name of the file at postion filePos.
 

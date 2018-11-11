@@ -25,8 +25,7 @@
 #include "Commands.h"
 #include "Printer.h"
 
-char tempLongFilename[LONG_FILENAME_LENGTH + 1];
-char fullName[LONG_FILENAME_LENGTH * SD_MAX_FOLDER_DEPTH + SD_MAX_FOLDER_DEPTH + 1];
+
 
 SDCardGCodeSource sdSource;
 SDCard            sd;
@@ -34,11 +33,16 @@ SDCard            sd;
 
 
 SDCard::SDCard() {
-    _sdActive = false;
-    _sdMode   = SDMODE_IDLE;
+  _sdActive = false;
+  _sdMode   = SDMODE_IDLE;
 
-    filesize = 0;
-    sdpos = 0;
+  _cwd[0] = '/';
+  _cwd[1] = 0;
+
+  _nFilesOnCard = 0;
+
+  filesize = 0;
+  sdpos = 0;
 }
 
 
@@ -160,8 +164,8 @@ SDCard::unmount() {
   Printer::setMenuMode(MODE_PAUSED,       false);
   Printer::setMenuMode(MODE_PRINTING,     false);
 
-  uid.cwd[0] = '/';
-  uid.cwd[1] = 0;
+  _cwd[0] = '/';
+  _cwd[1] = 0;
 }
 
 

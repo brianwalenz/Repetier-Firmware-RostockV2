@@ -314,11 +314,6 @@ UIDisplay::initialize() {
   encoderStartScreen = 0;
   statusMsg[0] = 0;
 
-  cwd[0] = '/';
-  cwd[1] = 0;
-
-  nFilesOnCard = 0;
-
 
 
   //

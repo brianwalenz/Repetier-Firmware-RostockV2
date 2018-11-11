@@ -242,10 +242,6 @@
 
 
 
-#define MAX_VFAT_ENTRIES (2)
-/** Total size of the buffer used to store the long filenames */
-#define LONG_FILENAME_LENGTH (13*MAX_VFAT_ENTRIES+1)
-#define SD_MAX_FOLDER_DEPTH 2
 
 
 

@@ -128,7 +128,8 @@ bool FatFile::getName(char* name, size_t size) {
     DBG_FAIL_MACRO;
     goto fail;
   }
-  if (!isLFN() || m_lfnOrd > MAX_VFAT_ENTRIES) {
+#warning Potential overflow of filename.
+  if (!isLFN() /* || m_lfnOrd > MAX_VFAT_ENTRIES */) {    //  Directories do this
     return getSFN(name);
   }
   if (!dirFile.openCluster(this)) {

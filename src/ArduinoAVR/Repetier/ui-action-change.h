@@ -34,7 +34,7 @@ const long baudrates[] PROGMEM = {9600, 14400, 19200, 28800, 38400, 56000,
 bool
 UIDisplay::doEncoderChange_file(int16_t encoderChange) {
 
-  if ((encoderChange > 0) && (_menuPos < nFilesOnCard + 1))
+  if ((encoderChange > 0) && (_menuPos < sd._nFilesOnCard + 1))
     _menuPos++;
 
   if ((encoderChange < 0) && (_menuPos > 0))

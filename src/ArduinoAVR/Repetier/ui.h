@@ -305,9 +305,6 @@ public:
   uint8_t       encoderStartScreen;  //  timer on aborting a menu
 
   char          statusMsg[21];
-
-  char    cwd[SD_MAX_FOLDER_DEPTH * LONG_FILENAME_LENGTH + 2];
-  uint16_t nFilesOnCard;
 };
 
 

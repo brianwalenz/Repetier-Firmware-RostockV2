@@ -8,7 +8,9 @@
 #define SDMODE_STOPPED    2
 #define SDMODE_FAILED   255
 
-#define SHORT_FILENAME_LENGTH 14
+#define MAX_FILENAME_LEN     48  //  could overflow in src/SdFat/FatLib/FatFileLFN.cpp
+#define MAX_CWD_LEN         128
+
 
 #include "Repetier.h"
 #include "HAL.h"
@@ -47,7 +49,7 @@ public:
 
   //  Used in SDCardGCodeSouce::isOpen()
   bool   isOpen(void)       {  return((_sdMode != SDMODE_IDLE) &&
-                                    (_sdMode != SDMODE_FAILED));  };
+                                      (_sdMode != SDMODE_FAILED));  };
   bool   isPrinting(void)   {  return(_sdMode == SDMODE_PRINTING);  };
   bool   isFinished(void)   {  return(sdpos == filesize);    };
 
@@ -59,6 +61,11 @@ private:
   uint8_t     _sdMode;  // 1 if we are printing from sd card, 2 = stop accepting new commands
 
 public:
+  char        _cwd[MAX_CWD_LEN + 1];
+
+  uint16_t    _nFilesOnCard;
+
+public:
   SdFile      file;
 
 private:
@@ -67,10 +74,5 @@ private:
 };
 
 extern SDCard sd;
-
-extern char tempLongFilename[LONG_FILENAME_LENGTH+1];
-extern char fullName[LONG_FILENAME_LENGTH*SD_MAX_FOLDER_DEPTH+SD_MAX_FOLDER_DEPTH+1];
-
-
 
 #endif  //  SDCARD_H

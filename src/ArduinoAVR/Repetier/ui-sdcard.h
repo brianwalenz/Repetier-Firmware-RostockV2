@@ -31,13 +31,14 @@ extern UIDisplay uid;
 
 void
 UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
+  char     cardname[MAX_FILENAME_LEN + 1];
   dir_t   *p    = NULL;
   FatFile *root = sd.getvwd();
   FatFile  file;
 
   root->rewind();
 
-  nFilesOnCard = 0;
+  sd._nFilesOnCard = 0;
 
 #define SHOW_SCANSDCARD
 
@@ -51,27 +52,27 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
 
     bool isDir = file.isDir();
 
-    file.getName(tempLongFilename, LONG_FILENAME_LENGTH);
+    file.getName(cardname, MAX_FILENAME_LEN);
     file.close();
 
 #ifdef SHOW_SCANSDCARD
     Com::print("scanSDcard -- '");
-    Com::print(tempLongFilename);
+    Com::print(cardname);
     Com::print("'\n");
 #endif
 
     //  Skip dot files.
 
-    if ((tempLongFilename[0] == '.') && (tempLongFilename[1] != '.'))
+    if ((cardname[0] == '.') && (cardname[1] != '.'))
       continue;
 
     //  If this is the file we want to get the name for, copy the name.
 
-    if ((filename != NULL) && (nFilesOnCard == filePos)) {
+    if ((filename != NULL) && (sd._nFilesOnCard == filePos)) {
       uint16_t  pos = 0;
 
-      for (pos=0; tempLongFilename[pos] != 0; pos++)
-        filename[pos] = tempLongFilename[pos];
+      for (pos=0; cardname[pos] != 0; pos++)
+        filename[pos] = cardname[pos];
 
       if (isDir)
         filename[pos++] = '/';
@@ -79,12 +80,12 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
       filename[pos] = 0;
     }
 
-    nFilesOnCard++;
+    sd._nFilesOnCard++;
   }
 
 #ifdef SHOW_SCANSDCARD
   Com::print("scanSDcard ");
-  Com::print(nFilesOnCard);
+  Com::print(sd._nFilesOnCard);
   Com::print("\n");
 #endif
 }
@@ -106,7 +107,7 @@ bool UIDisplay::isDirname(char *name) {
 
 
 void UIDisplay::goDir(char *name) {
-  char *p = cwd;
+  char *p = sd._cwd;
 
   //  Skip to the end of the string.
 
@@ -116,7 +117,7 @@ void UIDisplay::goDir(char *name) {
   //  If no name supplied, move up one level.
 
   if (name == NULL) {
-    if ((cwd[0] == '/') && (cwd[1] == 0))
+    if ((sd._cwd[0] == '/') && (sd._cwd[1] == 0))
       return;
 
     p--;  //  Move back off the NUL, now on a /
@@ -139,7 +140,7 @@ void UIDisplay::goDir(char *name) {
 
   //  Now set the directory.
 
-  sd.chdir(cwd);
+  sd.chdir(sd._cwd);
 
   scanSDcard();
 }
@@ -150,10 +151,11 @@ void UIDisplay::goDir(char *name) {
 /** write file names at current position to lcd */
 uint8_t
 UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
+  char       cardname[MAX_FILENAME_LEN + 1];
   FatFile   *root;
   FatFile    file;
 
-  //if (nFilesOnCard == 0)
+  //if (sd._nFilesOnCard == 0)
   //  scanSDcard();  //  necessary?  should be done when inserted.
 
   //  The menu shows:
@@ -178,7 +180,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   Com::print("\n");
 #endif
 
-  sd.chdir(cwd);
+  sd.chdir(sd._cwd);
 
   root = sd.getvwd();
   root->rewind();
@@ -227,7 +229,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
   //  Iterate through files until we fill the list.
 
-  while ((enti < nFilesOnCard) &&
+  while ((enti < sd._nFilesOnCard) &&
          (rowi < UI_ROWS) &&
          (file.openNext(root, O_READ))) {
 
@@ -235,20 +237,20 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
     bool isDir = file.isDir();
 
-    file.getName(tempLongFilename, LONG_FILENAME_LENGTH);
+    file.getName(cardname, MAX_FILENAME_LEN);
     file.close();
 
 #ifdef SHOW_SDREFRESH
     Com::print("sdrefresh -- enti=");
     Com::print(enti);
     Com::print(" '");
-    Com::print(tempLongFilename);
+    Com::print(cardname);
     Com::print("'\n");
 #endif
 
     //  Skip junk.
 
-    if (tempLongFilename[0] == '.')
+    if (cardname[0] == '.')
       continue; 
 
     //  Skip files that aren't displayed.  Can't skip them until we skip the garbage files above.
@@ -279,7 +281,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
     uint8_t   length = 0;
 
-    while ((length < MAX_COLS - col - isDir) && (tempLongFilename[length] != 0))
+    while ((length < MAX_COLS - col - isDir) && (cardname[length] != 0))
       length++;
 
 #ifdef SHOW_SDREFRESH
@@ -289,7 +291,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 #endif
 
     for (uint8_t pos=0; ((col < MAX_COLS) && (pos < length)); pos++, col++)
-      cache[rowi][col] = tempLongFilename[pos];
+      cache[rowi][col] = cardname[pos];
 
     if (isDir)
       cache[rowi][col++] = ']';
