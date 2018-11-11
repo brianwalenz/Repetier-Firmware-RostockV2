@@ -22,6 +22,11 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "Commands.h"
+#include "motion.h"
+#include "Printer.h"
+#include "Extruder.h"
 
 // ================ Sanity checks ================
 
@@ -1224,7 +1229,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
   //if (softEndstop && Printer::destinationSteps[Z_AXIS] < 0) Printer::destinationSteps[Z_AXIS] = 0; // now constrained at entry level including cylinder test
   int32_t difference[E_AXIS_ARRAY];
   float axisDistanceMM[VIRTUAL_AXIS_ARRAY]; // Real cartesian axis movement in mm. Virtual axis in 4;
-  secondspeed_t secondSpeed = Printer::fanSpeed;
+  uint8_t secondSpeed = Printer::fanSpeed;
   for(fast8_t axis = 0; axis < E_AXIS_ARRAY; axis++) {
     difference[axis] = Printer::destinationSteps[axis] - Printer::currentPositionSteps[axis];
     if(axis == E_AXIS) {

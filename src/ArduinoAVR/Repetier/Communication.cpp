@@ -20,6 +20,8 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "Communication.h"
 
 
 void
@@ -70,7 +72,7 @@ Com::printF(FSTRINGPARAM(text), uint32_t value) {
 }
 
 void
-Com::printF(FSTRINGPARAM(text), float value, uint8_t digits=2) {
+Com::printF(FSTRINGPARAM(text), float value, uint8_t digits) {
   Com::printF(text);
   Com::printFloat(value, digits);
 }

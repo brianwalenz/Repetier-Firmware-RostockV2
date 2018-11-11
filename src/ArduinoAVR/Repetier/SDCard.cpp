@@ -20,6 +20,10 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "gcode.h"
+#include "Commands.h"
+#include "Printer.h"
 
 char tempLongFilename[LONG_FILENAME_LENGTH + 1];
 char fullName[LONG_FILENAME_LENGTH * SD_MAX_FOLDER_DEPTH + SD_MAX_FOLDER_DEPTH + 1];

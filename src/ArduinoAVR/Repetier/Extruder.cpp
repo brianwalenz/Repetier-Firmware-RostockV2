@@ -20,6 +20,13 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "gcode.h"
+#include "Commands.h"
+#include "Eeprom.h"
+#include "motion.h"
+#include "Printer.h"
+#include "Extruder.h"
 
 uint8_t manageMonitor = 0; ///< Temp. we want to monitor with our host. 1+NUM_EXTRUDER is heated bed
 unsigned int counterPeriodical = 0;

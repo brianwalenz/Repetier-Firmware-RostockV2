@@ -22,6 +22,13 @@
 #include <ctype.h>
 
 #include "Repetier.h"
+#include "HAL.h"
+
+#include "Communication.h"
+#include "Commands.h"
+
+#include "motion.h"
+#include "Extruder.h"
 
 #include "uimenu.h"       //  Menu definitions.
 

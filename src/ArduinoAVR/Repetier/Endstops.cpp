@@ -22,6 +22,7 @@
 */
 
 #include "Repetier.h"
+#include "motion.h"
 
 flag8_t Endstops::lastState = 0;
 flag8_t Endstops::lastRead = 0;

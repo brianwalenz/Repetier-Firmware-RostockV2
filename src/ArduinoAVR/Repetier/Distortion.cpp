@@ -22,6 +22,7 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
 
 #if DISTORTION_CORRECTION
 

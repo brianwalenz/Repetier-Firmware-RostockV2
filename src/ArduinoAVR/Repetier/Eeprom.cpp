@@ -22,7 +22,13 @@
 */
 
 #include "Repetier.h"
-
+#include "HAL.h"
+#include "gcode.h"
+#include "motion.h"
+#include "Commands.h"
+#include "Communication.h"
+#include "Eeprom.h"
+#include "Extruder.h"
 
 void EEPROM::update(GCode *com)
 {
@@ -452,7 +458,7 @@ void EEPROM::updatePrinterUsage()
   Printer::flag2 |= PRINTER_FLAG2_RESET_FILAMENT_USAGE;
   Printer::msecondsPrinting = HAL::timeInMilliseconds();
   updateChecksum();
-  Commands::reportPrinterUsage();
+  //Commands::reportPrinterUsage();
 }
 
 /** \brief Writes all eeprom settings to serial console.

@@ -24,6 +24,8 @@
 #ifndef COMMANDS_H_INCLUDED
 #define COMMANDS_H_INCLUDED
 
+#include "gcode.h"
+
 class Commands
 {
 public:
@@ -41,7 +43,6 @@ public:
   static void setFan2Speed(int speed); /// Set fan speed 0..255
   static void changeFeedrateMultiply(int factorInPercent);
   static void changeFlowrateMultiply(int factorInPercent);
-  static void reportPrinterUsage();
   static void emergencyStop();
   static void checkFreeMemory();
   static void writeLowestFreeRAM();

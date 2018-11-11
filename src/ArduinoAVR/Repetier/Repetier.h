@@ -25,6 +25,11 @@
 #include <math.h>
 #include <stdint.h>
 
+#include <avr/pgmspace.h>
+#include <avr/io.h>
+
+#undef min
+#undef max
 
 /** Uncomment, to see detailed data for every move. Only for debugging purposes! */
 //#define DEBUG_QUEUE_MOVE
@@ -131,8 +136,6 @@
 
 #include "Configuration.h"
 
-typedef uint8_t secondspeed_t;
-
 #ifndef MOVE_X_WHEN_HOMED
 #define MOVE_X_WHEN_HOMED 0
 #endif
@@ -238,23 +241,14 @@ typedef uint8_t secondspeed_t;
 #define ANALOG_INPUT_CHANNELS {EXT0_TEMPSENSOR_PIN, HEATED_BED_SENSOR_PIN}
 
 
-//#include "HAL.h"
 
 #define MAX_VFAT_ENTRIES (2)
 /** Total size of the buffer used to store the long filenames */
 #define LONG_FILENAME_LENGTH (13*MAX_VFAT_ENTRIES+1)
 #define SD_MAX_FOLDER_DEPTH 2
 
-#include "ui.h"
-#include "Communication.h"
-
-#include "src/SdFat/SdFat.h"
-
-#include "gcode.h"
 
 
-#undef min
-#undef max
 
 class RMath
 {
@@ -506,9 +500,6 @@ inline RVector3 operator*(float lhs,const RVector3 &rhs) {
 #endif
 
 extern const uint8_t osAnalogInputChannels[] PROGMEM;
-//extern uint8_t osAnalogInputCounter[ANALOG_INPUTS];
-//extern uint16_t osAnalogInputBuildup[ANALOG_INPUTS];
-//extern uint8_t osAnalogInputPos; // Current sampling position
 
 #if ANALOG_INPUTS > 0
 extern volatile uint16_t osAnalogInputValues[ANALOG_INPUTS];
@@ -533,8 +524,6 @@ extern float maxadvspeed;
 #endif
 
 
-#include "Extruder.h"
-
 void manage_inactivity(uint8_t debug);
 
 extern void finishNextSegment();
@@ -549,59 +538,33 @@ extern float calcZOffset(long factors[], long pointX, long pointY);
 extern void linear_move(long steps_remaining[]);
 
 
-extern millis_t previousMillisCmd;
-extern millis_t maxInactiveTime;
-extern millis_t stepperInactiveTime;
-
 extern void setupTimerInterrupt();
 extern void motorCurrentControlInit();
 extern void microstepInit();
 
-#include "Printer.h"
-#include "motion.h"
 extern long baudrate;
 
-#include "HAL.h"
 
 
 extern unsigned int counterPeriodical;
 extern volatile uint8_t executePeriodical;
 extern uint8_t counter500ms;
 extern void writeMonitor();
+
 #if FEATURE_FAN_CONTROL
 extern uint8_t fanKickstart;
 #endif
+
 #if FEATURE_FAN2_CONTROL
 extern uint8_t fan2Kickstart;
 #endif
 
-extern char tempLongFilename[LONG_FILENAME_LENGTH+1];
-extern char fullName[LONG_FILENAME_LENGTH*SD_MAX_FOLDER_DEPTH+SD_MAX_FOLDER_DEPTH+1];
-
-#define SHORT_FILENAME_LENGTH 14
-#include "src/SdFat/SdFat.h"
-#include "SDCard.h"
-
 extern volatile int waitRelax; // Delay filament relax at the end of print, could be a simple timeout
-extern void updateStepsParameter(PrintLine *p/*,uint8_t caller*/);
 
 #ifdef DEBUG_PRINT
 extern int debugWaitLoop;
 #endif
 
 #define NUM_AXIS 4
-
-#define STR(s) #s
-#define XSTR(s) STR(s)
-
-#include "Commands.h"
-#include "Eeprom.h"
-
-
-#ifdef FAST_INTEGER_SQRT
-#define SQRT(x) ( HAL::integerSqrt(x) )
-#else
-#define SQRT(x) sqrt(x)
-#endif
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef EXTRUDER_H_INCLUDED
 #define EXTRUDER_H_INCLUDED
 
+#include "HAL.h"
+
 #define CELSIUS_EXTRA_BITS 3
 #define VIRTUAL_EXTRUDER 16 // don't change this to more then 16 without modifying the eeprom positions
 

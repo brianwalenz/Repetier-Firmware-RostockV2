@@ -42,6 +42,9 @@
 #ifndef PRINTER_H_INCLUDED
 #define PRINTER_H_INCLUDED
 
+#include "ui.h"   //  For MODE_*, at least.
+#include "Communication.h"
+
 union floatLong {
   float f;
   uint32_t l;

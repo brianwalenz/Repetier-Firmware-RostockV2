@@ -1,4 +1,7 @@
 #include "Repetier.h"
+#include "Printer.h"
+#include "Commands.h"
+
 #include <SPI.h>
 
 

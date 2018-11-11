@@ -8,6 +8,12 @@
 #define SDMODE_STOPPED    2
 #define SDMODE_FAILED   255
 
+#define SHORT_FILENAME_LENGTH 14
+
+#include "Repetier.h"
+#include "HAL.h"
+#include "Communication.h"
+#include "src/SdFat/SdFat.h"
 
 class SDCard {
 public:
@@ -61,6 +67,10 @@ private:
 };
 
 extern SDCard sd;
+
+extern char tempLongFilename[LONG_FILENAME_LENGTH+1];
+extern char fullName[LONG_FILENAME_LENGTH*SD_MAX_FOLDER_DEPTH+SD_MAX_FOLDER_DEPTH+1];
+
 
 
 #endif  //  SDCARD_H

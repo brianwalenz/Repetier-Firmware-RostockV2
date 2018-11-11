@@ -20,6 +20,14 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "Communication.h"
+#include "gcode.h"
+#include "Commands.h"
+#include "Eeprom.h"
+#include "motion.h"
+#include "Printer.h"
+#include "Extruder.h"
 
 const int8_t sensitive_pins[] PROGMEM = SENSITIVE_PINS; // Sensitive pin list for M42
 int Commands::lowestRAMValue = MAX_RAM;
@@ -237,25 +245,6 @@ void Commands::setFan2Speed(int speed) {
 #endif
 }
 
-void Commands::reportPrinterUsage() {
-  float dist = Printer::filamentPrinted * 0.001 + HAL::eprGetFloat(EPR_PRINTING_DISTANCE);
-  Com::printF(PSTR("Printed filament:"), dist, 2);
-  Com::printF(PSTR("m "));
-  bool alloff = true;
-  for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
-    if(tempController[i]->targetTemperatureC > 15) alloff = false;
-  int32_t seconds = (alloff ? 0 : (HAL::timeInMilliseconds() - Printer::msecondsPrinting) / 1000) + HAL::eprGetInt32(EPR_PRINTING_TIME);
-  int32_t tmp = seconds / 86400;
-  seconds -= tmp * 86400;
-  Com::printF(PSTR("Printing time:"), tmp);
-  tmp = seconds / 3600;
-  Com::printF(PSTR(" days "), tmp);
-  seconds -= tmp * 3600;
-  tmp = seconds / 60;
-  Com::printF(PSTR(" hours "), tmp);
-  Com::printF(PSTR(" min"));
-  Com::printF(PSTR("\n"));
-}
 
 
 
@@ -1086,7 +1075,7 @@ void Commands::processMCode(GCode *com) {
 #endif
       Com::printF(PSTR("CAP: PAUSESTOP:1\n"));
       Com::printF(PSTR("CAP: PREHEAT:1\n"));
-      reportPrinterUsage();
+      //reportPrinterUsage();
       break;
     case 114: // M114
       printCurrentPosition();

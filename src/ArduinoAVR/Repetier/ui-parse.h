@@ -22,6 +22,7 @@
 #include <ctype.h>
 
 #include "Repetier.h"
+#include "Eeprom.h"
 
 extern UIDisplay uid;
 
@@ -309,6 +310,26 @@ UIDisplay::parse(const char *txt, bool ram) {
     //
     //  Would be nice if there was a report of the time of the current print,
     //  not just historical times.
+    //
+    //    void Commands::reportPrinterUsage() {
+    //      float dist = Printer::filamentPrinted * 0.001 + HAL::eprGetFloat(EPR_PRINTING_DISTANCE);
+    //      Com::printF(PSTR("Printed filament:"), dist, 2);
+    //      Com::printF(PSTR("m "));
+    //      bool alloff = true;
+    //      for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
+    //        if(tempController[i]->targetTemperatureC > 15) alloff = false;
+    //      int32_t seconds = (alloff ? 0 : (HAL::timeInMilliseconds() - Printer::msecondsPrinting) / 1000) + HAL::eprGetInt32(EPR_PRINTING_TIME);
+    //      int32_t tmp = seconds / 86400;
+    //      seconds -= tmp * 86400;
+    //      Com::printF(PSTR("Printing time:"), tmp);
+    //      tmp = seconds / 3600;
+    //      Com::printF(PSTR(" days "), tmp);
+    //      seconds -= tmp * 3600;
+    //      tmp = seconds / 60;
+    //      Com::printF(PSTR(" hours "), tmp);
+    //      Com::printF(PSTR(" min"));
+    //      Com::printF(PSTR("\n"));
+    //    }
 
     //  Total time printing:
     //    x days xx:xx

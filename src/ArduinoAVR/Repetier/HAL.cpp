@@ -1,4 +1,8 @@
 #include "Repetier.h"
+#include "HAL.h"
+
+#include "motion.h"
+
 #include <compat/twi.h>
 
 #if ANALOG_INPUTS > 0

@@ -19,6 +19,9 @@
 #ifndef _ui_h
 #define _ui_h
 
+#include "HAL.h"
+
+
 //  The display can show 4 rows of 20 columns each.
 #define UI_COLS  20
 #define UI_ROWS   4

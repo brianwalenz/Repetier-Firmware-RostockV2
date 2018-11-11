@@ -22,6 +22,11 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "gcode.h"
+#include "Commands.h"
+#include "motion.h"
+#include "Printer.h"
 
 #ifndef FEATURE_CHECKSUM_FORCED
 #define FEATURE_CHECKSUM_FORCED false

@@ -82,6 +82,10 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "Commands.h"
+#include "motion.h"
+#include "Printer.h"
 
 #ifndef BED_LEVELING_METHOD
 #define BED_LEVELING_METHOD 0

@@ -22,6 +22,7 @@
 #include <ctype.h>
 
 #include "Repetier.h"
+#include "SDCard.h"
 
 
 extern UIDisplay uid;

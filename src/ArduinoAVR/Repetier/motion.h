@@ -24,6 +24,9 @@
 #ifndef MOTION_H_INCLUDED
 #define MOTION_H_INCLUDED
 
+#include "Printer.h"
+#include "Extruder.h"
+
 /** Marks the first step of a new move */
 #define FLAG_WARMUP 1
 #define FLAG_NOMINAL 2
@@ -145,7 +148,7 @@ public:
   static ufast8_t linesWritePos; // Position where we write the next cached line move
   ufast8_t joinFlags;
   volatile ufast8_t flags;
-  secondspeed_t secondSpeed; // for laser intensity or fan control
+  uint8_t secondSpeed; // for laser intensity or fan control
 private:
   fast8_t primaryAxis;
   ufast8_t dir;                       ///< Direction of movement. 1 = X+, 2 = Y+, 4= Z+, values can be combined.
@@ -511,6 +514,10 @@ public:
 #endif
 };
 
+
+extern millis_t previousMillisCmd;
+extern millis_t maxInactiveTime;
+extern millis_t stepperInactiveTime;
 
 
 #endif // MOTION_H_INCLUDED

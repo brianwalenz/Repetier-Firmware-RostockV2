@@ -34,6 +34,7 @@
 #include <avr/io.h>
 
 
+
 #define INLINE __attribute__((always_inline))
 
 #include <avr/io.h>
@@ -66,6 +67,8 @@
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
+#undef min
+#undef max
 #else
 #include "WProgram.h"
 #define COMPAT_PRE1
@@ -131,7 +134,10 @@ typedef uint8_t flag8_t;
 typedef int8_t fast8_t;
 typedef uint8_t ufast8_t;
 
-#define FAST_INTEGER_SQRT
+
+#define SQRT(x) ( HAL::integerSqrt(x) )
+//#define SQRT(x) sqrt(x)
+
 
 #ifndef EXTERNALSERIAL
 

@@ -17,6 +17,13 @@
 */
 
 #include "Repetier.h"
+#include "HAL.h"
+#include "gcode.h"
+#include "Commands.h"
+#include "Eeprom.h"
+#include "motion.h"
+#include "Printer.h"
+#include "Extruder.h"
 
 #if USE_ADVANCE
 ufast8_t Printer::maxExtruderSpeed;            ///< Timer delay for end extruder speed

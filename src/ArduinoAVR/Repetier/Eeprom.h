@@ -19,6 +19,8 @@
 #ifndef _EEPROM_H
 #define _EEPROM_H
 
+#include "Printer.h"
+
 // Id to distinguish version changes
 #define EEPROM_PROTOCOL_VERSION 19
 
