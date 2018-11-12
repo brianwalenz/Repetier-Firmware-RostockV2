@@ -24,6 +24,8 @@
 #include "Repetier.h"
 #include "HAL.h"
 
+#include "rmath.h"
+
 #if DISTORTION_CORRECTION
 
 Distortion Printer::distortion;

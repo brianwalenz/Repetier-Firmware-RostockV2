@@ -28,6 +28,8 @@
 #include "motion.h"
 #include "Printer.h"
 
+#include "rmath.h"
+
 #ifndef FEATURE_CHECKSUM_FORCED
 #define FEATURE_CHECKSUM_FORCED false
 #endif

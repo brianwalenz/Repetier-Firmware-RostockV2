@@ -87,6 +87,8 @@
 #include "motion.h"
 #include "Printer.h"
 
+#include "rmath.h"
+
 #ifndef BED_LEVELING_METHOD
 #define BED_LEVELING_METHOD 0
 #endif

@@ -25,6 +25,8 @@
 #include "Printer.h"
 #include "Extruder.h"
 
+#include "rmath.h"
+
 #if USE_ADVANCE
 ufast8_t Printer::maxExtruderSpeed;            ///< Timer delay for end extruder speed
 volatile int Printer::extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
@@ -271,17 +273,27 @@ void Printer::updateDerivedParameter() {
   deltaDiagonalStepsSquaredA.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionA() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
   deltaDiagonalStepsSquaredB.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionB() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
   deltaDiagonalStepsSquaredC.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionC() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
+
+  Com::printF(PSTR("LARGE_MACHINE?\n"));
+  Com::printF(PSTR("deltaDiagonalStepsSquaredA.l "), deltaDiagonalStepsSquaredA.l);
+  Com::printF(PSTR("axisStepsPerMM[Z_AXIS]"), axisStepsPerMM[Z_AXIS]);
+  Com::printF(PSTR("radius0"), radius0);
+  Com::printF(PSTR("2 * radius0 * axisStepsPerMM[Z_AXIS]"), 2 * radius0 * axisStepsPerMM[Z_AXIS]);
+
   if(deltaDiagonalStepsSquaredA.l > 65534 || 2 * radius0 * axisStepsPerMM[Z_AXIS] > 65534) {
+    Com::printF(PSTR("LARGE_MACHINE!\n"));
     setLargeMachine(true);
     deltaDiagonalStepsSquaredA.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredA.l));
     deltaDiagonalStepsSquaredB.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredB.l));
     deltaDiagonalStepsSquaredC.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredC.l));
   } else {
+    Com::printF(PSTR("LARGE_MACHINE - nope, a small machine!\n"));
     setLargeMachine(false);
     deltaDiagonalStepsSquaredA.l = RMath::sqr(deltaDiagonalStepsSquaredA.l);
     deltaDiagonalStepsSquaredB.l = RMath::sqr(deltaDiagonalStepsSquaredB.l);
     deltaDiagonalStepsSquaredC.l = RMath::sqr(deltaDiagonalStepsSquaredC.l);
   }
+
   deltaMaxRadiusSquared = RMath::sqr(EEPROM::deltaMaxRadius());
   long cart[Z_AXIS_ARRAY], delta[TOWER_ARRAY];
   cart[X_AXIS] = cart[Y_AXIS] = 0;

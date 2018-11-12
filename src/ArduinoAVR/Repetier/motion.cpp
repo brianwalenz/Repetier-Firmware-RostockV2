@@ -28,6 +28,8 @@
 #include "Printer.h"
 #include "Extruder.h"
 
+#include "rmath.h"
+
 // ================ Sanity checks ================
 
 
@@ -671,7 +673,7 @@ inline float PrintLine::safeSpeed(fast8_t drivingAxis) {
   float safe(xyMin);
   if(isEMove()) {
     if(isXYZMove())
-      safe = RMath::min(safe, 0.5 * Extruder::current->maxStartFeedrate * fullSpeed / fabs(speedE));
+      safe = RMath::min(safe, (float)(0.5 * Extruder::current->maxStartFeedrate * fullSpeed / fabs(speedE)));
     else
       safe = 0.5 * Extruder::current->maxStartFeedrate; // This is a retraction move
   }
@@ -751,6 +753,14 @@ void PrintLine::waitForXFreeLines(uint8_t b, bool allowMoves) {
    @param deltaPosSteps Result array with tower coordinates.
    @returns 1 if Cartesian coordinates have a valid delta tower position 0 if not.
 */
+
+inline
+unsigned long
+absLong(long a) {
+  return a >= 0 ? a : -a;
+}
+
+
 uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t deltaPosSteps[]) {
   int32_t zSteps = cartesianPosSteps[Z_AXIS];
 
@@ -807,7 +817,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
     const uint32_t LIMIT = 65534; // Largest squarable int without overflow;
 
     // A TOWER height
-    uint32_t temp = RMath::absLong(Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS]);
+    uint32_t temp = absLong(Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS]);
     uint32_t opt = Printer::deltaDiagonalStepsSquaredA.l;
 
     if (temp > LIMIT) {
@@ -824,7 +834,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
 
     opt -= temp;
 
-    temp = RMath::absLong(Printer::deltaAPosXSteps - cartesianPosSteps[X_AXIS]);
+    temp = absLong(Printer::deltaAPosXSteps - cartesianPosSteps[X_AXIS]);
 
     if (temp > LIMIT) {
       Com::printF(PSTR("Apos x steps\n"));
@@ -846,7 +856,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
     }
 
     // B TOWER height
-    temp = RMath::absLong(Printer::deltaBPosYSteps - cartesianPosSteps[Y_AXIS]);
+    temp = absLong(Printer::deltaBPosYSteps - cartesianPosSteps[Y_AXIS]);
     opt = Printer::deltaDiagonalStepsSquaredB.l;
 
     if (temp > LIMIT) {
@@ -863,7 +873,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
 
     opt -= temp;
 
-    temp = RMath::absLong(Printer::deltaBPosXSteps - cartesianPosSteps[X_AXIS]);
+    temp = absLong(Printer::deltaBPosXSteps - cartesianPosSteps[X_AXIS]);
 
     if (temp > LIMIT ) {
       Com::printF(PSTR("Bpos x steps\n"));
@@ -884,7 +894,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
     }
 
     // C TOWER height
-    temp = RMath::absLong(Printer::deltaCPosYSteps - cartesianPosSteps[Y_AXIS]);
+    temp = absLong(Printer::deltaCPosYSteps - cartesianPosSteps[Y_AXIS]);
     opt = Printer::deltaDiagonalStepsSquaredC.l ;
 
     if (temp > LIMIT) {
@@ -901,7 +911,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
 
     opt -= temp;
 
-    temp = RMath::absLong(Printer::deltaCPosXSteps - cartesianPosSteps[X_AXIS]);
+    temp = absLong(Printer::deltaCPosXSteps - cartesianPosSteps[X_AXIS]);
 
     if (temp > LIMIT) {
       Com::printF(PSTR("Cpos x steps\n"));
