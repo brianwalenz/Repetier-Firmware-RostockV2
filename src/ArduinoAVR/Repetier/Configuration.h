@@ -987,9 +987,6 @@
 */
 #define KILL_METHOD 1
 
-/** Appends the line number after every ok send, to acknowledge the received command. Uncomment for plain ok ACK if your host has problems with this */
-#define ACK_WITH_LINENUMBER 1
-
 /** Communication errors can swallow part of the ok, which tells the host software to send
     the next command. Not receiving it will cause your printer to stop. Sending this string every
     second, if our queue is empty should prevent this. Comment it, if you don't want this feature. */

@@ -263,16 +263,17 @@ void GCode::checkAndPushCommand()
 	} else {
 		pushCommand();
 	}
+
 #ifdef DEBUG_COM_ERRORS
   if(hasM() && M == 667)
     return; // omit ok
 #endif
-#if ACK_WITH_LINENUMBER
+
+  //  Appends the line number after every ok send, to acknowledge the received command. Uncomment
+  //  for plain ok ACK if your host has problems with this
   Com::printF(PSTR("ok "), actLineNumber);
   Com::printF(PSTR("\n"));
-#else
-  Com::printF(PSTR("ok\n"));
-#endif
+
   GCodeSource::activeSource->wasLastCommandReceivedAsBinary = sendAsBinary;
 	keepAlive(NotBusy);
 	GCodeSource::activeSource->waitingForResend = -1; // everything is ok.

@@ -275,10 +275,14 @@ void Printer::updateDerivedParameter() {
   deltaDiagonalStepsSquaredC.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionC() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
 
   Com::printF(PSTR("LARGE_MACHINE?\n"));
-  Com::printF(PSTR("deltaDiagonalStepsSquaredA.l "), deltaDiagonalStepsSquaredA.l);
-  Com::printF(PSTR("axisStepsPerMM[Z_AXIS]"), axisStepsPerMM[Z_AXIS]);
-  Com::printF(PSTR("radius0"), radius0);
-  Com::printF(PSTR("2 * radius0 * axisStepsPerMM[Z_AXIS]"), 2 * radius0 * axisStepsPerMM[Z_AXIS]);
+  Com::printF(PSTR(" deltaDiagonalStepsSquaredA.l "), deltaDiagonalStepsSquaredA.l);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR(" axisStepsPerMM[Z_AXIS]"), axisStepsPerMM[Z_AXIS]);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR(" radius0"), radius0);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR(" 2 * radius0 * axisStepsPerMM[Z_AXIS]"), 2 * radius0 * axisStepsPerMM[Z_AXIS]);
+  Com::printF(PSTR("\n"));
 
   if(deltaDiagonalStepsSquaredA.l > 65534 || 2 * radius0 * axisStepsPerMM[Z_AXIS] > 65534) {
     Com::printF(PSTR("LARGE_MACHINE!\n"));
