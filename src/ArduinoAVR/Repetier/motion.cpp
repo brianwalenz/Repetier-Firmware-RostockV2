@@ -83,22 +83,6 @@ void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int
   if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0))
     e = 0; // should not be allowed for current temperature
 
-#if MOVE_X_WHEN_HOMED == 1 || MOVE_Y_WHEN_HOMED == 1 || MOVE_Z_WHEN_HOMED == 1
-  if(!Printer::isHoming() && !Printer::isNoDestinationCheck()) {
-#if MOVE_X_WHEN_HOMED
-    if(!Printer::isXHomed())
-      x = 0;
-#endif
-#if MOVE_Y_WHEN_HOMED
-    if(!Printer::isYHomed())
-      y = 0;
-#endif
-#if MOVE_Z_WHEN_HOMED
-    if(!Printer::isZHomed() && !Printer::isZProbingActive())
-      z = 0;
-#endif
-  }
-#endif //  MOVE_X_WHEN_HOMED == 1 || MOVE_Y_WHEN_HOMED == 1 || MOVE_Z_WHEN_HOMED == 1
   float savedFeedrate = Printer::feedrate;
   Printer::destinationSteps[X_AXIS] = Printer::currentPositionSteps[X_AXIS] + x;
   Printer::destinationSteps[Y_AXIS] = Printer::currentPositionSteps[Y_AXIS] + y;
@@ -127,22 +111,6 @@ void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int
     \param pathOptimize If false start and end speeds get fixed to minimum values.
 */
 void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool pathOptimize) {
-#if MOVE_X_WHEN_HOMED == 1 || MOVE_Y_WHEN_HOMED == 1 || MOVE_Z_WHEN_HOMED == 1
-  if(!Printer::isHoming() && !Printer::isNoDestinationCheck()) { // prevent movements when not homed
-#if MOVE_X_WHEN_HOMED
-    if(!Printer::isXHomed())
-      x = 0;
-#endif
-#if MOVE_Y_WHEN_HOMED
-    if(!Printer::isYHomed())
-      y = 0;
-#endif
-#if MOVE_Z_WHEN_HOMED
-    if(!Printer::isZHomed() && !Printer::isZProbingActive())
-      z = 0;
-#endif
-  }
-#endif // MOVE_X_WHEN_HOMED == 1 || MOVE_Y_WHEN_HOMED == 1 || MOVE_Z_WHEN_HOMED == 1
   Printer::lastCmdPos[X_AXIS] += x * Printer::invAxisStepsPerMM[X_AXIS];
   Printer::lastCmdPos[Y_AXIS] += y * Printer::invAxisStepsPerMM[Y_AXIS];
   Printer::lastCmdPos[Z_AXIS] += z * Printer::invAxisStepsPerMM[Z_AXIS];

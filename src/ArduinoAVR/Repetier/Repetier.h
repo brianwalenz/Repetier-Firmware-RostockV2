@@ -136,16 +136,6 @@
 
 #include "Configuration.h"
 
-#ifndef MOVE_X_WHEN_HOMED
-#define MOVE_X_WHEN_HOMED 0
-#endif
-#ifndef MOVE_Y_WHEN_HOMED
-#define MOVE_Y_WHEN_HOMED 0
-#endif
-#ifndef MOVE_Z_WHEN_HOMED
-#define MOVE_Z_WHEN_HOMED 0
-#endif
-
 #ifndef BOARD_FAN_SPEED
 #define BOARD_FAN_SPEED
 #endif

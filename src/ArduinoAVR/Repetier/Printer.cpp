@@ -517,22 +517,6 @@ uint8_t Printer::setDestinationStepsFromGCode(GCode *com) {
   register int32_t p;
   float x, y, z;
   bool posAllowed = true;
-#if MOVE_X_WHEN_HOMED == 1 || MOVE_Y_WHEN_HOMED == 1 || MOVE_Z_WHEN_HOMED == 1
-  if(!isNoDestinationCheck()) {
-#if MOVE_X_WHEN_HOMED
-    if(!isXHomed())
-      com->unsetX();
-#endif
-#if MOVE_Y_WHEN_HOMED
-    if(!isYHomed())
-      com->unsetY();
-#endif
-#if MOVE_Z_WHEN_HOMED
-    if(!isZHomed())
-      com->unsetZ();
-#endif
-  }
-#endif
 #if DISTORTION_CORRECTION == 0
   if(!com->hasNoXYZ()) {
 #endif
