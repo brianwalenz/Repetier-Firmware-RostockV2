@@ -170,7 +170,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   // _menuTop   Which entry is the first to be displayed?
   // _menuPos   Which entry is highlighted?
 
-#define SHOW_SDREFRESH
+#undef SHOW_SDREFRESH
 
 #ifdef SHOW_SDREFRESH
   Com::print("sdrefresh -- menuTop=");
