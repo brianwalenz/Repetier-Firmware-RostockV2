@@ -31,6 +31,24 @@
 
 #include "rmath.h"
 
+
+// Microstep setting (Only functional when stepper driver microstep pins are connected to
+// MCU. Currently only works for RAMBO boards
+
+#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16]
+
+// MS1 MS2 Stepper Driver Micro stepping mode table
+
+#define MICROSTEP1 LOW,LOW
+#define MICROSTEP2 HIGH,LOW
+#define MICROSTEP4 LOW,HIGH
+#define MICROSTEP8 HIGH,HIGH
+#define MICROSTEP16 HIGH,HIGH
+#define MICROSTEP32 HIGH,HIGH
+
+
+
+
 const int8_t sensitive_pins[] PROGMEM = SENSITIVE_PINS; // Sensitive pin list for M42
 int Commands::lowestRAMValue = MAX_RAM;
 int Commands::lowestRAMValueSend = MAX_RAM;

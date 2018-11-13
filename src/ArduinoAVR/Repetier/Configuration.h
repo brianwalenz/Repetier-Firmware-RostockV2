@@ -658,8 +658,6 @@
 // ##                           Movement settings                                          ##
 // ##########################################################################################
 
-// Microstep setting (Only functional when stepper driver microstep pins are connected to MCU. Currently only works for RAMBO boards
-#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16]
 
 // Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
 // Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)

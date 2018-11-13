@@ -159,14 +159,6 @@
 #define MAX_ROOM_TEMPERATURE 40
 #endif
 
-// MS1 MS2 Stepper Driver Micro stepping mode table
-#define MICROSTEP1 LOW,LOW
-#define MICROSTEP2 HIGH,LOW
-#define MICROSTEP4 LOW,HIGH
-#define MICROSTEP8 HIGH,HIGH
-#define MICROSTEP16 HIGH,HIGH
-#define MICROSTEP32 HIGH,HIGH
-
 #define GCODE_BUFFER_SIZE 1
 
 #ifndef FEATURE_BABYSTEPPING
