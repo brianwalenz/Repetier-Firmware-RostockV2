@@ -44,11 +44,6 @@ public:
   static void changeFeedrateMultiply(int factorInPercent);
   static void changeFlowrateMultiply(int factorInPercent);
   static void emergencyStop();
-  static void checkFreeMemory();
-  static void writeLowestFreeRAM();
-private:
-  static int lowestRAMValue;
-  static int lowestRAMValueSend;
 };
 
 #endif // COMMANDS_H_INCLUDED

@@ -566,7 +566,7 @@ public:
   }
   static void setupTimer();
 
-  static int getFreeRam();
+  static void printFreeMemory(void);
   static void resetHardware();
 
   // SPI related functions

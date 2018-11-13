@@ -298,7 +298,7 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
   // Make result permanent
   if (pathOptimize) waitRelax = 70;
   pushLine();
-  DEBUG_MEMORY;
+  //HAL::printFreeMemory();
 }
 
 /**
@@ -1705,7 +1705,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       }
     }
     Printer::interval >>= 1; // 50% of time to next call to do cur=0
-    DEBUG_MEMORY;
+    //HAL::printFreeMemory();
   } // Do even
   return Printer::interval;
 }

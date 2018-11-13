@@ -40,10 +40,6 @@
 // Echo all ascii commands after receiving
 //#define DEBUG_ECHO_ASCII
 
-/** Writes the free RAM to output, if it is less then at the last test. Should always return
-    values >500 for safety, since it doesn't catch every function call. Nice to tweak cache
-    usage or for searching for memory induced errors. Switch it off for production, it costs execution time. */
-//#define DEBUG_FREE_MEMORY
 //#define DEBUG_ADVANCE
 
 /** If enabled, writes the created generic table to serial port at startup. */
@@ -207,11 +203,6 @@
 #define SHARED_COOLER_BOARD_EXT 0
 #endif
 
-#ifndef DEBUG_FREE_MEMORY
-#define DEBUG_MEMORY
-#else
-#define DEBUG_MEMORY Commands::checkFreeMemory();
-#endif
 
 
 #define EXT0_SENSOR_INDEX  0

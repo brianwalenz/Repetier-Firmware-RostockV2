@@ -239,16 +239,30 @@ void HAL::setupTimer() {
   TIMSK1 |= (1 << OCIE1A); // Enable interrupt
 }
 
-int HAL::getFreeRam() {
-  int freeram = 0;
+void
+HAL::printFreeMemory(void) {
+  uint32_t  freeRAM = 0;
+
+  extern int __heap_start;
+  extern int *__brkval; 
+
+  int f = (int) &f - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+
+  Com::printF(PSTR("Free RAM: "), f);
+  Com::printF(PSTR("\n"));
+
+#if 0
   InterruptProtectedBlock noInts;
   uint8_t * heapptr, * stackptr;
+
   heapptr = (uint8_t *)malloc(4);          // get heap pointer
   free(heapptr);      // free up the memory again (sets heapptr to 0)
   stackptr =  (uint8_t *)(SP);           // save value of stack pointer
   freeram = (int)stackptr - (int)heapptr;
   return freeram;
+#endif
 }
+
 
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
@@ -405,7 +419,9 @@ ISR(TIMER1_COMPA_vect) {
     stepperWait = 0; // Important because of optimization in asm at begin
     OCR1A = 65500; // Wait for next move
   }
-  DEBUG_MEMORY;
+
+  //HAL::printFreeMemory();
+
   sbi(TIMSK1, OCIE1A);
   //insideTimer1 = 0;
 }

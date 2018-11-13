@@ -50,8 +50,6 @@
 
 
 const int8_t sensitive_pins[] PROGMEM = SENSITIVE_PINS; // Sensitive pin list for M42
-int Commands::lowestRAMValue = MAX_RAM;
-int Commands::lowestRAMValueSend = MAX_RAM;
 
 void Commands::commandLoop() {
 
@@ -1620,18 +1618,4 @@ void Commands::emergencyStop() {
   InterruptProtectedBlock noInts;
   while(1) {}
 #endif
-}
-
-void Commands::checkFreeMemory() {
-  int newfree = HAL::getFreeRam();
-  if(newfree < lowestRAMValue)
-    lowestRAMValue = newfree;
-}
-
-void Commands::writeLowestFreeRAM() {
-  if(lowestRAMValueSend > lowestRAMValue) {
-    lowestRAMValueSend = lowestRAMValue;
-    Com::printF(PSTR("Free RAM:"), lowestRAMValue);
-    Com::printF(PSTR("\n"));
-  }
 }

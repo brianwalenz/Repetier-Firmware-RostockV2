@@ -730,8 +730,8 @@ void Printer::setup() {
 #endif // DISTORTION_CORRECTION
 
   updateDerivedParameter();
-  Commands::checkFreeMemory();
-  Commands::writeLowestFreeRAM();
+
+  HAL::printFreeMemory();
   HAL::setupTimer();
 
 #if FEATURE_WATCHDOG
@@ -774,7 +774,7 @@ void Printer::defaultLoopActions() {
   HAL::syncEEPROM();
 #endif
 
-  DEBUG_MEMORY;
+  //HAL::printFreeMemory();
 }
 
 void Printer::MemoryPosition() {
