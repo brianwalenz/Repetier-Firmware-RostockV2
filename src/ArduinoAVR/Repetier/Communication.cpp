@@ -52,11 +52,35 @@ Com::printF(FSTRINGPARAM(text), const char *msg) {
   Com::printF(text);
   Com::print(msg);
 }
-
+#if 0
 void
 Com::printF(FSTRINGPARAM(text), int value) {
   Com::printF(text);
   Com::print((int32_t)value);
+}
+#endif
+void
+Com::printF(FSTRINGPARAM(text), int8_t value) {
+  Com::printF(text);
+  Com::print(value);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), uint8_t value) {
+  Com::printF(text);
+  Com::print(value);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), int16_t value) {
+  Com::printF(text);
+  Com::print(value);
+}
+
+void
+Com::printF(FSTRINGPARAM(text), uint16_t value) {
+  Com::printF(text);
+  Com::print(value);
 }
 
 void

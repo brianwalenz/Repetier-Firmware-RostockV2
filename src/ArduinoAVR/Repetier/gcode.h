@@ -18,275 +18,334 @@
 #ifndef _GCODE_H
 #define _GCODE_H
 
-#define MAX_CMD_SIZE 96
-#define ARRAY_SIZE(_x)	(sizeof(_x)/sizeof(_x[0]))
-
-enum FirmwareState {
-  NotBusy=0,
-  Processing,
-  Paused,
-  WaitHeater
-};
-
 #include "SDCard.h"
 
 class Commands;
 
+//#define ARRAY_SIZE(_x)	(sizeof(_x)/sizeof(_x[0]))
+
+//  &RFSERIAL
+
+// This class defines the general interface to handle gcode communication with the firmware. This
+// allows it to connect to different data sources and handle them all inside the same data structure.
+// If several readers are active, the first one sending a byte pauses all other inputs until the command
+// is complete. Only then the next reader will be queried. New queries are started in round robin fashion
+// so every channel gets the same chance to send commands.
+//
+// Available source types are:
+// - serial communication port
+// - sd card
+
+
+#define GCODE_BUFFER_SIZE 1     //  Number of commands we buffer.
+#define MAX_DATA_SOURCES  4     //  Number of inputs we can have.
+#define MAX_CMD_SIZE      96    //  Maximum length of a command line.
+
+//  Previous enum FirmwareState
+#define GCODE_NOT_BUSY      0
+#define GCODE_PROCESSING    1
+#define GCODE_PAUSED        2
+#define GCODE_WAIT_HEATER   3
+
+
+#define GCODE_N           0x00000001
+#define GCODE_M           0x00000002
+#define GCODE_G           0x00000004
+#define GCODE_X           0x00000008
+#define GCODE_Y           0x00000010
+#define GCODE_Z           0x00000020
+#define GCODE_E           0x00000040
+#define GCODE_F           0x00000080
+#define GCODE_T           0x00000100
+#define GCODE_S           0x00000200
+#define GCODE_P           0x00000400
+#define GCODE_xs          0x00000800  //  Former string
+#define GCODE_I           0x00001000
+#define GCODE_J           0x00002000
+#define GCODE_R           0x00004000
+#define GCODE_D           0x00008000
+#define GCODE_C           0x00010000
+#define GCODE_H           0x00020000
+#define GCODE_A           0x00040000
+#define GCODE_B           0x00080000
+#define GCODE_K           0x00100000
+#define GCODE_L           0x00200000
+#define GCODE_O           0x00400000
+#define GCODE_x1          0x00800000
+#define GCODE_x2          0x01000000
+#define GCODE_x3          0x02000000
+#define GCODE_x4          0x04000000
+#define GCODE_x5          0x08000000
+#define GCODE_x6          0x10000000
+#define GCODE_x7          0x20000000
+#define GCODE_x8          0x40000000
+#define GCODE_x9          0x80000000
 
 
 
 
-
-
-#ifndef MAX_DATA_SOURCES
-#define MAX_DATA_SOURCES 4
-#endif
-
-/** This class defines the general interface to handle gcode communication with the firmware. This
-    allows it to connect to different data sources and handle them all inside the same data structure.
-    If several readers are active, the first one sending a byte pauses all other inputs until the command
-    is complete. Only then the next reader will be queried. New queries are started in round robin fashion
-    so every channel gets the same chance to send commands.
-
-    Available source types are:
-    - serial communication port
-    - sd card
-    - flash memory
-*/
-
-class GCodeSource {
-  static fast8_t      numSources;
-  static GCodeSource *sources[MAX_DATA_SOURCES];
-
+class gcodeCommand {
 public:
-  static GCodeSource *activeSource;
+  inline bool hasG(void)           { return((_has & GCODE_G) != 0); };
+  inline bool hasM(void)           { return((_has & GCODE_M) != 0); };
+  inline bool hasT(void)           { return((_has & GCODE_T) != 0); };
 
-  static void registerSource(GCodeSource *newSource);
-  static void removeSource(GCodeSource *delSource);
-  static void rotateSource();
+  inline bool hasS(void)           { return((_has & GCODE_S) != 0); };
+  inline bool hasP(void)           { return((_has & GCODE_P) != 0); };
 
+  inline bool hasX(void)           { return((_has & GCODE_X) != 0); };
+  inline bool hasY(void)           { return((_has & GCODE_Y) != 0); };
+  inline bool hasZ(void)           { return((_has & GCODE_Z) != 0); };
 
-  uint32_t lastLineNumber;
-  uint8_t  wasLastCommandReceivedAsBinary; ///< Was the last successful command in binary mode?
-  millis_t timeOfLastDataPacket;
-  int8_t   waitingForResend; ///< Waiting for line to be resend. -1 = no wait.
+  inline bool hasI(void)           { return((_has & GCODE_I) != 0); };
+  inline bool hasJ(void)           { return((_has & GCODE_J) != 0); };
 
-  GCodeSource() {
-    lastLineNumber                 = 0;
-    wasLastCommandReceivedAsBinary = false;
-    timeOfLastDataPacket           = 0;
-    waitingForResend               = -1;
+  inline bool hasD(void)           { return((_has & GCODE_D) != 0); };
+  inline bool hasH(void)           { return((_has & GCODE_H) != 0); };
+
+  inline bool hasF(void)           { return((_has & GCODE_F) != 0); };
+  inline bool hasE(void)           { return((_has & GCODE_E) != 0); };
+
+  inline bool hasR(void)           { return((_has & GCODE_R) != 0); };
+
+  inline bool hasN(void)           { return((_has & GCODE_N) != 0); };
+
+  inline bool hasNoXYZ(void) {
+    return((hasX() == false) && (hasY() == false) && (hasZ() == false));
   };
-  virtual ~GCodeSource() {}
 
-  virtual bool isOpen(void) = 0;
-  virtual bool closeOnError(void) = 0; // return true if the channel can not interactively correct errors.
-  virtual bool dataAvailable(void) = 0; // would read return a new byte?
-  virtual int  readByte(void) = 0;
-  virtual void close(void) = 0;
+  inline void setG(void)           { _has |= GCODE_G; };
+  inline void setM(void)           { _has |= GCODE_M; };
+  inline void setT(void)           { _has |= GCODE_T; };
+
+  inline void setS(void)           { _has |= GCODE_S; };
+  inline void setP(void)           { _has |= GCODE_P; };
+
+  inline void setX(void)           { _has |= GCODE_X; };
+  inline void setY(void)           { _has |= GCODE_Y; };
+  inline void setZ(void)           { _has |= GCODE_Z; };
+
+  inline void setI(void)           { _has |= GCODE_I; };
+  inline void setJ(void)           { _has |= GCODE_J; };
+
+  inline void setD(void)           { _has |= GCODE_D; };
+  inline void setH(void)           { _has |= GCODE_H; };
+
+  inline void setF(void)           { _has |= GCODE_F; };
+  inline void setE(void)           { _has |= GCODE_E; };
+
+  inline void setR(void)           { _has |= GCODE_R; };
+
+  inline void setN(void)           { _has |= GCODE_N; };
+
+
+  inline void unsetX(void)         { _has &= ~GCODE_X; };
+  inline void unsetY(void)         { _has &= ~GCODE_Y; };
+  inline void unsetZ(void)         { _has &= ~GCODE_Z; };
+
+
+  inline uint16_t getM(void)       { return(M);                };
+  inline long     getS(long def)   { return(hasS() ? S : def); };
+  inline long     getP(long def)   { return(hasP() ? P : def); };
+
+private:
+  uint32_t _has;
+
+public:
+  uint16_t G;
+  uint16_t M;
+  uint8_t  T;
+
+  int32_t  S;
+  int32_t  P;
+
+  float    X;
+  float    Y;
+  float    Z;
+
+  float    I;
+  float    J;
+
+  float    D;
+  float    H;
+
+  float    F;
+  float    E;
+
+  float    R;
+
+  uint16_t N;  //  Line number
+
+  //uint16_t LN;     //  Line number this command should be
+
+public:
+  bool parseCommand(char *line);
+  void printCommand(void);
 };
 
 
 
-class SerialGCodeSource: public GCodeSource {
-  Stream *stream;
-public:
-  SerialGCodeSource(Stream *p)      { stream = p;                  };
-  virtual bool isOpen(void)         { return(true);                };
-  virtual bool closeOnError(void)   { return(false);               };
-  virtual bool dataAvailable(void)  { return(stream->available()); };
-  virtual int  readByte(void)       { return(stream->read());      };
-  virtual void close(void)          { return;                      };
-};
 
 
-class SDCardGCodeSource: public GCodeSource {
+
+
+
+
+
+//  Read data from either the serial port or the SD Card.
+//  When an SD card file is selected via the interface, _sdCardActive must be set.
+//  We'll read bytes from there until the file is empty, then go back to
+//  waiting for serial port commands.
+
+
+class gcodeQueue {
 public:
-  virtual bool isOpen(void)          { return(sd.isOpen()); };
-  virtual bool closeOnError(void)    { return(true); };
-  virtual bool dataAvailable(void) {
+  gcodeQueue() {
+    _sdCardActive   = false;    //  Set to true when SD card file is selected.
+    _lastLineNumber = 0;
+    _lastLineTime   = 0;
+
+    _cmdsLen        = 0;
+    _cmdsOut        = 0;
+    _cmdsIn         = 0;
+  };
+  ~gcodeQueue() {
+  };
+
+
+  //  Return next command, if it exists.
+  //
+  gcodeCommand   *popCommand(void) {
+    gcodeCommand *out = NULL;
+
+    if (_cmdsLen > 0) {
+      out = _cmds + _cmdsOut;
+
+      _cmdsOut++;
+      _cmdsLen--;
+
+      if (_cmdsOut == GCODE_BUFFER_SIZE)
+        _cmdsOut = 0;
+    }
+
+    return(out);
+  };
+
+private:
+  bool      dataAvailable(void) {
+
+    //  If no SD card file active, return the status of the serial port.
+
+    if (_sdCardActive == false)
+      return(RFSERIAL.available());
+
+    //  Otherwise, the status of the file on the SD card.
+
     if (sd.isPrinting() == false)
       return(false);
 
     if (sd.isFinished() == false)
       return(true);
 
-    close();
+    //  Nope, no data.  Close the file.
+
+    sd.stopPrint();
+
+    Com::printF(PSTR("Done printing file.\n"));
+
+    _sdCardActive = false;
+
     return(false);
   };
-  virtual int  readByte(void) {
+
+
+private:
+  uint8_t   readByte(void) {
+
+    //  If no SD card file active, read from the serial port.
+
+    if (_sdCardActive == false)
+      return(RFSERIAL.read());
+
+    //  Otherwise, try to read a byte from the card.
+
     int8_t n = sd.file.read();
 
-    if (n == -1)
-      close();
+    if (n == -1) {
+      //close();   sd.file.close()??
+      _sdCardActive = false;
+    }
 
     return(n);
   };
-  virtual void close(void) {
-    sd.stopPrint();
 
-    //  stopPrint() removes the source too.
-    //GCodeSource::removeSource(this);  
 
-    Com::printF(PSTR("Done printing file.\n"));
+
+
+public:
+  //  Unused.  It parsed the PGB stored string, then:
+  //    if ((cmd.parseCommand(buf)) &&
+  //        (cmd.hasT() || cmd.hasM() || cmd.hasG())) {
+  //      Commands::executeGCode(&cmd);
+  //      Printer::defaultLoopActions();
+  //    }
+  //
+  //void      executeFString(FSTRINGPARAM(cmd));
+  void      executeNext(void);
+
+  void      fatalError(FSTRINGPARAM(message));
+
+  void      startFile(void)   { _sdCardActive = true;  };
+  void      stopFile(void)    { _sdCardActive = false;  };
+
+  void      pauseFile(void)   { _sdCardActive = false; };
+  void      resumeFile(void)  { _sdCardActive = true;  };
+
+
+  //  The original sent text over the serial port to tell the client we're
+  //  not dead.
+  void      keepAlive(uint8_t state) {
+#if 0
+    if ((state == NotBusy) ||
+        (KEEP_ALIVE_INTERVAL == 0))
+      return;
+
+    millis_t now = HAL::timeInMilliseconds();
+
+    if (now - lastBusySignal < KEEP_ALIVE_INTERVAL)   //  No need to send keepalive
+      return;
+
+    if(state == Paused)
+      Com::printF(PSTR("busy:paused for user interaction\n"));  
+
+    else if(state == WaitHeater)
+      Com::printF(PSTR("busy:heating\n"));  
+
+    else // processing and uncaught cases
+      Com::printF(PSTR("busy:processing\n"));
+
+    lastBusySignal = now;
+#endif
   };
+
+
+private:
+  //  For sources.
+  bool          _sdCardActive;
+  uint32_t      _lastLineNumber;
+  uint32_t      _lastLineTime;
+
+private:
+  gcodeCommand  _cmds[GCODE_BUFFER_SIZE];   //  Buffer of received commands.
+  uint8_t       _cmdsLen;                   //
+  uint8_t       _cmdsOut;                   //  Index of the next buffer to output to the processor.
+  uint8_t       _cmdsIn;                    //  Index of the next buffer to fill from the input file.
+
+  //uint32_t _lastBusySignal;            ///< When was the last busy signal
 };
 
 
-extern SerialGCodeSource serial0Source;
-extern SDCardGCodeSource sdSource;
-
-
-
-
-
-
-
-
-
-
-
-class GCode   // 52 uint8_ts per command needed
-{
-  uint16_t params;
-  uint16_t params2;
-
-public:
-  uint16_t N;  //  Line number
-  uint16_t M;
-  uint16_t G;
-  float    X;
-  float    Y;
-  float    Z;
-  float    E;
-  float    F;
-  int32_t  S;
-  int32_t  P;
-  float    I;
-  float    J;
-  float    R;
-  float    D;
-  float    C;
-  float    H;
-  float    A;
-  float    B;
-  float    K;
-  float    L;
-  float    O;
-  char    *text;   //  Message
-  uint8_t  T;
-
-  // True if origin did not come from serial console. That way we can send status messages to
-  // a host only if he would normally not know about the mode switch.
-  bool internalCommand;
-
-  inline bool hasN()           { return ((params & 1) != 0);}
-  inline bool hasM()           { return ((params & 2) != 0);}
-  inline bool hasG()           { return ((params & 4) != 0);}
-  inline bool hasX()           { return ((params & 8) != 0);}
-  inline bool hasY()           { return ((params & 16) != 0);}
-  inline bool hasZ()           { return ((params & 32) != 0);}
-  inline bool hasNoXYZ()       { return ((params & 56) == 0);}
-  inline bool hasE()           { return ((params & 64) != 0);}
-  inline bool hasF()           { return ((params & 256) != 0);}
-  inline bool hasT()           { return ((params & 512) != 0);}
-  inline bool hasS()           { return ((params & 1024) != 0);}
-  inline bool hasP()           { return ((params & 2048) != 0);}
-  inline bool isV2()           { return ((params & 4096) != 0);}
-  inline bool hasString()      { return ((params & 32768) != 0);}
-  inline bool hasI()           { return ((params2 & 1) != 0);}
-  inline bool hasJ()           { return ((params2 & 2) != 0);}
-  inline bool hasR()           { return ((params2 & 4) != 0);}
-  inline bool hasD()           { return ((params2 & 8) != 0);}
-  inline bool hasC()           { return ((params2 & 16) != 0);}
-  inline bool hasH()           { return ((params2 & 32) != 0);}
-  inline bool hasA()           { return ((params2 & 64) != 0);}
-  inline bool hasB()           { return ((params2 & 128) != 0);}
-  inline bool hasK()           { return ((params2 & 256) != 0);}
-  inline bool hasL()           { return ((params2 & 512) != 0);}
-  inline bool hasO()           { return ((params2 & 1024) != 0);}
-  inline long getS(long def)   { return (hasS() ? S : def);}
-  inline long getP(long def)   { return (hasP() ? P : def);}
-
-  inline void unsetX()         { params &= ~8;}
-  inline void unsetY()         { params &= ~16;}
-  inline void unsetZ()         { params &= ~32;}
-
-  inline void setFormatError() { params2 |= 32768;}
-  inline bool hasFormatError() { return ((params2 & 32768) != 0);}
-
-	static FSTRINGPARAM(fatalErrorMsg);
-
-	inline static bool hasFatalError() {return fatalErrorMsg != NULL;}
-
-  void printCommand();
-
-  bool parseBinary(uint8_t *buffer,bool fromSerial);
-  bool parseAscii(char *line,bool fromSerial);
-
-  void popCurrentCommand();
-  void echoCommand();
-
-  /** Get next command in command buffer. After the command is processed, call gcode_command_finished() */
-  static GCode *peekCurrentCommand();
-
-  /** Frees the cache used by the last command fetched. */
-  static void readFromSerial();
-  static void pushCommand();
-  static void executeFString(FSTRINGPARAM(cmd));
-  static uint8_t computeBinarySize(char *ptr);
-	static void fatalError(FSTRINGPARAM(message));
-	static void reportFatalError();
-	static void resetFatalError();
-	static void keepAlive(enum FirmwareState state);
-	static uint32_t keepAliveInterval;
-
-  //friend class SDCard;
-  //friend class UIDisplay;
-
-  friend class GCodeSource;    
-
-protected:
-  void debugCommandBuffer();
-  void checkAndPushCommand();
-
-  static void requestResend();
-
-  inline float parseFloatValue(char *s) {
-    char *endPtr;
-    while(*s == 32) s++; // skip spaces
-    float f = (strtod(s, &endPtr));
-    if(s == endPtr) f=0.0; // treat empty string "x " as "x0"
-    return f;
-  }
-
-  inline long parseLongValue(char *s) {
-    char *endPtr;
-    while(*s == 32) s++; // skip spaces
-    long l = (strtol(s, &endPtr, 10));
-    if(s == endPtr) l=0; // treat empty string argument "p " as "p0"
-    return l;
-  }
-
-  static GCode   commandsBuffered[GCODE_BUFFER_SIZE]; ///< Buffer for received commands.
-  static uint8_t bufferReadIndex; ///< Read position in gcode_buffer.
-  static uint8_t bufferWriteIndex; ///< Write position in gcode_buffer.
-  static uint8_t commandReceiving[MAX_CMD_SIZE]; ///< Current received command.
-  static uint8_t commandsReceivingWritePosition; ///< Writing position in gcode_transbuffer.
-  static uint8_t sendAsBinary; ///< Flags the command as binary input.
-  static uint8_t commentDetected; ///< Flags true if we are reading the comment part of a command.
-  static uint8_t binaryCommandSize; ///< Expected size of the incoming binary command.
-  static bool    waitUntilAllCommandsAreParsed; ///< Don't read until all commands are parsed. Needed if gcode_buffer is misused as storage for strings.
-  static uint32_t actLineNumber; ///< Line number of current command.
-  static volatile uint8_t bufferLength; ///< Number of commands stored in gcode_buffer
-  static uint8_t formatErrors; ///< Number of sequential format errors
-	static millis_t lastBusySignal; ///< When was the last busy signal
-
-public:
-  GCodeSource *source;    
-};
-
+extern gcodeQueue  commandQueue;
 
 
 #endif
-

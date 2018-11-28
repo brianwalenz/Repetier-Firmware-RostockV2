@@ -711,6 +711,24 @@ void PrintLine::waitForXFreeLines(uint8_t b, bool allowMoves) {
     //GCode::readFromSerial();
     Commands::checkForPeriodicalActions(allowMoves);
   }
+
+  //  This was at the end of Commands.cpp processG001(), but it seems here is better.
+#ifdef DEBUG_QUEUE_MOVE
+  InterruptProtectedBlock noInts;
+
+  int lc = (int)PrintLine::linesCount;
+  int lp = (int)PrintLine::linesPos;
+  int wp = (int)PrintLine::linesWritePos;
+
+  int n = (wp - lp);
+
+  if(n < 0) n += PRINTLINE_CACHE_SIZE;
+
+  noInts.unprotect();
+
+  if(n != lc)
+    Com::printF(PSTR("Buffer corrupted\n"));
+#endif
 }
 
 

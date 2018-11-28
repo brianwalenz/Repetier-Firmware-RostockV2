@@ -25,9 +25,6 @@
 #include "Commands.h"
 #include "Printer.h"
 
-
-
-SDCardGCodeSource sdSource;
 SDCard            sd;
 
 
@@ -188,7 +185,8 @@ SDCard::startPrint() {
 
   uid.clearStatus();
 
-  GCodeSource::registerSource(&sdSource);
+  commandQueue.startFile();
+  //GCodeSource::registerSource(&sdSource);
 }
 
 
@@ -204,7 +202,8 @@ SDCard::pausePrint(bool intern) {
   Printer::setMenuMode(MODE_PAUSED, true);
   Printer::setPrinting(false);
 
-  GCodeSource::removeSource(&sdSource);
+  commandQueue.pauseFile();
+  //GCodeSource::removeSource(&sdSource);
 
   if(intern) {
     Commands::waitUntilEndOfAllBuffers();
@@ -220,7 +219,7 @@ SDCard::pausePrint(bool intern) {
     Printer::lastCmdPos[Y_AXIS] = Printer::currentPosition[Y_AXIS];
     Printer::lastCmdPos[Z_AXIS] = Printer::currentPosition[Z_AXIS];
 
-    GCode::executeFString(PSTR(PAUSE_START_COMMANDS));
+    //commandQueue.executeFString(PSTR(PAUSE_START_COMMANDS));
   }
 }
 
@@ -233,14 +232,15 @@ SDCard::continuePrint(bool intern) {
     return;
 
   if(intern) {
-    GCode::executeFString(PSTR(PAUSE_END_COMMANDS));
+    //commandQueue.executeFString(PSTR(PAUSE_END_COMMANDS));
 
     Printer::GoToMemoryPosition(true, true, false, false, Printer::maxFeedrate[X_AXIS]);
     Printer::GoToMemoryPosition(false, false, true, false, Printer::maxFeedrate[Z_AXIS] / 2.0f);
     Printer::GoToMemoryPosition(false, false, false, true, Printer::maxFeedrate[E_AXIS] / 2.0f);
   }
 
-  GCodeSource::registerSource(&sdSource);
+  commandQueue.resumeFile();
+  //GCodeSource::registerSource(&sdSource);
 
   Printer::setPrinting(true);
   Printer::setMenuMode(MODE_PAUSED, false);
@@ -265,7 +265,8 @@ SDCard::stopPrint() {
   Printer::setMenuMode(MODE_PAUSED,   false);
   Printer::setPrinting(false);
 
-  GCodeSource::removeSource(&sdSource);
+  commandQueue.stopFile();
+  //GCodeSource::removeSource(&sdSource);
 
   //  Execute some gcode on stopping.
   //GCode::executeFString(PSTR(SD_RUN_ON_STOP));

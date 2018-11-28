@@ -31,10 +31,24 @@ class Commands
 public:
   static void commandLoop();
   static void checkForPeriodicalActions(bool allowNewMoves);
-  static void processArc(GCode *com);
-  static void processGCode(GCode *com);
-  static void processMCode(GCode *com);
-  static void executeGCode(GCode *com);
+
+  static void processArc(gcodeCommand *com);
+
+  static void processG000(gcodeCommand *com);
+  static void processG001(gcodeCommand *com);
+  static void processG004(gcodeCommand *com);
+  static void processG029(gcodeCommand *com);
+  static void processG030(gcodeCommand *com);
+  static void processG100(gcodeCommand *com);
+  static void processG131(gcodeCommand *com);
+  static void processG132(gcodeCommand *com);
+  static void processG133(gcodeCommand *com);
+  static void processGCode(gcodeCommand *com);
+
+  static void processMCode(gcodeCommand *com);
+
+  static void executeGCode(gcodeCommand *com);
+
   static void waitUntilEndOfAllMoves();
   static void waitUntilEndOfAllBuffers();
   static void printCurrentPosition();

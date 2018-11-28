@@ -57,7 +57,7 @@ void Printer::measureDistortion(void) {
   Printer::coordinateOffset[X_AXIS] = Printer::coordinateOffset[Y_AXIS] = Printer::coordinateOffset[Z_AXIS] = 0;
 
   if(!distortion.measure()) {
-    GCode::fatalError(PSTR("G33 failed!"));
+    commandQueue.fatalError(PSTR("G33 failed!"));
     return;
   }
   Printer::feedrate = oldFeedrate;

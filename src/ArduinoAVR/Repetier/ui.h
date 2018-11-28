@@ -124,7 +124,6 @@ typedef const menuPage_t     menuPage;
 
 
 
-class GCode;
 
 class UIDisplay {
 public:

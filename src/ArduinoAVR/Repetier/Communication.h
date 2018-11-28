@@ -28,9 +28,18 @@ namespace Com {
   void print(const char *text);
 
   void printF(FSTRINGPARAM(text), const char *msg);
-  void printF(FSTRINGPARAM(text), int value);
+
+  //  void printF(FSTRINGPARAM(text), int value);
+
+  void printF(FSTRINGPARAM(text), int8_t value);
+  void printF(FSTRINGPARAM(text), uint8_t value);
+
+  void printF(FSTRINGPARAM(text), int16_t value);
+  void printF(FSTRINGPARAM(text), uint16_t value);
+
   void printF(FSTRINGPARAM(text), int32_t value);
   void printF(FSTRINGPARAM(text), uint32_t value);
+
   void printF(FSTRINGPARAM(text), float value, uint8_t digits=2);
 
 

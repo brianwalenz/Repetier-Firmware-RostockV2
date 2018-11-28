@@ -419,7 +419,7 @@ uint8_t Printer::moveTo(float x, float y, float z, float e, float f) {
   if(f != IGNORE_COORDINATE)
     feedrate = f;
   // Disable software end stop or we get wrong distances when length < real length
-  if (!PrintLine::queueNonlinearMove(ALWAYS_CHECK_ENDSTOPS, true, false)) {
+  if (!PrintLine::queueNonlinearMove(true, true, false)) {
     Com::printF(PSTR("WARNING: moveTo / queueDeltaMove returns error\n"));
     return 0;
   }
@@ -458,7 +458,7 @@ uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pa
   if(f != IGNORE_COORDINATE)
     feedrate = f;
 
-  if (!PrintLine::queueNonlinearMove(ALWAYS_CHECK_ENDSTOPS, pathOptimize, true)) {
+  if (!PrintLine::queueNonlinearMove(true, pathOptimize, true)) {
     Com::printF(PSTR("WARNING: moveToReal / queueDeltaMove returns error\n"));
 
 #ifdef DEBUG
@@ -513,7 +513,7 @@ void Printer::updateCurrentPositionSteps() {
     \return true if it is a move, false if no move results from coordinates.
 */
 
-uint8_t Printer::setDestinationStepsFromGCode(GCode *com) {
+uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
   register int32_t p;
   float x, y, z;
   bool posAllowed = true;
@@ -749,9 +749,8 @@ void Printer::setup() {
 
   Extruder::selectExtruderById(0);
 
-#ifdef STARTUP_GCODE
-  GCode::executeFString(PSTR(STARTUP_GCODE));
-#endif
+  //  You can now send some initialization gcode to the printer.
+  //commandQueue.executeFString(PSTR(STARTUP_GCODE));
 }
 
 void Printer::defaultLoopActions() {

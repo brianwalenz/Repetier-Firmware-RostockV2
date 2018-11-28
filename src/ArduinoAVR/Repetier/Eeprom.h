@@ -177,7 +177,7 @@ public:
   static void readDataFromEEPROM(bool includeExtruder);
 
   static void writeSettings();
-  static void update(GCode *com);
+  static void update(gcodeCommand *com);
   static void updatePrinterUsage();
   static inline void setVersion(uint8_t v) {
     HAL::eprSetByte(EPR_VERSION,v);

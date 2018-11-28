@@ -30,27 +30,29 @@
 #include "Eeprom.h"
 #include "Extruder.h"
 
-void EEPROM::update(GCode *com)
+void EEPROM::update(gcodeCommand *com)
 {
-  if(com->hasT() && com->hasP()) switch(com->T)
-                                   {
-                                     case 0:
-                                       if(com->hasS())
-                                         HAL::eprSetByte(com->P, (uint8_t)com->S);
-                                       break;
-                                     case 1:
-                                       if(com->hasS())
-                                         HAL::eprSetInt16(com->P, (int16_t)com->S);
-                                       break;
-                                     case 2:
-                                       if(com->hasS())
-                                         HAL::eprSetInt32(com->P, (int32_t)com->S);
-                                       break;
-                                     case 3:
-                                       if(com->hasX())
-                                         HAL::eprSetFloat(com->P, com->X);
-                                       break;
-                                   }
+  if(com->hasT() && com->hasP())
+    switch(com->T)
+      {
+        case 0:
+          if(com->hasS())
+            HAL::eprSetByte(com->P, (uint8_t)com->S);
+          break;
+        case 1:
+          if(com->hasS())
+            HAL::eprSetInt16(com->P, (int16_t)com->S);
+          break;
+        case 2:
+          if(com->hasS())
+            HAL::eprSetInt32(com->P, (int32_t)com->S);
+          break;
+        case 3:
+          if(com->hasX())
+            HAL::eprSetFloat(com->P, com->X);
+          break;
+      }
+
   uint8_t newcheck = computeChecksum();
   if(newcheck != HAL::eprGetByte(EPR_INTEGRITY_BYTE))
     HAL::eprSetByte(EPR_INTEGRITY_BYTE, newcheck);

@@ -303,7 +303,7 @@ bool runBedLeveling(int s) {
 #endif
   Printer::coordinateOffset[X_AXIS] = Printer::coordinateOffset[Y_AXIS] = Printer::coordinateOffset[Z_AXIS] = 0;
   Printer::startProbing(true);
-  //GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
+  //commandQueue.executeFString(PSTR(Z_PROBE_START_SCRIPT));
   Plane plane;
   if(!measureAutolevelPlane(plane)) {
     Com::printF(PSTR("ERROR: Probing had returned errors - autoleveling canceled.\n"));
@@ -452,12 +452,12 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
         Com::print(Printer::currentPosition[X_AXIS] - ZPOffsetX);
         Com::printF(PSTR(", "), Printer::currentPosition[Y_AXIS] - ZPOffsetY);
         Com::printF(PSTR("\n"));
-        GCode::fatalError(PSTR("Could not activate z-probe offset due to coordinate constraints - result is inaccurate!"));
+        commandQueue.fatalError(PSTR("Could not activate z-probe offset due to coordinate constraints - result is inaccurate!"));
         return false;
       } else {
-	    if(runScript) {
-        GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
-      }
+	    //if(runScript) {
+      //  commandQueue.executeFString(PSTR(Z_PROBE_START_SCRIPT));
+      //}
 	    float maxStartHeight = EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0) + 0.1;
 	    if(currentPosition[Z_AXIS] > maxStartHeight && enforceStartHeight) {
 		    cz = maxStartHeight;
@@ -477,9 +477,9 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
 #endif
     }
 #else
-  if(runScript) {
-    GCode::executeFString(PSTR(Z_PROBE_START_SCRIPT));
-  }
+  //if(runScript) {
+  //  commandQueue.executeFString(PSTR(Z_PROBE_START_SCRIPT));
+  //}
 #endif
   Printer::moveToReal(cx, cy, cz, IGNORE_COORDINATE, EXTRUDER_SWITCH_XY_SPEED);
   updateCurrentPosition(false);
@@ -490,7 +490,7 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
 void Printer::finishProbing() {
   float cx, cy, cz;
   realPosition(cx, cy, cz);
-  GCode::executeFString(PSTR(Z_PROBE_FINISHED_SCRIPT));
+  //commandQueue.executeFString(PSTR(Z_PROBE_FINISHED_SCRIPT));
   if(Extruder::current) {
     offsetX = -Extruder::current->xOffset * invAxisStepsPerMM[X_AXIS];
     offsetY = -Extruder::current->yOffset * invAxisStepsPerMM[Y_AXIS];
@@ -585,9 +585,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
         return ILLEGAL_Z_PROBE;
       }
     }
-#ifdef Z_PROBE_RUN_AFTER_EVERY_PROBE
-    GCode::executeFString(PSTR(Z_PROBE_RUN_AFTER_EVERY_PROBE));
-#endif
+    //commandQueue.executeFString(PSTR(Z_PROBE_RUN_AFTER_EVERY_PROBE));
   }
 #if Z_PROBE_DISABLE_HEATERS
 	Extruder::unpauseExtruders(false);

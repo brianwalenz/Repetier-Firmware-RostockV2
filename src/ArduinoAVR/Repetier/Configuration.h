@@ -82,11 +82,6 @@
 #define NONLINEAR_SYSTEM 1    //  UNUSED
 
 
-/* You can write some GCODE to be executed on startup. Use this e.g. to set some 
-   pins. Separate multiple GCODEs with \n
-*/
-//#define STARTUP_GCODE ""
-
 // ##########################################################################################
 // ##                               Calibration                                            ##
 // ##########################################################################################
@@ -172,10 +167,6 @@
 #define EXTRUDER_FAN_COOL_TEMP 50
 // Retraction for sd pause over lcd
 #define RETRACT_ON_PAUSE 2
-// These commands get executed after storing position and going to park position.
-#define PAUSE_START_COMMANDS ""
-// These commands get executed before we go to stored position.
-#define PAUSE_END_COMMANDS ""
 
 /* Speed in mm/s for extruder moves fom internal commands, e.g. switching extruder. */
 #define EXTRUDER_SWITCH_XY_SPEED 100
@@ -480,8 +471,6 @@
 #define HAVE_HEATED_BED 1
 
 #define HEATED_BED_MAX_TEMP 120
-/** Skip M190 wait, if heated bed is already within x degrees. Fixed numbers only, 0 = off. */
-#define SKIP_M190_IF_WITHIN 5
 
 // Select type of your heated bed. It's the same as for EXT0_TEMPSENSOR_TYPE
 // set to 0 if you don't have a heated bed
@@ -631,10 +620,6 @@
 // If you do z min homing, you might want to rise extruder a bit after homing so it does not heat
 // touching your bed.
 #define Z_UP_AFTER_HOME 0
-// You can disable endstop checking for print moves. This is needed, if you get sometimes
-// false signals from your endstops. If your endstops don't give false signals, you
-// can set it on for safety.
-#define ALWAYS_CHECK_ENDSTOPS 1
 
 // maximum positions in mm - only fixed numbers!
 // For delta robot Z_MAX_LENGTH is the maximum travel of the towers and should be set to the distance between the hotend
@@ -979,17 +964,6 @@
 #define ENABLE_POWER_ON_STARTUP 1
 
 
-/** What shall the printer do, when it receives an M112 emergency stop signal?
-    0 = Disable heaters/motors, wait forever until someone presses reset.
-    1 = restart by resetting the AVR controller. The USB connection will not reset if managed by a different chip!
-*/
-#define KILL_METHOD 1
-
-/** Communication errors can swallow part of the ok, which tells the host software to send
-    the next command. Not receiving it will cause your printer to stop. Sending this string every
-    second, if our queue is empty should prevent this. Comment it, if you don't want this feature. */
-//#define WAITING_IDENTIFIER "wait"
-
 /** \brief Sets time for echo debug
 
     You can set M111 1 which enables ECHO of commands sent. This define specifies the position,
@@ -1055,9 +1029,6 @@
 #define Z_PROBE_REPETITIONS 5 // Repetitions for probing at one point.
 /** Distance between nozzle and bed when probe triggers. */
 #define Z_PROBE_HEIGHT 39.91
-/** These scripts are run before resp. after the z-probe is done. Add here code to activate/deactivate probe if needed. */
-#define Z_PROBE_START_SCRIPT ""
-#define Z_PROBE_FINISHED_SCRIPT ""
 /** Set 1 if you need a hot extruder for good probe results. Normally only required if nozzle is probe. */
 #define Z_PROBE_REQUIRES_HEATING 0
 /** Minimum extruder temperature for probing. If it is lower, it will be increased to that value. */
@@ -1197,9 +1168,6 @@
 /** You can store the current position with M401 and go back to it with M402.
     This works only if feature is set to true. */
 #define FEATURE_MEMORY_POSITION 1
-
-/** If a checksum is sent, all future commands must also contain a checksum. Increases reliability especially for binary protocol. */
-#define FEATURE_CHECKSUM_FORCED 0
 
 /** Should support for fan control be compiled in. If you enable this make sure
     the FAN pin is not the same as for your second extruder. RAMPS e.g. has FAN_PIN in 9 which

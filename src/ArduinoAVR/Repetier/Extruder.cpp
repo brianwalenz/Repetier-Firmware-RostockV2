@@ -283,7 +283,7 @@ void Extruder::manageTemperatures() {
     }
 #endif // KILL_IF_SENSOR_DEFECT
     Printer::debugSet(8); // Go into dry mode
-    GCode::fatalError(PSTR("Heater/sensor error"));
+    commandQueue.fatalError(PSTR("Heater/sensor error"));
   } // any sensor defect
 #endif // NUM_TEMPERATURE_LOOPS
 
@@ -310,7 +310,7 @@ void TemperatureController::waitForTargetTemperature() {
       time = HAL::timeInMilliseconds();
       }*/
     Commands::checkForPeriodicalActions(true);
-    GCode::keepAlive(WaitHeater);
+    commandQueue.keepAlive(GCODE_WAIT_HEATER);
     if(fabs(targetTemperatureC - currentTemperatureC) <= 1) {
       Printer::setAutoreportTemp(oldReport);
       return;
@@ -593,7 +593,7 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
         printedTime = currentTime;
         }*/
       Commands::checkForPeriodicalActions(true);
-      GCode::keepAlive(WaitHeater);
+      commandQueue.keepAlive(GCODE_WAIT_HEATER);
       //gcode_read_serial();
 #if RETRACT_DURING_HEATUP
       if (actExtruder == Extruder::current && actExtruder->waitRetractUnits > 0 && !retracted && dirRising && actExtruder->tempControl.currentTemperatureC > actExtruder->waitRetractTemperature) {
@@ -1135,7 +1135,7 @@ void TemperatureController::autotunePID(float temp, uint8_t controllerId, int ma
     HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
     Commands::checkForPeriodicalActions(true); // update heaters etc.
-    GCode::keepAlive(WaitHeater);
+    commandQueue.keepAlive(GCODE_WAIT_HEATER);
     updateCurrentTemperature();
     currentTemp = currentTemperatureC;
     millis_t time = HAL::timeInMilliseconds();

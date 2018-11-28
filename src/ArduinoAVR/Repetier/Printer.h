@@ -44,6 +44,7 @@
 
 #include "ui.h"   //  For MODE_*, at least.
 #include "Communication.h"
+#include "gcode.h"
 
 union floatLong {
   float f;
@@ -717,7 +718,7 @@ public:
       \param com g-code with new destination position.
       \return true if it is a move, false if no move results from coordinates.
   */
-  static uint8_t setDestinationStepsFromGCode(GCode *com);
+  static uint8_t setDestinationStepsFromGCode(gcodeCommand *com);
   /** \brief Move to position without considering transformations.
 
       Computes the destinationSteps without rotating but including active offsets!
