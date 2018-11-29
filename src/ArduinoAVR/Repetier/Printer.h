@@ -190,12 +190,12 @@ extern bool runBedLeveling(int save); // save = S parameter in gcode
 class Printer {
   static uint8_t debugLevel;
 public:
-#if USE_ADVANCE || defined(DOXYGEN)
+#if USE_ADVANCE
   static volatile int extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
   static ufast8_t maxExtruderSpeed;            ///< Timer delay for end extruder speed
   //static uint8_t extruderAccelerateDelay;     ///< delay between 2 speec increases
   static int advanceStepsSet;
-#if ENABLE_QUADRATIC_ADVANCE || defined(DOXYGEN)
+#if ENABLE_QUADRATIC_ADVANCE
   static long advanceExecuted;             ///< Executed advance steps
 #endif
 #endif
@@ -251,15 +251,15 @@ public:
   static int32_t stepsRemainingAtZHit;
   static int32_t stepsRemainingAtXHit;
   static int32_t stepsRemainingAtYHit;
-#if SOFTWARE_LEVELING || defined(DOXYGEN)
+#if SOFTWARE_LEVELING
   static int32_t levelingP1[3];
   static int32_t levelingP2[3];
   static int32_t levelingP3[3];
 #endif
-#if FEATURE_AUTOLEVEL || defined(DOXYGEN)
+#if FEATURE_AUTOLEVEL
   static float autolevelTransformation[9]; ///< Transformation matrix
 #endif
-#if FEATURE_BABYSTEPPING || defined(DOXYGEN)
+#if FEATURE_BABYSTEPPING
   static int16_t zBabystepsMissing;
   static int16_t zBabysteps;
 #endif
@@ -775,10 +775,10 @@ public:
     currentNonlinearPositionSteps[C_TOWER] = zaxis;
   }
   static void deltaMoveToTopEndstops(float feedrate);
-#if MAX_HARDWARE_ENDSTOP_Z || defined(DOXYGEN)
+#if MAX_HARDWARE_ENDSTOP_Z
   static float runZMaxProbe();
 #endif
-#if FEATURE_Z_PROBE || defined(DOXYGEN)
+#if FEATURE_Z_PROBE
   static bool startProbing(bool runScript, bool enforceStartHeight = true);
   static void finishProbing();
   static float runZProbe(bool first, bool last, uint8_t repeat = Z_PROBE_REPETITIONS, bool runStartScript = true, bool enforceStartHeight = true);
@@ -790,12 +790,12 @@ public:
   // system without Z-probe
   static void transformToPrinter(float x, float y, float z, float &transX, float &transY, float &transZ);
   static void transformFromPrinter(float x, float y, float z, float &transX, float &transY, float &transZ);
-#if FEATURE_AUTOLEVEL || defined(DOXYGEN)
+#if FEATURE_AUTOLEVEL
   static void resetTransformationMatrix(bool silent);
   //static void buildTransformationMatrix(float h1,float h2,float h3);
   static void buildTransformationMatrix(Plane &plane);
 #endif
-#if DISTORTION_CORRECTION || defined(DOXYGEN)
+#if DISTORTION_CORRECTION
   static void measureDistortion(void);
   static Distortion distortion;
 #endif
@@ -815,7 +815,7 @@ public:
 	static void moveToParkPosition();
 
 
-#if FEATURE_Z_PROBE || defined(DOXYGEN)
+#if FEATURE_Z_PROBE
   /** \brief Prepares printer for probing commands.
 
       Probing can not start under all conditions. This command therefore makes sure,

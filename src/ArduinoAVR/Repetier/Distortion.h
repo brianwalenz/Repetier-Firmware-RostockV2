@@ -19,7 +19,7 @@
 #ifndef _DISTORTION_H
 #define _DISTORTION_H
 
-#if DISTORTION_CORRECTION || defined(DOXYGEN)
+#if DISTORTION_CORRECTION
 /** \brief Handle distortion related stuff.
 
     Distortion correction can be used to solve problems resulting from an uneven build plate.

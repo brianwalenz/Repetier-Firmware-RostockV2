@@ -508,7 +508,7 @@ public:
   static inline void calculateDirectionAndDelta(int32_t difference[], ufast8_t *dir, int32_t delta[]);
   static inline uint8_t calculateDistance(float axis_diff[], uint8_t dir, float *distance);
 
-#if (SOFTWARE_LEVELING && DRIVE_SYSTEM == DELTA) || defined(DOXYGEN)
+#if (SOFTWARE_LEVELING)
   static void calculatePlane(int32_t factors[], int32_t p1[], int32_t p2[], int32_t p3[]);
   static float calcZOffset(int32_t factors[], int32_t pointX, int32_t pointY);
 #endif
