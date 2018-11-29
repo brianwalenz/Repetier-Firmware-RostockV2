@@ -175,34 +175,6 @@ void Printer::setDebugLevel(uint8_t newLevel) {
   }
 }
 
-void Printer::toggleEcho() {
-  setDebugLevel(debugLevel ^ 1);
-}
-
-void Printer::toggleInfo() {
-  setDebugLevel(debugLevel ^ 2);
-}
-
-void Printer::toggleErrors() {
-  setDebugLevel(debugLevel ^ 4);
-}
-
-void Printer::toggleDryRun() {
-  setDebugLevel(debugLevel ^ 8);
-}
-
-void Printer::toggleCommunication() {
-  setDebugLevel(debugLevel ^ 16);
-}
-
-void Printer::toggleNoMoves() {
-  setDebugLevel(debugLevel ^ 32);
-}
-
-void Printer::toggleEndStop() {
-  setDebugLevel(debugLevel ^ 64);
-}
-
 bool Printer::isPositionAllowed(float x, float y, float z) {
   if(isNoDestinationCheck()) return true;
   bool allowed = true;

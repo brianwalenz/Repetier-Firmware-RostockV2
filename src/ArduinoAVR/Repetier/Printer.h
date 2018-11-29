@@ -323,13 +323,7 @@ public:
     return (menuMode & mode) == mode;
   }
   static void setDebugLevel(uint8_t newLevel);
-  static void toggleEcho();
-  static void toggleInfo();
-  static void toggleErrors();
-  static void toggleDryRun();
-  static void toggleCommunication();
-  static void toggleNoMoves();
-  static void toggleEndStop();
+
   static INLINE uint8_t getDebugLevel() {
     return debugLevel;
   }
@@ -372,6 +366,8 @@ public:
   static INLINE void debugReset(uint8_t flags) {
     setDebugLevel(debugLevel & ~flags);
   }
+
+
   /** Sets the pwm for the fan speed. Gets called by motion control or Commands::setFanSpeed. */
   static void setFanSpeedDirectly(uint8_t speed);
   /** Sets the pwm for the fan 2 speed. Gets called by motion control or Commands::setFan2Speed. */
