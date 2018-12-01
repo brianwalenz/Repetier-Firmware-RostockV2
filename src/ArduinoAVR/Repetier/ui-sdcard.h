@@ -180,10 +180,18 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   Com::print("\n");
 #endif
 
-  sd.chdir(sd._cwd);
+  sd.chdir(sd._cwd);   //  We should be here already!
 
   root = sd.getvwd();
   root->rewind();
+
+  //  Make sure our position is on a file.  This is needed after we go into a
+  //  directory with no files - UIDisplay::okAction_selectFile() hardcodes
+  //  _menuPos to 2, which normally would put the selection dot on the first
+  //  file.
+
+  if (_menuPos > sd._nFilesOnCard + 1)
+    _menuPos = sd._nFilesOnCard + 1;
 
   //  If showing the first element, it's the usual header.
 

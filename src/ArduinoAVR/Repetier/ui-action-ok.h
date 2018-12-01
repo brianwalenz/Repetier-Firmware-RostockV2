@@ -13,9 +13,8 @@ UIDisplay::okAction_selectFile(uint8_t filePos) {
   if (isDirname(filename)) {
     goDir(filename);
 
-
-    _menuPos = 2;
-    _menuSel = 255;
+    _menuPos = 2;      //  Leave on the first file; UIDisplay::sdrefresh()
+    _menuSel = 255;    //  will reset if the directory is empty.
     _menuTop = 0;
 
     refreshPage();
@@ -75,7 +74,7 @@ UIDisplay::okAction_start(bool allowMoves) {
   else if ((menuType == menuType_select) && (_menuPos == 1)) {
     goDir(NULL);
 
-    _menuPos = 1;
+    _menuPos = 1;     //  Leave on the up-directory entry.
     _menuSel = 255;
     _menuTop = 0;
 
