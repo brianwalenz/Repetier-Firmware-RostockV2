@@ -209,6 +209,46 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
   //  Otherwise, entryType is entryType_action, and we need to do something!
 
 
+  //  Extruder moves are special cased, but are basically the same.
+  //  Well, not really.
+  //  I want to make both the distance and extrude rate increase with acceleration.
+  //
+  if (entryAction == ACT_POS_E) {
+    if (allowMoves == false)
+      return(false);
+
+    uint8_t axis = E_AXIS;
+
+    float distance    = encoderChange * encoderAccel / 10.0;   //  Distance in mm
+    float distanceMax = 1.0;
+
+    if ((encoderChange > 0) && (distance > distanceMax))
+      distance = distanceMax;
+
+    if ((encoderChange < 0) && (distance < -distanceMax))
+      distance = -distanceMax;
+
+    int32_t steps = distance * Printer::axisStepsPerMM[axis];
+
+    if ((encoderChange > 0) && (steps == 0))   steps =  1;
+    if ((encoderChange < 0) && (steps == 0))   steps = -1;
+
+    //  Now just move.
+
+    Com::printf(PSTR("E: change:%d accel:%f distance:%f steps:%ld feedrate:%f -- "),
+                encoderChange, encoderAccel, distance, steps, Printer::maxFeedrate[axis]);
+
+    if (entryAction == ACT_POS_E) {
+      PrintLine::moveRelativeDistanceInStepsReal(0, 0, 0, steps, Printer::maxFeedrate[axis] / 10, false, false);
+    }
+
+    Commands::printCurrentPosition();
+
+    return(true);
+  }
+
+
+
   //  Move!
   //
   if ((entryAction == ACT_POS_X) ||
