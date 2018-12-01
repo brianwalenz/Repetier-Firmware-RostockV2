@@ -22,10 +22,27 @@
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
+//  This is idiotic.  sprintf() adds 2KB ROM usage.
+//  And at most 256 bytes RAM usage for two buffers
+//   - one for copying the PSTR to RAM
+//   - one for the output string
+//
+//  But it doesn't support floating point, thanks, Arduino!
+//  (Adds another 1.5KB to ROM)
+//
+//  http://forum.arduino.cc/index.php/topic,124809.0.html
+//    cd /Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/lib/avr6/
+//    cp libc.a libc.a.orig
+//    ../../bin/ar -dv libc.a vfprintf_std.o
+//    ../../bin/ar -xv libprintf_flt.a vfprintf_flt.o
+//    ../../bin/ar -rv libc.a vfprintf_flt.o
+
 namespace Com {
   void print(char c);
   void printF(FSTRINGPARAM(text));
   void print(const char *text);
+
+  void printf(FSTRINGPARAM(fmtrom), ...);
 
   void printF(FSTRINGPARAM(text), const char *msg);
 

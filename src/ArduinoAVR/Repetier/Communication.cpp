@@ -230,3 +230,26 @@ Com::printArrayF(FSTRINGPARAM(text), int32_t *arr, uint8_t n) {
   Com::printF(PSTR("\n"));
 }
 
+
+
+
+#include <stdarg.h>
+
+void
+Com::printf(FSTRINGPARAM(fmtrom), ...) {
+  va_list           ap;
+  char              fmt[128];
+  uint8_t           fmtlen = 0;
+  char              buf[128];
+
+  while (pgm_read_byte(fmtrom) != 0)
+    fmt[fmtlen++] = pgm_read_byte(fmtrom++);
+
+  fmt[fmtlen] = 0;
+
+  va_start(ap, fmtrom);
+  vsnprintf(buf, 128, fmt, ap);
+  va_end(ap);
+
+  print(buf);
+}
