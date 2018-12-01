@@ -34,9 +34,9 @@
 
 
 //Inactivity shutdown variables
-millis_t previousMillisCmd = 0;
-millis_t maxInactiveTime = MAX_INACTIVE_TIME * 1000L;
-millis_t stepperInactiveTime = STEPPER_INACTIVE_TIME * 1000L;
+uint32_t previousMillisCmd = 0;
+uint32_t maxInactiveTime = MAX_INACTIVE_TIME * 1000L;
+uint32_t stepperInactiveTime = STEPPER_INACTIVE_TIME * 1000L;
 
 #if USE_ADVANCE
 #if ENABLE_QUADRATIC_ADVANCE
@@ -296,7 +296,7 @@ void PrintLine::updateTrapezoids() {
   if(maxfirst != linesWritePos)
     nextPlannerIndex(maxfirst); // don't touch the line printing
   // Now ignore enough segments to gain enough time for path planning
-  millis_t timeleft = 0;
+  uint32_t timeleft = 0;
   // Skip as many stored moves as needed to gain enough time for computation
 #if PRINTLINE_CACHE_SIZE < 10
 #define minTime 4500L * PRINTLINE_CACHE_SIZE

@@ -310,7 +310,7 @@ public:
         (KEEP_ALIVE_INTERVAL == 0))
       return;
 
-    millis_t now = HAL::timeInMilliseconds();
+    uint32_t now = HAL::timeInMilliseconds();
 
     if (now - lastBusySignal < KEEP_ALIVE_INTERVAL)   //  No need to send keepalive
       return;

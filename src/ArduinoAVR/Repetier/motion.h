@@ -356,9 +356,9 @@ public:
 };
 
 
-extern millis_t previousMillisCmd;
-extern millis_t maxInactiveTime;
-extern millis_t stepperInactiveTime;
+extern uint32_t previousMillisCmd;
+extern uint32_t maxInactiveTime;
+extern uint32_t stepperInactiveTime;
 
 
 #endif // MOTION_H_INCLUDED

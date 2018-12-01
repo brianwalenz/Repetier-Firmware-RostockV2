@@ -56,10 +56,10 @@ public:
   float tempIStateLimitMax;
   float tempIStateLimitMin;
   uint8_t flags;
-  millis_t lastDecoupleTest;  ///< Last time of decoupling sensor-heater test
+  uint32_t lastDecoupleTest;  ///< Last time of decoupling sensor-heater test
   float  lastDecoupleTemp;  ///< Temperature on last test
-  millis_t decoupleTestPeriod; ///< Time between setting and testing decoupling.
-  millis_t preheatStartTime;    ///< Time (in milliseconds) when heat up was started
+  uint32_t decoupleTestPeriod; ///< Time between setting and testing decoupling.
+  uint32_t preheatStartTime;    ///< Time (in milliseconds) when heat up was started
   int16_t preheatTemperature;
 
   void setTargetTemperature(float target);
@@ -99,14 +99,14 @@ public:
     flags &= ~(TEMPERATURE_CONTROLLER_FLAG_DECOUPLE_FULL | TEMPERATURE_CONTROLLER_FLAG_DECOUPLE_HOLD);
     if(on) flags |= TEMPERATURE_CONTROLLER_FLAG_DECOUPLE_HOLD;
   }
-  inline void startFullDecouple(millis_t &t)
+  inline void startFullDecouple(uint32_t &t)
   {
     if(isDecoupleFull()) return;
     lastDecoupleTest = t;
     lastDecoupleTemp = currentTemperatureC;
     setDecoupleFull(true);
   }
-  inline void startHoldDecouple(millis_t &t)
+  inline void startHoldDecouple(uint32_t &t)
   {
     if(isDecoupleHold()) return;
     if(fabs(currentTemperatureC - targetTemperatureC) + 1 > DECOUPLING_TEST_MAX_HOLD_VARIANCE) return;
@@ -142,7 +142,7 @@ public:
   {
     preheatStartTime = 0;
   }
-  inline millis_t preheatTime()
+  inline uint32_t preheatTime()
   {
     return preheatStartTime == 0 ? 0 : HAL::timeInMilliseconds() - preheatStartTime;
   }

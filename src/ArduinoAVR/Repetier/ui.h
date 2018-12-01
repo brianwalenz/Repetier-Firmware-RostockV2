@@ -279,16 +279,16 @@ public:
 
   //uint16_t      activeAction; // action for ok/next/previous
   //uint16_t      delayedAction;
-  //millis_t      lastRefresh;
+  //uint32_t      lastRefresh;
 #else
   uint16_t activeAction; // action for ok/next/previous
   uint16_t lastAction;
   uint16_t delayedAction;
-  millis_t lastSwitch; // Last time display switched pages
-  millis_t lastRefresh;
+  uint32_t lastSwitch; // Last time display switched pages
+  uint32_t lastRefresh;
   uint16_t lastButtonAction;
-  millis_t lastButtonStart;
-  millis_t nextRepeat; // Time of next autorepeat
+  uint32_t lastButtonStart;
+  uint32_t nextRepeat; // Time of next autorepeat
   int repeatDuration; // Time between to actions if autorepeat is enabled
 #endif
 

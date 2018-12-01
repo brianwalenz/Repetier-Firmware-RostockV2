@@ -229,7 +229,7 @@ public:
   static float currentPosition[Z_AXIS_ARRAY]; ///< Position in global coordinates
   static float lastCmdPos[Z_AXIS_ARRAY]; ///< Last coordinates (global coordinates) send by g-codes
   static int32_t destinationSteps[E_AXIS_ARRAY];         ///< Target position in steps.
-  static millis_t lastTempReport;
+  static uint32_t lastTempReport;
   static float extrudeMultiplyError; ///< Accumulated error during extrusion
   static float extrusionFactor; ///< Extrusion multiply factor
 

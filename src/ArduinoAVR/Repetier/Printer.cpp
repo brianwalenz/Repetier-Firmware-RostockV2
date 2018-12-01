@@ -82,7 +82,7 @@ int Printer::currentLayer = 0;
 int Printer::maxLayer = -1; // -1 = unknown
 char Printer::printName[21] = ""; // max. 20 chars + 0
 float Printer::progress = 0;
-millis_t Printer::lastTempReport = 0;
+uint32_t Printer::lastTempReport = 0;
 
 #if FEATURE_AUTOLEVEL
 float Printer::autolevelTransformation[9]; ///< Transformation matrix
@@ -722,7 +722,7 @@ void Printer::setup() {
 void Printer::defaultLoopActions() {
   Commands::checkForPeriodicalActions(true);  //check heater every n milliseconds
   uid.mediumAction(); // do check encoder
-  millis_t curtime = HAL::timeInMilliseconds();
+  uint32_t curtime = HAL::timeInMilliseconds();
   if(PrintLine::hasLines() || isMenuMode(MODE_PRINTING | MODE_PAUSED))
     previousMillisCmd = curtime;
   else {

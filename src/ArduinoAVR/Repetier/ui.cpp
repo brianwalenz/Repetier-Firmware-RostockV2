@@ -294,7 +294,7 @@ UIDisplay::initialize() {
 
   //uint16_t      activeAction; // action for ok/next/previous
   //uint16_t      delayedAction;
-  //millis_t      lastRefresh;
+  //uint32_t      lastRefresh;
 #else
   activeAction = 0;
   lastAction = 0;
@@ -983,7 +983,7 @@ UIDisplay::refreshPage(void) {
 
 // Gets calls from main tread only
 void UIDisplay::slowAction(bool allowMoves) {
-  millis_t time    = HAL::timeInMilliseconds();
+  uint32_t time    = HAL::timeInMilliseconds();
   uint8_t  refresh = 0;
 
   // delayed action open?

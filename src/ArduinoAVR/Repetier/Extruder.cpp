@@ -67,7 +67,7 @@ void Extruder::manageTemperatures() {
   uint8_t errorDetected = 0;
 
   bool newDefectFound = false;
-  millis_t time = HAL::timeInMilliseconds(); // compare time for decouple tests
+  uint32_t time = HAL::timeInMilliseconds(); // compare time for decouple tests
 #if NUM_TEMPERATURE_LOOPS > 0
   for(uint8_t controller = 0; controller < NUM_TEMPERATURE_LOOPS; controller++) {
     TemperatureController *act = tempController[controller];
@@ -289,7 +289,7 @@ void Extruder::manageTemperatures() {
 
   // Report temperatures every second, so we do not need to send M105
   if(Printer::isAutoreportTemp()) {
-    millis_t now = HAL::timeInMilliseconds();
+    uint32_t now = HAL::timeInMilliseconds();
     if(now - Printer::lastTempReport > 1000) {
       Printer::lastTempReport = now;
       Commands::printTemperatures();
@@ -302,7 +302,7 @@ void TemperatureController::waitForTargetTemperature() {
   if(Printer::debugDryrun()) return;
   bool oldReport = Printer::isAutoreportTemp();
   Printer::setAutoreportTemp(true);
-  //millis_t time = HAL::timeInMilliseconds();
+  //uint32_t time = HAL::timeInMilliseconds();
   while(true) {
     /*if( (HAL::timeInMilliseconds() - time) > 1000 )   //Print Temp Reading every 1 second while heating up.
       {
@@ -576,13 +576,13 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
     uid.refreshPage();
 
     bool dirRising = actExtruder->tempControl.targetTemperatureC > actExtruder->tempControl.currentTemperatureC;
-    //millis_t printedTime = HAL::timeInMilliseconds();
-    millis_t waituntil = 0;
+    //uint32_t printedTime = HAL::timeInMilliseconds();
+    uint32_t waituntil = 0;
 #if RETRACT_DURING_HEATUP
     uint8_t retracted = 0;
 #endif
-    millis_t currentTime;
-    millis_t maxWaitUntil = 0;
+    uint32_t currentTime;
+    uint32_t maxWaitUntil = 0;
     bool oldAutoreport = Printer::isAutoreportTemp();
     Printer::setAutoreportTemp(true);
     do {
@@ -605,7 +605,7 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
         if(dirRising ? actExtruder->tempControl.currentTemperatureC >= actExtruder->tempControl.targetTemperatureC - 5 : actExtruder->tempControl.currentTemperatureC <= actExtruder->tempControl.targetTemperatureC + 5) {
           maxWaitUntil = currentTime + 120000L;
         }
-      } else if((millis_t)(maxWaitUntil - currentTime) < 2000000000UL) {
+      } else if((uint32_t)(maxWaitUntil - currentTime) < 2000000000UL) {
         break;
       }
       if((waituntil == 0 &&
@@ -615,9 +615,9 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
          || (waituntil != 0 && (abs(actExtruder->tempControl.currentTemperatureC - actExtruder->tempControl.targetTemperatureC)) > TEMP_HYSTERESIS)
 #endif
          ) {
-        waituntil = currentTime + 1000UL * (millis_t)actExtruder->watchPeriod; // now wait for temp. to stabilize
+        waituntil = currentTime + 1000UL * (uint32_t)actExtruder->watchPeriod; // now wait for temp. to stabilize
       }
-    } while(waituntil == 0 || (waituntil != 0 && (millis_t)(waituntil - currentTime) < 2000000000UL));
+    } while(waituntil == 0 || (waituntil != 0 && (uint32_t)(waituntil - currentTime) < 2000000000UL));
     Printer::setAutoreportTemp(oldAutoreport);
 #if RETRACT_DURING_HEATUP
     if (retracted && actExtruder == Extruder::current) {
@@ -1138,7 +1138,7 @@ void TemperatureController::autotunePID(float temp, uint8_t controllerId, int ma
     commandQueue.keepAlive(GCODE_WAIT_HEATER);
     updateCurrentTemperature();
     currentTemp = currentTemperatureC;
-    millis_t time = HAL::timeInMilliseconds();
+    uint32_t time = HAL::timeInMilliseconds();
     maxTemp = RMath::max(maxTemp, currentTemp);
     minTemp = RMath::min(minTemp, currentTemp);
     if(heating == true && currentTemp > temp) { // switch heating -> off
