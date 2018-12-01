@@ -58,11 +58,13 @@ gcodeQueue::executeNext(void) {
 
     char ch = readByte();                                //    Read a byte.
 
+#if 0
     Com::print("Read '");
     Com::print(ch);
     Com::print("'  bufPos=");
     Com::print(bufPos);
     Com::print("\n");
+#endif
 
     if ((ch == '\n') ||                                  //    If end-of-line, set it to
         (ch == '\r')) {                                  //    end-of-string.  Turn off any
@@ -84,9 +86,11 @@ gcodeQueue::executeNext(void) {
       break;                                             //    out of the loop.
   }
 
+#if 0
   Com::print("COMMAND '");
   Com::print(buf);
   Com::print("'\n");
+#endif
 
   gcodeCommand *cmd = _cmds + _cmdsIn;                   //  Grab the next available command
 
@@ -102,7 +106,9 @@ gcodeQueue::executeNext(void) {
   if (_cmdsIn >= GCODE_BUFFER_SIZE)                      //  Loop around the circle,
     _cmdsIn = 0;                                         //  if needed.
 
+#if 0
   Com::printF(PSTR("ok\n"));                             //  Optionally append the line number that is being ACK'd.
+#endif
 
   keepAlive(GCODE_NOT_BUSY);                             //  Update keep_alive status.
 }
