@@ -199,7 +199,7 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
   uint8_t version = HAL::eprGetByte(EPR_VERSION); // This is the saved version. Don't copy data nor set it to older versions!
 
   Com::printF(PSTR("Detected EEPROM version: "));
-  Com::printF(version);
+  Com::print(version);
   Com::printF(PSTR("\n"));
 
   baudrate = HAL::eprGetInt32(EPR_BAUDRATE);
