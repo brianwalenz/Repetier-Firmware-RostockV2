@@ -257,7 +257,7 @@ void Commands::setFanSpeed(int speed, bool immediately) {
   Printer::fanSpeed = speed;
   if(PrintLine::linesCount == 0 || immediately) {
     if(Printer::mode == PRINTER_MODE_FFF) {
-      for(fast8_t i = 0; i < PRINTLINE_CACHE_SIZE; i++)
+      for(int8_t i = 0; i < PRINTLINE_CACHE_SIZE; i++)
         PrintLine::lines[i].secondSpeed = speed;         // fill all printline buffers with new fan speed value
     }
     Printer::setFanSpeedDirectly(speed);
@@ -992,7 +992,7 @@ Commands::processMCode(gcodeCommand *com) {
   }
 
   else if (com->M == 116) {
-    for(fast8_t h = 0; h <= HEATED_BED_INDEX; h++) {
+    for(int8_t h = 0; h <= HEATED_BED_INDEX; h++) {
       tempController[h]->waitForTargetTemperature();
     }
   }

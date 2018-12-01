@@ -51,9 +51,9 @@ volatile int waitRelax = 0; // Delay filament relax at the end of print, could b
 
 PrintLine PrintLine::lines[PRINTLINE_CACHE_SIZE]; ///< Cache for print moves.
 PrintLine *PrintLine::cur = NULL;               ///< Current printing line
-ufast8_t PrintLine::linesWritePos = 0;            ///< Position where we write the next cached line move.
-volatile ufast8_t PrintLine::linesCount = 0;      ///< Number of lines cached 0 = nothing to do.
-ufast8_t PrintLine::linesPos = 0;                 ///< Position for executing line movement.
+uint8_t PrintLine::linesWritePos = 0;            ///< Position where we write the next cached line move.
+volatile uint8_t PrintLine::linesCount = 0;      ///< Number of lines cached 0 = nothing to do.
+uint8_t PrintLine::linesPos = 0;                 ///< Position for executing line movement.
 
 /**
    Move printer the given number of steps. Puts the move into the queue. Used by e.g. homing commands.
@@ -122,7 +122,7 @@ void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z,
 
 
 
-void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast8_t drivingAxis) {
+void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, int8_t drivingAxis) {
   long axisInterval[VIRTUAL_AXIS_ARRAY]; // shortest interval possible for that axis
 
   //float timeForMove = (float)(F_CPU)*distance / (isXOrYMove() ? RMath::max(Printer::minimumSpeed, Printer::feedrate) : Printer::feedrate); // time is in ticks
@@ -195,7 +195,7 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
   float slowestAxisPlateauTimeRepro = 1e15; // 1/time to reduce division Unit: 1/s
   uint32_t *accel = (isEPositiveMove() ?  Printer::maxPrintAccelerationStepsPerSquareSecond : Printer::maxTravelAccelerationStepsPerSquareSecond);
 
-  for(fast8_t i = 0; i < E_AXIS_ARRAY ; i++) {
+  for(int8_t i = 0; i < E_AXIS_ARRAY ; i++) {
     if(isMoveOfAxis(i))
       // v = a * t => t = v/a = F_CPU/(c*a) => 1/t = c*a/F_CPU
       slowestAxisPlateauTimeRepro = RMath::min(slowestAxisPlateauTimeRepro, (float)axisInterval[i] * (float)accel[i]); //  steps/s^2 * step/tick  Ticks/s^2
@@ -285,14 +285,14 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
    The method is called before lines_count is increased!
 */
 void PrintLine::updateTrapezoids() {
-  ufast8_t first = linesWritePos;
+  uint8_t first = linesWritePos;
   PrintLine *firstLine;
   PrintLine *act = &lines[linesWritePos];
   InterruptProtectedBlock noInts;
 
   // First we find out how far back we could go with optimization.
 
-  ufast8_t maxfirst = linesPos; // first non fixed segment we might change
+  uint8_t maxfirst = linesPos; // first non fixed segment we might change
   if(maxfirst != linesWritePos)
     nextPlannerIndex(maxfirst); // don't touch the line printing
   // Now ignore enough segments to gain enough time for path planning
@@ -330,7 +330,7 @@ void PrintLine::updateTrapezoids() {
   firstLine = &lines[first];
   firstLine->block(); // don't let printer touch this or following segments during update
   noInts.unprotect();
-  ufast8_t previousIndex = linesWritePos;
+  uint8_t previousIndex = linesWritePos;
   previousPlannerIndex(previousIndex);
   PrintLine *previous = &lines[previousIndex]; // segment before the one we are inserting
 
@@ -531,7 +531,7 @@ void PrintLine::updateStepsParameter() {
    start = last line inserted
    last = last element until we check
 */
-inline void PrintLine::backwardPlanner(ufast8_t start, ufast8_t last) {
+inline void PrintLine::backwardPlanner(uint8_t start, uint8_t last) {
   PrintLine *act = &lines[start], *previous;
   float lastJunctionSpeed = act->endSpeed; // Start always with safe speed
 
@@ -568,7 +568,7 @@ inline void PrintLine::backwardPlanner(ufast8_t start, ufast8_t last) {
   } // while loop
 }
 
-void PrintLine::forwardPlanner(ufast8_t first) {
+void PrintLine::forwardPlanner(uint8_t first) {
   PrintLine *act;
   PrintLine *next = &lines[first];
   float vmaxRight;
@@ -608,7 +608,7 @@ void PrintLine::forwardPlanner(ufast8_t first) {
 }
 
 
-inline float PrintLine::safeSpeed(fast8_t drivingAxis) {
+inline float PrintLine::safeSpeed(int8_t drivingAxis) {
 	float xyMin = Printer::maxJerk * 0.5;
 	float mz = 0;
   float safe(xyMin);
@@ -918,7 +918,7 @@ bool NonlinearSegment::checkEndstops(PrintLine *cur, bool checkall) {
       return false;
   }
 
-  fast8_t r = 0;
+  int8_t r = 0;
 
   if(checkall) {
     // endstops are per motor and do not depend on global axis movement
@@ -954,7 +954,7 @@ bool NonlinearSegment::checkEndstops(PrintLine *cur, bool checkall) {
   return r != 0;
 }
 
-void PrintLine::calculateDirectionAndDelta(int32_t difference[], ufast8_t *dir, int32_t delta[]) {
+void PrintLine::calculateDirectionAndDelta(int32_t difference[], uint8_t *dir, int32_t delta[]) {
   *dir = 0;
   //Find direction
   if(difference[X_AXIS] != 0) {
@@ -1009,7 +1009,7 @@ void PrintLine::calculateDirectionAndDelta(int32_t difference[], ufast8_t *dir, 
    @param p The line to examine.
 */
 inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
-  fast8_t i;
+  int8_t i;
   int32_t delta, diff;
   int32_t destinationSteps[Z_AXIS_ARRAY], destinationDeltaSteps[TOWER_ARRAY];
   // Save current position
@@ -1190,7 +1190,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
   int32_t difference[E_AXIS_ARRAY];
   float axisDistanceMM[VIRTUAL_AXIS_ARRAY]; // Real cartesian axis movement in mm. Virtual axis in 4;
   uint8_t secondSpeed = Printer::fanSpeed;
-  for(fast8_t axis = 0; axis < E_AXIS_ARRAY; axis++) {
+  for(int8_t axis = 0; axis < E_AXIS_ARRAY; axis++) {
     difference[axis] = Printer::destinationSteps[axis] - Printer::currentPositionSteps[axis];
     if(axis == E_AXIS) {
       if(Printer::mode == PRINTER_MODE_FFF) {
@@ -1206,7 +1206,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
   }
 
   float cartesianDistance;
-  ufast8_t cartesianDir;
+  uint8_t cartesianDir;
   int32_t cartesianDeltaSteps[E_AXIS_ARRAY];
   calculateDirectionAndDelta(difference, &cartesianDir, cartesianDeltaSteps);
   if (!calculateDistance(axisDistanceMM, cartesianDir, &cartesianDistance)) {
@@ -1260,7 +1260,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
 
   int32_t startPosition[E_AXIS_ARRAY], fractionalSteps[E_AXIS_ARRAY];
   if(numLines > 1) {
-    for (fast8_t i = 0; i < Z_AXIS_ARRAY; i++)
+    for (int8_t i = 0; i < Z_AXIS_ARRAY; i++)
       startPosition[i] = Printer::currentPositionSteps[i];
     startPosition[E_AXIS] = 0;
     cartesianDistance /= static_cast<float>(numLines);
@@ -1290,13 +1290,13 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
     if (numLines == 1) {
       // p->numDeltaSegments = segmentCount; // not neede, gets overwritten further down
       p->dir = cartesianDir;
-      for (fast8_t i = 0; i < E_AXIS_ARRAY; i++) {
+      for (int8_t i = 0; i < E_AXIS_ARRAY; i++) {
         p->delta[i] = cartesianDeltaSteps[i];
         fractionalSteps[i] = difference[i];
       }
       p->distance = cartesianDistance;
     } else {
-      for (fast8_t i = 0; i < E_AXIS_ARRAY; i++) {
+      for (int8_t i = 0; i < E_AXIS_ARRAY; i++) {
         Printer::destinationSteps[i] = startPosition[i] + (difference[i] * lineNumber) / numLines;
         fractionalSteps[i] = Printer::destinationSteps[i] - Printer::currentPositionSteps[i];
         axisDistanceMM[i] = fabs(fractionalSteps[i] * Printer::invAxisStepsPerMM[i]);
@@ -1332,7 +1332,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
         return false;  // Line too short in low precision area
       }
     }
-    fast8_t drivingAxis = X_AXIS;
+    int8_t drivingAxis = X_AXIS;
     p->primaryAxis = VIRTUAL_AXIS; // Virtual axis will lead Bresenham step either way
     if (virtualAxisSteps > p->delta[E_AXIS]) { // Is delta move or E axis leading
       p->stepsRemaining = virtualAxisSteps;
@@ -1353,7 +1353,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
     Com::printF(PSTR("\n"));
 #endif
     p->calculateMove(axisDistanceMM, pathOptimize, drivingAxis);
-    for (fast8_t i = 0; i < E_AXIS_ARRAY; i++) {
+    for (int8_t i = 0; i < E_AXIS_ARRAY; i++) {
       Printer::currentPositionSteps[i] += fractionalSteps[i];
     }
   }

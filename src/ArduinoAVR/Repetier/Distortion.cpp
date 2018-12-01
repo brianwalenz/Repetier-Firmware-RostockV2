@@ -164,7 +164,7 @@ void Distortion::resetCorrection(void) {
     setMatrix(0, i);
 }
 
-int Distortion::matrixIndex(fast8_t x, fast8_t y) const {
+int Distortion::matrixIndex(int8_t x, int8_t y) const {
   return static_cast<int>(y) * DISTORTION_CORRECTION_POINTS + x;
 }
 
@@ -183,7 +183,7 @@ void Distortion::setMatrix(int32_t val, int index) {
 #endif
 }
 
-bool Distortion::isCorner(fast8_t i, fast8_t j) const {
+bool Distortion::isCorner(int8_t i, int8_t j) const {
   return (i == 0 || i == DISTORTION_CORRECTION_POINTS - 1)
     && (j == 0 || j == DISTORTION_CORRECTION_POINTS - 1);
 }
@@ -191,17 +191,17 @@ bool Distortion::isCorner(fast8_t i, fast8_t j) const {
 /**
    Extrapolates the changes from p1 to p2 to p3 which has the same distance as p1-p2.
 */
-inline int32_t Distortion::extrapolatePoint(fast8_t x1, fast8_t y1, fast8_t x2, fast8_t y2) const {
+inline int32_t Distortion::extrapolatePoint(int8_t x1, int8_t y1, int8_t x2, int8_t y2) const {
   return 2 * getMatrix(matrixIndex(x2, y2)) - getMatrix(matrixIndex(x1, y1));
 }
 
-void Distortion::extrapolateCorner(fast8_t x, fast8_t y, fast8_t dx, fast8_t dy) {
+void Distortion::extrapolateCorner(int8_t x, int8_t y, int8_t dx, int8_t dy) {
   setMatrix((extrapolatePoint(x + 2 * dx, y, x + dx, y) + extrapolatePoint(x, y + 2 * dy, x, y + dy)) / 2.0,
             matrixIndex(x, y));
 }
 
 void Distortion::extrapolateCorners() {
-  const fast8_t m = DISTORTION_CORRECTION_POINTS - 1;
+  const int8_t m = DISTORTION_CORRECTION_POINTS - 1;
   extrapolateCorner(0, 0, 1, 1);
   extrapolateCorner(0, m, 1, -1);
   extrapolateCorner(m, 0, -1, 1);
@@ -209,7 +209,7 @@ void Distortion::extrapolateCorners() {
 }
 
 bool Distortion::measure(void) {
-  fast8_t ix, iy;
+  int8_t ix, iy;
 
   disable(false);
 	Printer::prepareForProbing();

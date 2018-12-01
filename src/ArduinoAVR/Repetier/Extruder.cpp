@@ -318,7 +318,7 @@ void TemperatureController::waitForTargetTemperature() {
   }
 }
 
-fast8_t TemperatureController::errorState() {
+int8_t TemperatureController::errorState() {
   if(isSensorDefect())
     return 1;
   if(isSensorDecoupled())
@@ -330,7 +330,7 @@ fast8_t TemperatureController::errorState() {
 void Extruder::pauseExtruders(bool bed) {
 
   disableAllExtruderMotors();
-  for(fast8_t i = 0; i < NUM_EXTRUDER; i++) {
+  for(int8_t i = 0; i < NUM_EXTRUDER; i++) {
     if(extruder[i].tempControl.targetTemperatureC > 0) {
       extruder[i].tempControl.targetTemperatureC = -fabs(extruder[i].tempControl.targetTemperatureC);
       pwm_pos[extruder[i].tempControl.pwmIndex] = 0;
@@ -345,7 +345,7 @@ void Extruder::pauseExtruders(bool bed) {
 
 void Extruder::unpauseExtruders(bool wait) {
   // activate temperatures
-  for(fast8_t i = 0; i < NUM_EXTRUDER; i++) {
+  for(int8_t i = 0; i < NUM_EXTRUDER; i++) {
     if(extruder[i].tempControl.targetTemperatureC < 0)
       extruder[i].tempControl.targetTemperatureC = -extruder[i].tempControl.targetTemperatureC;
   }
@@ -355,7 +355,7 @@ void Extruder::unpauseExtruders(bool wait) {
     waitBed = true;
   }
   if(wait) {
-    for(fast8_t i = 0; i < NUM_EXTRUDER; i++)
+    for(int8_t i = 0; i < NUM_EXTRUDER; i++)
       extruder[i].tempControl.waitForTargetTemperature();
     if(waitBed) {
       heatedBedController.waitForTargetTemperature();
@@ -514,7 +514,7 @@ void Extruder::selectExtruderById(uint8_t extruderId) {
   Printer::maxTravelAccelerationStepsPerSquareSecond[E_AXIS] =
     Printer::maxPrintAccelerationStepsPerSquareSecond[E_AXIS] = Printer::maxAccelerationMMPerSquareSecond[E_AXIS] * Printer::axisStepsPerMM[E_AXIS];
 #if USE_ADVANCE
-  Printer::maxExtruderSpeed = (ufast8_t)floor(HAL::maxExtruderTimerFrequency() / (Extruder::current->maxFeedrate * next->stepsPerMM));
+  Printer::maxExtruderSpeed = (uint8_t)floor(HAL::maxExtruderTimerFrequency() / (Extruder::current->maxFeedrate * next->stepsPerMM));
   if(Printer::maxExtruderSpeed > 15) Printer::maxExtruderSpeed = 15;
   float fmax = ((float)HAL::maxExtruderTimerFrequency() / ((float)Printer::maxExtruderSpeed * Printer::axisStepsPerMM[E_AXIS])); // Limit feedrate to interrupt speed
   if(fmax < Printer::maxFeedrate[E_AXIS]) Printer::maxFeedrate[E_AXIS] = fmax;
@@ -728,7 +728,7 @@ void Extruder::disableCurrentExtruderMotor() {
 
 
 void Extruder::disableAllExtruderMotors() {
-  for(fast8_t i = 0; i < NUM_EXTRUDER; i++) {
+  for(int8_t i = 0; i < NUM_EXTRUDER; i++) {
     if(extruder[i].enablePin > -1)
       HAL::digitalWrite(extruder[i].enablePin, !extruder[i].enableOn);
   }

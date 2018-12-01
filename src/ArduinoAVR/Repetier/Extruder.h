@@ -127,7 +127,7 @@ public:
     return flags & TEMPERATURE_CONTROLLER_FLAG_SENSDECOUPLED;
   }
 	static void resetAllErrorStates();
-	fast8_t errorState();
+	int8_t errorState();
   inline bool isSlowedDown()
   {
     return flags & TEMPERATURE_CONTROLLER_FLAG_SLOWDOWN;

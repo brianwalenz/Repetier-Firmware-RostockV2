@@ -97,15 +97,15 @@ extern uint8_t lastMoveID;
 
 class PrintLine { // RAM usage: 24*4+15 = 113 Byte
 public:
-  static ufast8_t linesPos; // Position for executing line movement
+  static uint8_t linesPos; // Position for executing line movement
   static PrintLine lines[];
-  static ufast8_t linesWritePos; // Position where we write the next cached line move
-  ufast8_t joinFlags;
-  volatile ufast8_t flags;
+  static uint8_t linesWritePos; // Position where we write the next cached line move
+  uint8_t joinFlags;
+  volatile uint8_t flags;
   uint8_t secondSpeed; // for laser intensity or fan control
 private:
-  fast8_t primaryAxis;
-  ufast8_t dir;                       ///< Direction of movement. 1 = X+, 2 = Y+, 4= Z+, values can be combined.
+  int8_t primaryAxis;
+  uint8_t dir;                       ///< Direction of movement. 1 = X+, 2 = Y+, 4= Z+, values can be combined.
   int32_t timeInTicks;
   int32_t delta[E_AXIS_ARRAY];                  ///< Steps we want to move.
   int32_t error[E_AXIS_ARRAY];                  ///< Error calculation for Bresenham algorithm
@@ -148,7 +148,7 @@ private:
 public:
   int32_t stepsRemaining;            ///< Remaining steps, until move is finished
   static PrintLine *cur;
-  static volatile ufast8_t linesCount; // Number of lines cached 0 = nothing to do
+  static volatile uint8_t linesCount; // Number of lines cached 0 = nothing to do
 
   inline bool areParameterUpToDate() {return joinFlags & FLAG_JOIN_STEPPARAMS_COMPUTED;}
   inline void invalidateParameter() {joinFlags &= ~FLAG_JOIN_STEPPARAMS_COMPUTED;}
@@ -278,8 +278,8 @@ public:
   }
 
   void updateStepsParameter();
-  float safeSpeed(fast8_t drivingAxis);
-  void calculateMove(float axis_diff[], uint8_t pathOptimize, fast8_t distanceBase);
+  float safeSpeed(int8_t drivingAxis);
+  void calculateMove(float axis_diff[], uint8_t pathOptimize, int8_t distanceBase);
   void logLine();
 
   INLINE long getWaitTicks() {
@@ -327,26 +327,26 @@ public:
   static inline void computeMaxJunctionSpeed(PrintLine *previous, PrintLine *current);
   static int32_t bresenhamStep();
   static void waitForXFreeLines(uint8_t b = 1, bool allowMoves = false);
-  static inline void forwardPlanner(ufast8_t p);
-  static inline void backwardPlanner(ufast8_t p, ufast8_t last);
+  static inline void forwardPlanner(uint8_t p);
+  static inline void backwardPlanner(uint8_t p, uint8_t last);
   static void updateTrapezoids();
   static uint8_t insertWaitMovesIfNeeded(uint8_t pathOptimize, uint8_t waitExtraLines);
 
   static void moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool check_endstop, bool pathOptimize = true);
   static void moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool pathOptimize = true);
 
-  static INLINE void previousPlannerIndex(ufast8_t &p) {
+  static INLINE void previousPlannerIndex(uint8_t &p) {
     p = (p ? p - 1 : PRINTLINE_CACHE_SIZE - 1);
   }
 
-  static INLINE void nextPlannerIndex(ufast8_t& p) {
+  static INLINE void nextPlannerIndex(uint8_t& p) {
     p = (p >= PRINTLINE_CACHE_SIZE - 1 ? 0 : p + 1);
   }
 
   static uint8_t queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimize, uint8_t softEndstop);
   static inline void queueEMove(int32_t e_diff, uint8_t check_endstops, uint8_t pathOptimize);
   inline uint16_t calculateNonlinearSubSegments(uint8_t softEndstop);
-  static inline void calculateDirectionAndDelta(int32_t difference[], ufast8_t *dir, int32_t delta[]);
+  static inline void calculateDirectionAndDelta(int32_t difference[], uint8_t *dir, int32_t delta[]);
   static inline uint8_t calculateDistance(float axis_diff[], uint8_t dir, float *distance);
 
 #if FEATURE_SOFTWARE_LEVELING

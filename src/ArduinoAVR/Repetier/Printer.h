@@ -194,7 +194,7 @@ public:
 
 #if USE_ADVANCE
   static volatile int extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
-  static ufast8_t maxExtruderSpeed;            ///< Timer delay for end extruder speed
+  static uint8_t maxExtruderSpeed;            ///< Timer delay for end extruder speed
   //static uint8_t extruderAccelerateDelay;     ///< delay between 2 speec increases
   static int advanceStepsSet;
 #if ENABLE_QUADRATIC_ADVANCE
@@ -218,7 +218,7 @@ public:
   static uint8_t unitIsInches;
   static uint8_t mode;
   static uint8_t fanSpeed; // Last fan speed set with M106/M107
-  static fast8_t stepsPerTimerCall;
+  static int8_t stepsPerTimerCall;
   static uint8_t flag0, flag1; // 1 = stepper disabled, 2 = use external extruder interrupt, 4 = temp Sensor defect, 8 = homed
   static uint8_t flag2, flag3;
   static uint32_t interval;    ///< Last step duration in ticks.

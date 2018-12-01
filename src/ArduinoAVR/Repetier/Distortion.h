@@ -59,12 +59,12 @@ public:
   void showMatrix();
   void resetCorrection();
 private:
-  int matrixIndex(fast8_t x, fast8_t y) const;
+  int matrixIndex(int8_t x, int8_t y) const;
   int32_t getMatrix(int index) const;
   void setMatrix(int32_t val, int index);
-  bool isCorner(fast8_t i, fast8_t j) const;
-  INLINE int32_t extrapolatePoint(fast8_t x1, fast8_t y1, fast8_t x2, fast8_t y2) const;
-  void extrapolateCorner(fast8_t x, fast8_t y, fast8_t dx, fast8_t dy);
+  bool isCorner(int8_t i, int8_t j) const;
+  INLINE int32_t extrapolatePoint(int8_t x1, int8_t y1, int8_t x2, int8_t y2) const;
+  void extrapolateCorner(int8_t x, int8_t y, int8_t dx, int8_t dy);
   void extrapolateCorners();
 
   // attributes
