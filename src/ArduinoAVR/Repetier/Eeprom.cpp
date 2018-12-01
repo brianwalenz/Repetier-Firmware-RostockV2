@@ -82,7 +82,6 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 #endif
 
   HAL::eprSetByte(EPR_BED_HEAT_MANAGER,heatedBedController.heatManager);
-  HAL::eprSetInt16(EPR_BED_PREHEAT_TEMP,heatedBedController.preheatTemperature);
 
   HAL::eprSetByte(EPR_BED_DRIVE_MAX,heatedBedController.pidDriveMax);
   HAL::eprSetByte(EPR_BED_DRIVE_MIN,heatedBedController.pidDriveMin);
@@ -118,7 +117,6 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
       HAL::eprSetFloat(o+EPR_EXTRUDER_MAX_START_FEEDRATE,e->maxStartFeedrate);
       HAL::eprSetFloat(o+EPR_EXTRUDER_MAX_ACCELERATION,e->maxAcceleration);
       HAL::eprSetByte(o+EPR_EXTRUDER_HEAT_MANAGER,e->tempControl.heatManager);
-      HAL::eprSetInt16(o+EPR_EXTRUDER_PREHEAT,e->tempControl.preheatTemperature);
       HAL::eprSetByte(o+EPR_EXTRUDER_DRIVE_MAX,e->tempControl.pidDriveMax);
       HAL::eprSetByte(o+EPR_EXTRUDER_DRIVE_MIN,e->tempControl.pidDriveMin);
       HAL::eprSetFloat(o+EPR_EXTRUDER_PID_PGAIN,e->tempControl.pidPGain);
@@ -221,7 +219,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
 #endif
 
   heatedBedController.heatManager = HAL::eprGetByte(EPR_BED_HEAT_MANAGER);
-  heatedBedController.preheatTemperature = HAL::eprGetInt16(EPR_BED_PREHEAT_TEMP);
   heatedBedController.pidDriveMax = HAL::eprGetByte(EPR_BED_DRIVE_MAX);
   heatedBedController.pidDriveMin = HAL::eprGetByte(EPR_BED_DRIVE_MIN);
   heatedBedController.pidPGain = HAL::eprGetFloat(EPR_BED_PID_PGAIN);
@@ -277,7 +274,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
           e->maxStartFeedrate = HAL::eprGetFloat(o+EPR_EXTRUDER_MAX_START_FEEDRATE);
           e->maxAcceleration = HAL::eprGetFloat(o+EPR_EXTRUDER_MAX_ACCELERATION);
           e->tempControl.heatManager = HAL::eprGetByte(o+EPR_EXTRUDER_HEAT_MANAGER);
-          e->tempControl.preheatTemperature = HAL::eprGetInt16(o+EPR_EXTRUDER_PREHEAT);
           e->tempControl.pidDriveMax = HAL::eprGetByte(o+EPR_EXTRUDER_DRIVE_MAX);
           e->tempControl.pidDriveMin = HAL::eprGetByte(o+EPR_EXTRUDER_DRIVE_MIN);
           e->tempControl.pidPGain = HAL::eprGetFloat(o+EPR_EXTRUDER_PID_PGAIN);
@@ -352,10 +348,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
           HAL::eprSetFloat(EPR_RETRACTION_UNDO_SPEED,RETRACTION_UNDO_SPEED);
         }
 
-      if(version < 17) {
-        heatedBedController.preheatTemperature = HEATED_BED_PREHEAT_TEMP;
-        extruder[0].tempControl.preheatTemperature = EXT0_PREHEAT_TEMP;
-      }
       if(version < 19) {
 		    HAL::eprSetFloat(EPR_PARK_X,PARK_POSITION_X);
 		    HAL::eprSetFloat(EPR_PARK_Y,PARK_POSITION_Y);
@@ -467,7 +459,6 @@ void EEPROM::writeSettings()
   writeByte(EPR_AUTOLEVEL_ACTIVE, PSTR("Autolevel active (1/0)"));
 #endif
 
-  writeInt(EPR_BED_PREHEAT_TEMP, PSTR("Bed Preheat temp. [°C]"));
   writeByte(EPR_BED_HEAT_MANAGER, PSTR("Bed Heat Manager [0-3]"));
   writeByte(EPR_BED_DRIVE_MAX, PSTR("Bed PID drive max"));
   writeByte(EPR_BED_DRIVE_MIN, PSTR("Bed PID drive min"));
@@ -491,7 +482,6 @@ void EEPROM::writeSettings()
       writeFloat(o + EPR_EXTRUDER_MAX_FEEDRATE, PSTR("max. feedrate [mm/s]"));
       writeFloat(o + EPR_EXTRUDER_MAX_START_FEEDRATE, PSTR("start feedrate [mm/s]"));
       writeFloat(o + EPR_EXTRUDER_MAX_ACCELERATION, PSTR("acceleration [mm/s^2]"));
-      writeInt(o + EPR_EXTRUDER_PREHEAT, PSTR("Preheat temp. [°C]"));
       writeByte(o + EPR_EXTRUDER_HEAT_MANAGER, PSTR("heat manager [0-3]"));
       writeByte(o + EPR_EXTRUDER_DRIVE_MAX, PSTR("PID drive max"));
       writeByte(o + EPR_EXTRUDER_DRIVE_MIN, PSTR("PID drive min"));

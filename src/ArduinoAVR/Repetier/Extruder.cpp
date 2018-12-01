@@ -88,8 +88,7 @@ void Extruder::manageTemperatures() {
 
     // Check for obvious sensor errors
     if((act->currentTemperatureC < MIN_DEFECT_TEMPERATURE || act->currentTemperatureC > MAX_DEFECT_TEMPERATURE) &&
-       act->targetTemperatureC > 0 /*is heating*/ &&
-       (act->preheatTime() == 0 || act->preheatTime() >= MILLISECONDS_PREHEAT_TIME /*preheating time is over*/)) { // no temp sensor or short in sensor, disable heater
+       act->targetTemperatureC > 0) {
       errorDetected = 1;
       if(extruderTempErrors < 10)    // Ignore short temporary failures
         extruderTempErrors++;
@@ -548,11 +547,6 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
   if(temperatureInCelsius < 0) temperatureInCelsius = 0;
   TemperatureController *tc = tempController[extr];
   if(tc->sensorType == 0) temperatureInCelsius = 0;
-  //if(temperatureInCelsius==tc->targetTemperatureC) return;
-  if (temperatureInCelsius < MAX_ROOM_TEMPERATURE)
-    tc->resetPreheatTime();
-  else if (tc->targetTemperatureC == 0)
-    tc->startPreheatTime();
 
   tc->setTargetTemperature(temperatureInCelsius);
   tc->updateTempControlVars();
@@ -642,12 +636,19 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius, uint8_t ext
 #endif
 }
 
-void Extruder::setHeatedBedTemperature(float temperatureInCelsius, bool beep) {
-  if(temperatureInCelsius > HEATED_BED_MAX_TEMP) temperatureInCelsius = HEATED_BED_MAX_TEMP;
-  if(temperatureInCelsius < 0) temperatureInCelsius = 0;
-  if(heatedBedController.targetTemperatureC == temperatureInCelsius) return; // don't flood log with messages if killed
+void
+Extruder::setHeatedBedTemperature(float temperatureInCelsius) {
+
+  if (temperatureInCelsius > HEATED_BED_MAX_TEMP)
+    temperatureInCelsius = HEATED_BED_MAX_TEMP;
+
+  if (temperatureInCelsius < 0)
+    temperatureInCelsius = 0;
+
+  if(heatedBedController.targetTemperatureC == temperatureInCelsius)
+    return; // don't flood log with messages if killed
+
   heatedBedController.setTargetTemperature(temperatureInCelsius);
-  if(beep && temperatureInCelsius > 30) heatedBedController.setAlarm(true);
 
   Com::printF(PSTR("TargetBed:"));
   Com::printFloat(heatedBedController.targetTemperatureC, 0);
@@ -1355,7 +1356,7 @@ Extruder extruder[NUM_EXTRUDER] = {
     , {
       0, EXT0_TEMPSENSOR_TYPE, EXT0_SENSOR_INDEX, EXT0_HEAT_MANAGER, 0, 0, 0, 0, 0, 0
       , 0, EXT0_PID_INTEGRAL_DRIVE_MAX, EXT0_PID_INTEGRAL_DRIVE_MIN, EXT0_PID_PGAIN_OR_DEAD_TIME, EXT0_PID_I, EXT0_PID_D, EXT0_PID_MAX, 0, 0
-      , 0, 0, 0, EXT0_DECOUPLE_TEST_PERIOD, 0, EXT0_PREHEAT_TEMP
+      , 0, 0, 0, EXT0_DECOUPLE_TEST_PERIOD
     }
     , ext0_select_cmd, ext0_deselect_cmd, EXT0_EXTRUDER_COOLER_SPEED, 0, 0, 0
   }
@@ -1364,7 +1365,7 @@ Extruder extruder[NUM_EXTRUDER] = {
 TemperatureController heatedBedController = {
   PWM_HEATED_BED, HEATED_BED_SENSOR_TYPE, BED_SENSOR_INDEX, HEATED_BED_HEAT_MANAGER, 0, 0, 0, 0, 0, 0
   , 0, HEATED_BED_PID_INTEGRAL_DRIVE_MAX, HEATED_BED_PID_INTEGRAL_DRIVE_MIN, HEATED_BED_PID_PGAIN_OR_DEAD_TIME, HEATED_BED_PID_IGAIN, HEATED_BED_PID_DGAIN, HEATED_BED_PID_MAX, 0, 0
-  , 0, 0, 0, HEATED_BED_DECOUPLE_TEST_PERIOD, 0, HEATED_BED_PREHEAT_TEMP
+  , 0, 0, 0, HEATED_BED_DECOUPLE_TEST_PERIOD
 };
 
 

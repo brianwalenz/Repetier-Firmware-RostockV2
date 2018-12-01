@@ -330,19 +330,6 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
   }
 
 
-  else if (entryAction == ACT_BED_T_PREHEAT) {
-    int16_t temp = (int)heatedBedController.preheatTemperature + encoderChange;
-
-    if (temp < UI_SET_MIN_HEATED_BED_TEMP)
-      temp = UI_SET_MIN_HEATED_BED_TEMP;
-
-    if (temp > UI_SET_MAX_HEATED_BED_TEMP)
-      temp = UI_SET_MAX_HEATED_BED_TEMP;
-
-    heatedBedController.preheatTemperature = temp;
-  }
-
-
   else if (entryAction == ACT_EXT_T_TARGET) {
     int temp = (int)extruder[0].tempControl.targetTemperatureC;  //  is float
 
@@ -361,19 +348,6 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
       temp = UI_SET_MAX_EXTRUDER_TEMP;
 
     Extruder::setTemperatureForExtruder(temp, 0);
-  }
-
-
-  else if (entryAction == ACT_EXT_T_PREHEAT) {
-    int16_t temp = extruder[0].tempControl.preheatTemperature + encoderChange;
-
-    if (temp < UI_SET_MIN_EXTRUDER_TEMP)
-      temp = UI_SET_MIN_EXTRUDER_TEMP;
-
-    if (temp > UI_SET_MAX_EXTRUDER_TEMP)
-      temp = UI_SET_MAX_EXTRUDER_TEMP;
-
-    extruder[0].tempControl.preheatTemperature = temp;
   }
 
 

@@ -44,9 +44,9 @@
 #define ACT_FAN_CHANGE       (uint16_t)6
 #define ACT_ABORT_PRINT      (uint16_t)7
 #define ACT_EXT_T_TARGET     (uint16_t)8
-#define ACT_EXT_T_PREHEAT    (uint16_t)9
+#define ACT_unused_1         (uint16_t)9
 #define ACT_BED_T_TARGET     (uint16_t)10
-#define ACT_BED_T_PREHEAT    (uint16_t)11
+#define ACT_unused_2         (uint16_t)11
 #define ACT_HOME             (uint16_t)12
 #define ACT_POS_E            (uint16_t)13
 #define ACT_POS_X            (uint16_t)14

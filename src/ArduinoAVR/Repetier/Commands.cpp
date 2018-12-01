@@ -907,42 +907,45 @@ Commands::processMCode(gcodeCommand *com) {
 
   //  M104 set extruder temperature, return immediately
   //  M104 S<temp> T<tool>
-  //  M104 S<temp> T<tool> H=1 - set preheat temperature
+  //  M104 S<temp> T<tool> H=1 - set preheat temperature - not supported!
   //
+  //  M104 S<temp>  - set extruder temp and return immediately
+  //  M109 S<temp>  - set extruder temp and wait for it to stabilize
+  //
+  //  M140 S<temp>  - set bed temperature and return immediately
+  //  M190 S<temp>  - wait until bed reaches temperature
+  //
+  //  M116 P<tool> H<heater> C<chamber>  - wait for temps to stabilize
+
   else if (com->M == 104) {
-    if(Printer::debugDryrun())
+    if (Printer::debugDryrun())
       goto endMcode;
-    if(reportTempsensorError())
+    if (reportTempsensorError())
       goto endMcode;
 
     previousMillisCmd = HAL::timeInMilliseconds();
 
-
-    if(com->hasP() || (com->hasS() && com->S == 0))
+    if ((com->hasS() && com->S == 0))
       Commands::waitUntilEndOfAllMoves();
+
     if (com->hasS()) {
       if(com->hasT() && com->T < NUM_EXTRUDER)
         Extruder::setTemperatureForExtruder(com->S, com->T, com->hasF() && com->F > 0);
       else
         Extruder::setTemperatureForExtruder(com->S, Extruder::current->id, com->hasF() && com->F > 0);
-    } else if(com->hasH()) {
-      if(com->hasT() && com->T < NUM_EXTRUDER)
-        Extruder::setTemperatureForExtruder(extruder[com->T].tempControl.preheatTemperature, com->T, com->hasF() && com->F > 0);
-      else
-        Extruder::setTemperatureForExtruder(Extruder::current->tempControl.preheatTemperature, Extruder::current->id, com->hasF() && com->F > 0);
     }
   }
 
   else if (com->M == 140) {
-    if(Printer::debugDryrun())
+    if (Printer::debugDryrun())
       goto endMcode;
-    if(reportTempsensorError())
+    if (reportTempsensorError())
       goto endMcode;
 
     previousMillisCmd = HAL::timeInMilliseconds();
 
-    if (com->hasS()) Extruder::setHeatedBedTemperature(com->S, com->hasF() && com->F > 0);
-    else if(com->hasH()) Extruder::setHeatedBedTemperature(heatedBedController.preheatTemperature, com->hasF() && com->F > 0);
+    if (com->hasS())
+      Extruder::setHeatedBedTemperature(com->S);
   }
 
   else if (com->M == 105) {
@@ -958,23 +961,26 @@ Commands::processMCode(gcodeCommand *com) {
     previousMillisCmd = HAL::timeInMilliseconds();
 
     Commands::waitUntilEndOfAllMoves();
+
     Extruder *actExtruder = Extruder::current;
-    if(com->hasT() && com->T < NUM_EXTRUDER) actExtruder = &extruder[com->T];
-    if (com->hasS()) Extruder::setTemperatureForExtruder(com->S, actExtruder->id, com->hasF() && com->F > 0, true);
-    else if(com->hasH())  Extruder::setTemperatureForExtruder(actExtruder->tempControl.preheatTemperature, actExtruder->id, com->hasF() && com->F > 0, true);
+
+    if(com->hasT() && com->T < NUM_EXTRUDER)
+      actExtruder = &extruder[com->T];
+
+    if (com->hasS())
+      Extruder::setTemperatureForExtruder(com->S, actExtruder->id, com->hasF() && com->F > 0, true);
+
     previousMillisCmd = HAL::timeInMilliseconds();
   }
 
   else if (com->M == 190) {
-    if(Printer::debugDryrun())
-      goto endMcode;
-    if(reportTempsensorError())
-      goto endMcode;
+    if (Printer::debugDryrun())   goto endMcode;
+    if (reportTempsensorError())  goto endMcode;
 
     Commands::waitUntilEndOfAllMoves();
 
-    if (com->hasS()) Extruder::setHeatedBedTemperature(com->S, com->hasF() && com->F > 0);
-    else if(com->hasH())  Extruder::setHeatedBedTemperature(heatedBedController.preheatTemperature, com->hasF() && com->F > 0);
+    if (com->hasS())
+      Extruder::setHeatedBedTemperature(com->S);
 
     //  If the bed is within 5 degrees, don't wait.
     //
@@ -1036,7 +1042,7 @@ Commands::processMCode(gcodeCommand *com) {
     }
     if(Printer::debugDryrun()) { // simulate movements without printing
       Extruder::setTemperatureForExtruder(0, 0);
-      Extruder::setHeatedBedTemperature(0, false);
+      Extruder::setHeatedBedTemperature(0);
     }
   }
 
@@ -1055,7 +1061,6 @@ Commands::processMCode(gcodeCommand *com) {
     Com::printF(PSTR("CAP: AUTOREPORT_TEMP:1\n"));
     Com::printF(PSTR("CAP: EEPROM:1\n"));
     Com::printF(PSTR("CAP: PAUSESTOP:1\n"));
-    Com::printF(PSTR("CAP: PREHEAT:1\n"));
     //reportPrinterUsage();
   }
 

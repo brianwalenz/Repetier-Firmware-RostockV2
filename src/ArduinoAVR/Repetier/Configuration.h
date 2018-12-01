@@ -236,8 +236,6 @@
 /** Time in ms between a heater action and test of success. Must be more then time between turning heater on and first temp. rise! 
  * 0 will disable decoupling test */
 #define EXT0_DECOUPLE_TEST_PERIOD 18000
-/* Temperature when using preheat */
-#define EXT0_PREHEAT_TEMP 190
 
 
 
@@ -454,18 +452,12 @@
 // This feature exists to protect your hotend from overheating accidentally, but *NOT* from thermistor short/failure!
 #define MAXTEMP 260   // E3D could go up to 300
 
-#define HEATED_BED_PREHEAT_TEMP 55
-
-/** Extreme values to detect defect thermistors. */
-#define MIN_DEFECT_TEMPERATURE 10
-#define MAX_DEFECT_TEMPERATURE 270
-
-//How many milliseconds a hot end will preheat before starting to check the
-//temperature. This value should NOT be set to the time it takes the
-//hot end to reach the target temperature, but should be set to the time it 
-//takes to reach the minimum temperature your thermistor can read. The lower
-//the better/safer, and shouldn't need to be more than 30 seconds (30000) 
-#define MILLISECONDS_PREHEAT_TIME 30000
+//  Extreme values to detect defect thermistors.
+//
+//  Open circuit on extruder thermistor reads ~11.8.
+//
+#define MIN_DEFECT_TEMPERATURE 15   //  59 F
+#define MAX_DEFECT_TEMPERATURE 270  //  very hot.
 
 #define DEFAULT_PRINTER_MODE PRINTER_MODE_FFF
 

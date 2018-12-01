@@ -59,8 +59,6 @@ public:
   uint32_t lastDecoupleTest;  ///< Last time of decoupling sensor-heater test
   float  lastDecoupleTemp;  ///< Temperature on last test
   uint32_t decoupleTestPeriod; ///< Time between setting and testing decoupling.
-  uint32_t preheatStartTime;    ///< Time (in milliseconds) when heat up was started
-  int16_t preheatTemperature;
 
   void setTargetTemperature(float target);
   void updateCurrentTemperature();
@@ -134,18 +132,6 @@ public:
   }
   void waitForTargetTemperature();
   void autotunePID(float temp,uint8_t controllerId,int maxCycles,bool storeResult, int method);
-  inline void startPreheatTime()
-  {
-    preheatStartTime = HAL::timeInMilliseconds();
-  }
-  inline void resetPreheatTime()
-  {
-    preheatStartTime = 0;
-  }
-  inline uint32_t preheatTime()
-  {
-    return preheatStartTime == 0 ? 0 : HAL::timeInMilliseconds() - preheatStartTime;
-  }
 };
 class Extruder;
 extern Extruder extruder[];
@@ -204,24 +190,29 @@ public:
   void retract(bool isRetract,bool isLong);
   void retractDistance(float dist,bool extraLength = false);
 #endif
+
   static void manageTemperatures();
   static void disableCurrentExtruderMotor();
   static void disableAllExtruderMotors();
   static void selectExtruderById(uint8_t extruderId);
   static void disableAllHeater();
   static void initExtruder();
+
   static void initHeatedBed();
-  static void setHeatedBedTemperature(float temp_celsius,bool beep = false);
+  static void setHeatedBedTemperature(float temp_celsius);
   static float getHeatedBedTemperature();
+
   static void setTemperatureForExtruder(float temp_celsius,uint8_t extr,bool beep = false,bool wait = false);
   static void pauseExtruders(bool bed = false);
   static void unpauseExtruders(bool wait = true);
 };
 
+
 #define HEATED_BED_INDEX NUM_EXTRUDER
+#define NUM_TEMPERATURE_LOOPS HEATED_BED_INDEX+1
+
 extern TemperatureController heatedBedController;
 
-#define NUM_TEMPERATURE_LOOPS HEATED_BED_INDEX+1
 
 #define TEMP_INT_TO_FLOAT(temp) ((float)(temp)/(float)(1<<CELSIUS_EXTRA_BITS))
 #define TEMP_FLOAT_TO_INT(temp) ((int)((temp)*(1<<CELSIUS_EXTRA_BITS)))
@@ -229,6 +220,7 @@ extern TemperatureController heatedBedController;
 #if NUM_TEMPERATURE_LOOPS > 0
 extern TemperatureController *tempController[NUM_TEMPERATURE_LOOPS];
 #endif
+
 extern uint8_t autotuneIndex;
 
 

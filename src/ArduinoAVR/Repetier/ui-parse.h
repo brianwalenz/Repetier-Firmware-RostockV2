@@ -116,17 +116,6 @@ UIDisplay::parse(const char *txt, bool ram) {
       addFloat(heatedBedController.targetTemperatureC, 3, 0);
     }
 
-    //  Preheating
-    //
-    else if ((c1 == 'p') && (c2 == 'c')) {
-      //dNumber(extruder[c2 - '0'].tempControl.preheatTemperature, 3, ' ');
-      addNumber(Extruder::current->tempControl.preheatTemperature, 3, ' ');
-    }
-
-    else if ((c1 == 'p') && (c2 == 'b')) {
-      addNumber(heatedBedController.preheatTemperature, 3, ' ');
-    }
-
     //  Heater PWM fraction.
     else if ((c1 == 'h') && (c2 == 'c')) {
       uint8_t  pwm = pwm_pos[Extruder::current->id];

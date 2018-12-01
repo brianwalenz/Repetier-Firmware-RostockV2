@@ -211,22 +211,3 @@ UIDisplay::okAction(bool allowMoves) {
     return executeAction(action, allowMoves);
   }
 #endif
-
-
-#if 0
-  //  former finishAction
-  if (action == ACT_EXT_T_PREHEAT) {
-    int i = 0;
-    int o = i * EEPROM_EXTRUDER_LENGTH + EEPROM_EXTRUDER_OFFSET;
-
-    Extruder *e = &extruder[i];
-
-    HAL::eprSetInt16(o + EPR_EXTRUDER_PREHEAT, e->tempControl.preheatTemperature);
-    EEPROM::updateChecksum();
-  }
-
-  if (action == ACT_BED_T_PREHEAT) {
-    HAL::eprSetInt16(EPR_BED_PREHEAT_TEMP, heatedBedController.preheatTemperature);
-    EEPROM::updateChecksum();
-  }
-#endif

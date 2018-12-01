@@ -102,7 +102,6 @@
 #define EPR_RETRACTION_UNDO_EXTRA_LONG_LENGTH 1012
 #define EPR_RETRACTION_UNDO_SPEED             1016
 
-#define EPR_BED_PREHEAT_TEMP                  1048
 #define EPR_PARK_X						      1056
 #define EPR_PARK_Y                            1060
 #define EPR_PARK_Z                            1064
@@ -143,7 +142,6 @@
 // 55-57 free for byte sized parameter
 #define EPR_EXTRUDER_MIXING_RATIOS  58 // 16*2 byte ratios = 32 byte -> end = 89
 #define EPR_EXTRUDER_Z_OFFSET            90
-#define EPR_EXTRUDER_PREHEAT             94 // maybe better temperature
 
 class EEPROM
 {
