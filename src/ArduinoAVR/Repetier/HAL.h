@@ -128,9 +128,6 @@ public:
 // leave some margin for all the extra transformations. So we keep inside clean timings.
 #define LIMIT_INTERVAL ((F_CPU/30000)+1)
 
-typedef uint16_t speed_t;
-
-
 #define SQRT(x) ( HAL::integerSqrt(x) )
 //#define SQRT(x) sqrt(x)
 

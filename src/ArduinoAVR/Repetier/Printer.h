@@ -291,7 +291,7 @@ public:
   static float offsetY;                     ///< Y-offset for different tool positions.
   static float offsetZ;                     ///< Z-offset for different tool positions.
   static float offsetZ2;                    ///< Z-offset without rotation correction. Required for z probe corrections
-  static speed_t vMaxReached;               ///< Maximum reached speed
+  static uint16_t vMaxReached;               ///< Maximum reached speed
   static uint32_t msecondsPrinting;         ///< Milliseconds of printing time (means time with heated extruder)
   static float filamentPrinted;             ///< mm of filament printed since counting started
   static float memoryX;
@@ -658,7 +658,7 @@ public:
     WRITE(Z_STEP_PIN, !START_STEP_WITH_HIGH);
   }
 
-  static INLINE speed_t updateStepsPerTimerCall(speed_t vbase) {
+  static INLINE uint16_t updateStepsPerTimerCall(uint16_t vbase) {
     if(vbase > STEP_DOUBLER_FREQUENCY) {
 #if ALLOW_QUADSTEPPING
       if(vbase > STEP_DOUBLER_FREQUENCY * 2) {

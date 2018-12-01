@@ -145,7 +145,7 @@ float Printer::offsetX;                     ///< X-offset for different extruder
 float Printer::offsetY;                     ///< Y-offset for different extruder positions.
 float Printer::offsetZ;                     ///< Z-offset for different extruder positions.
 float Printer::offsetZ2 = 0;                ///< Z-offset without rotation correction.
-speed_t Printer::vMaxReached;               ///< Maximum reached speed
+uint16_t Printer::vMaxReached;               ///< Maximum reached speed
 uint32_t Printer::msecondsPrinting;         ///< Milliseconds of printing time (means time with heated extruder)
 float Printer::filamentPrinted;             ///< mm of filament printed since counting started
 float Printer::memoryX = IGNORE_COORDINATE;

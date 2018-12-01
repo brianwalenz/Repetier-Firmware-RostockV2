@@ -1601,7 +1601,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
   if (cur->moveAccelerating()) {
     Printer::vMaxReached = HAL::ComputeV(Printer::timer, cur->fAcceleration) + cur->vStart;
     if(Printer::vMaxReached > cur->vMax) Printer::vMaxReached = cur->vMax;
-    speed_t v = Printer::updateStepsPerTimerCall(Printer::vMaxReached);
+    uint16_t v = Printer::updateStepsPerTimerCall(Printer::vMaxReached);
     Printer::interval = HAL::CPUDivU2(v);
     // if(Printer::maxInterval < Printer::interval) // fix timing for very slow speeds
     //    Printer::interval = Printer::maxInterval;
@@ -1609,7 +1609,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     cur->updateAdvanceSteps(Printer::vMaxReached, maxLoops, true);
     Printer::stepNumber += maxLoops; // is only used by moveAccelerating
   } else if (cur->moveDecelerating()) { // time to slow down
-    speed_t v = HAL::ComputeV(Printer::timer, cur->fAcceleration);
+    uint16_t v = HAL::ComputeV(Printer::timer, cur->fAcceleration);
     if (v > Printer::vMaxReached)   // if deceleration goes too far it can become too large
       v = cur->vEnd;
     else {

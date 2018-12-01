@@ -130,9 +130,9 @@ private:
   uint32_t decelSteps;        ///< How much steps does it take, to reach the end speed.
   uint32_t accelerationPrim; ///< Acceleration along primary axis
   uint32_t fAcceleration;    ///< accelerationPrim*262144/F_CPU
-  speed_t vMax;              ///< Maximum reached speed in steps/s.
-  speed_t vStart;            ///< Starting speed in steps/s.
-  speed_t vEnd;              ///< End speed in steps/s
+  uint16_t vMax;              ///< Maximum reached speed in steps/s.
+  uint16_t vStart;            ///< Starting speed in steps/s.
+  uint16_t vEnd;              ///< End speed in steps/s
 #if USE_ADVANCE
 #if ENABLE_QUADRATIC_ADVANCE
   int32_t advanceRate;               ///< Advance steps at full speed
@@ -201,7 +201,7 @@ public:
   }
 
   // Only called from bresenham -> inside interrupt handle
-  inline void updateAdvanceSteps(speed_t v, uint8_t max_loops, bool accelerate) {
+  inline void updateAdvanceSteps(uint16_t v, uint8_t max_loops, bool accelerate) {
 #if USE_ADVANCE
     if(!Printer::isAdvanceActivated()) return;
 #if ENABLE_QUADRATIC_ADVANCE
