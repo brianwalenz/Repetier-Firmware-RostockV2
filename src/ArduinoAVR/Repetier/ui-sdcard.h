@@ -25,6 +25,10 @@
 #include "SDCard.h"
 
 
+#undef  SHOW_SCANSDCARD
+#undef  SHOW_SDREFRESH
+
+
 extern UIDisplay uid;
 
 
@@ -39,8 +43,6 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
   root->rewind();
 
   sd._nFilesOnCard = 0;
-
-#define SHOW_SCANSDCARD
 
 #ifdef SHOW_SCANSDCARD
   Com::print("\n");
@@ -96,7 +98,7 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
 
 bool UIDisplay::isDirname(char *name) {
 
-  while(*name)
+  while (*name)
     name++;
 
   name--;
@@ -159,7 +161,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   //  scanSDcard();  //  necessary?  should be done when inserted.
 
   //  The menu shows:
-  //    SELECT FILE TO PRINT
+  //    <  FILE TO PRINT >
   //    [..]      --
   //    file1     -- enti == 0
   //    file2     -- enti == 1
@@ -169,8 +171,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
   // _menuTop   Which entry is the first to be displayed?
   // _menuPos   Which entry is highlighted?
-
-#undef SHOW_SDREFRESH
 
 #ifdef SHOW_SDREFRESH
   Com::print("sdrefresh -- menuTop=");
