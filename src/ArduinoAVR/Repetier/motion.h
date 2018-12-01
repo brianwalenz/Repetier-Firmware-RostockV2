@@ -125,7 +125,7 @@ private:
   uint8_t moveID;                 ///< ID used to identify moves which are all part of the same line
   int32_t numPrimaryStepPerSegment;   ///< Number of primary Bresenham axis steps in each delta segment
   NonlinearSegment segments[DELTASEGMENTS_PER_PRINTLINE];
-  ticks_t fullInterval;     ///< interval at full speed in ticks/step.
+  uint32_t fullInterval;     ///< interval at full speed in ticks/step.
   uint32_t accelSteps;        ///< How much steps does it take, to reach the plateau.
   uint32_t decelSteps;        ///< How much steps does it take, to reach the end speed.
   uint32_t accelerationPrim; ///< Acceleration along primary axis

@@ -129,7 +129,6 @@ public:
 #define LIMIT_INTERVAL ((F_CPU/30000)+1)
 
 typedef uint16_t speed_t;
-typedef uint32_t ticks_t;
 
 
 #define SQRT(x) ( HAL::integerSqrt(x) )
