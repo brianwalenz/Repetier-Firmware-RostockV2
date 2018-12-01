@@ -66,34 +66,27 @@
 #define EPR_Y_LENGTH              149
 #define EPR_Z_LENGTH              153
 
-#define EPR_Z_PROBE_X_OFFSET      800
-#define EPR_Z_PROBE_Y_OFFSET      804
-#define EPR_Z_PROBE_HEIGHT        808
-#define EPR_Z_PROBE_SPEED         812
-#define EPR_Z_PROBE_X1            816
-#define EPR_Z_PROBE_Y1            820
-#define EPR_Z_PROBE_X2            824
-#define EPR_Z_PROBE_Y2            828
-#define EPR_Z_PROBE_X3            832
-#define EPR_Z_PROBE_Y3            836
-#define EPR_Z_PROBE_XY_SPEED      840
 #define EPR_AUTOLEVEL_MATRIX      844
 #define EPR_AUTOLEVEL_ACTIVE      880
 #define EPR_DELTA_DIAGONAL_ROD_LENGTH 881
 #define EPR_DELTA_HORIZONTAL_RADIUS 885
 #define EPR_DELTA_SEGMENTS_PER_SECOND_PRINT 889
 #define EPR_DELTA_SEGMENTS_PER_SECOND_MOVE 891
+
 #define EPR_DELTA_TOWERX_OFFSET_STEPS 893
 #define EPR_DELTA_TOWERY_OFFSET_STEPS 895
 #define EPR_DELTA_TOWERZ_OFFSET_STEPS 897
+
 #define EPR_DELTA_ALPHA_A         901
 #define EPR_DELTA_ALPHA_B         905
 #define EPR_DELTA_ALPHA_C         909
+
 #define EPR_DELTA_RADIUS_CORR_A   913
 #define EPR_DELTA_RADIUS_CORR_B   917
 #define EPR_DELTA_RADIUS_CORR_C   921
+
 #define EPR_DELTA_MAX_RADIUS      925
-#define EPR_Z_PROBE_BED_DISTANCE  929
+
 #define EPR_DELTA_DIAGONAL_CORRECTION_A 933
 #define EPR_DELTA_DIAGONAL_CORRECTION_B 937
 #define EPR_DELTA_DIAGONAL_CORRECTION_C 941
@@ -108,10 +101,7 @@
 #define EPR_RETRACTION_UNDO_EXTRA_LENGTH      1008
 #define EPR_RETRACTION_UNDO_EXTRA_LONG_LENGTH 1012
 #define EPR_RETRACTION_UNDO_SPEED             1016
-#define EPR_ACCELERATION_FACTOR_TOP           1032
-#define EPR_BENDING_CORRECTION_A              1036
-#define EPR_BENDING_CORRECTION_B              1040
-#define EPR_BENDING_CORRECTION_C              1044
+
 #define EPR_BED_PREHEAT_TEMP                  1048
 #define EPR_PARK_X						      1056
 #define EPR_PARK_Y                            1060
@@ -154,9 +144,6 @@
 #define EPR_EXTRUDER_MIXING_RATIOS  58 // 16*2 byte ratios = 32 byte -> end = 89
 #define EPR_EXTRUDER_Z_OFFSET            90
 #define EPR_EXTRUDER_PREHEAT             94 // maybe better temperature
-#ifndef Z_PROBE_BED_DISTANCE
-#define Z_PROBE_BED_DISTANCE 5.0
-#endif
 
 class EEPROM
 {
@@ -184,53 +171,6 @@ public:
     HAL::eprSetByte(EPR_INTEGRITY_BYTE,computeChecksum());
   }
 
-#if FEATURE_Z_PROBE
-  static inline void setZProbeHeight(float mm) {
-    HAL::eprSetFloat(EPR_Z_PROBE_HEIGHT, mm);
-    Com::printF(PSTR("Z-Probe height set to: "),mm,3);
-    Com::printF(PSTR("\n"));
-    EEPROM::updateChecksum();
-  }
-#endif
-    
-  static inline float zProbeSpeed() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_SPEED);
-  }
-  static inline float zProbeXYSpeed() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_XY_SPEED);
-  }
-  static inline float zProbeXOffset() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_X_OFFSET);
-  }
-  static inline float zProbeYOffset() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_Y_OFFSET);
-  }
-  static inline float zProbeHeight() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_HEIGHT);
-  }
-  static inline float zProbeX1() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_X1);
-  }
-  static inline float zProbeY1() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_Y1);
-  }
-  static inline float zProbeX2() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_X2);
-  }
-  static inline float zProbeY2() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_Y2);
-  }
-  static inline float zProbeX3() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_X3);
-  }
-  static inline float zProbeY3() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_Y3);
-  }
-  static inline float zProbeBedDistance() {
-    return HAL::eprGetFloat(EPR_Z_PROBE_BED_DISTANCE);
-  }
-
-
   static inline int16_t deltaSegmentsPerSecondMove() {
     return HAL::eprGetInt16(EPR_DELTA_SEGMENTS_PER_SECOND_MOVE);
   }
@@ -241,18 +181,11 @@ public:
     return HAL::eprGetInt16(EPR_DELTA_SEGMENTS_PER_SECOND_PRINT);
   }
 
-  static inline float deltaHorizontalRadius() {
-    return HAL::eprGetFloat(EPR_DELTA_HORIZONTAL_RADIUS);
-  }
-  static inline int16_t deltaTowerXOffsetSteps() {
-    return HAL::eprGetInt16(EPR_DELTA_TOWERX_OFFSET_STEPS);
-  }
-  static inline int16_t deltaTowerYOffsetSteps() {
-    return HAL::eprGetInt16(EPR_DELTA_TOWERY_OFFSET_STEPS);
-  }
-  static inline int16_t deltaTowerZOffsetSteps() {
-    return HAL::eprGetInt16(EPR_DELTA_TOWERZ_OFFSET_STEPS);
-  }
+  static inline float deltaHorizontalRadius() {return HAL::eprGetFloat(EPR_DELTA_HORIZONTAL_RADIUS);}
+
+  static inline int16_t deltaTowerXOffsetSteps() {return HAL::eprGetInt16(EPR_DELTA_TOWERX_OFFSET_STEPS);}
+  static inline int16_t deltaTowerYOffsetSteps() {return HAL::eprGetInt16(EPR_DELTA_TOWERY_OFFSET_STEPS);}
+  static inline int16_t deltaTowerZOffsetSteps() {return HAL::eprGetInt16(EPR_DELTA_TOWERZ_OFFSET_STEPS);}
 
   static inline void setRodRadius(float mm) {
     Printer::radius0=mm;
@@ -346,18 +279,6 @@ public:
   }
   static inline int8_t isZCorrectionEnabled() {
     return HAL::eprGetByte(EPR_DISTORTION_CORRECTION_ENABLED);
-  }
-  static inline float bendingCorrectionA() {
-    return HAL::eprGetFloat(EPR_BENDING_CORRECTION_A);
-  }
-  static inline float bendingCorrectionB() {
-    return HAL::eprGetFloat(EPR_BENDING_CORRECTION_B);
-  }
-  static inline float bendingCorrectionC() {
-    return HAL::eprGetFloat(EPR_BENDING_CORRECTION_C);
-  }
-  static inline float accelarationFactorTop() {
-    return HAL::eprGetFloat(EPR_ACCELERATION_FACTOR_TOP);
   }
   static inline float parkX() {
     return HAL::eprGetFloat(EPR_PARK_X);

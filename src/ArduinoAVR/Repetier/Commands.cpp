@@ -458,145 +458,6 @@ Commands::processG004(gcodeCommand *com) {
 
 
 void
-Commands::processG029(gcodeCommand *com) {
-#if 0 // DISABLE
-  Printer::prepareForProbing();
-
-#if defined(Z_PROBE_MIN_TEMPERATURE) && Z_PROBE_MIN_TEMPERATURE && Z_PROBE_REQUIRES_HEATING
-  float actTemp[NUM_EXTRUDER];
-  for(int i = 0; i < NUM_EXTRUDER; i++)
-    actTemp[i] = extruder[i].tempControl.targetTemperatureC;
-  Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, RMath::max(EEPROM::zProbeHeight(), static_cast<float>(ZHOME_HEAT_HEIGHT)), IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
-  Commands::waitUntilEndOfAllMoves();
-
-#if ZHOME_HEAT_ALL
-  for(int i = 0; i < NUM_EXTRUDER; i++) {
-    Extruder::setTemperatureForExtruder(RMath::max(actTemp[i], static_cast<float>(ZPROBE_MIN_TEMPERATURE)), i, false, false);
-  }
-  for(int i = 0; i < NUM_EXTRUDER; i++) {
-    if(extruder[i].tempControl.currentTemperatureC < ZPROBE_MIN_TEMPERATURE)
-      Extruder::setTemperatureForExtruder(RMath::max(actTemp[i], static_cast<float>(ZPROBE_MIN_TEMPERATURE)), i, false, true);
-  }
-#else
-  if(extruder[Extruder::current->id].tempControl.currentTemperatureC < ZPROBE_MIN_TEMPERATURE)
-    Extruder::setTemperatureForExtruder(RMath::max(actTemp[Extruder::current->id], static_cast<float>(ZPROBE_MIN_TEMPERATURE)), Extruder::current->id, false, true);
-#endif
-#endif
-
-  bool ok = true;
-  Printer::startProbing(true);
-  bool oldAutolevel = Printer::isAutolevelActive();
-  Printer::setAutolevelActive(false);
-  float sum = 0, last, oldFeedrate = Printer::feedrate;
-  Printer::moveTo(EEPROM::zProbeX1(), EEPROM::zProbeY1(), IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
-  sum = Printer::runZProbe(true, false, Z_PROBE_REPETITIONS, false);
-  if(sum == ILLEGAL_Z_PROBE) ok = false;
-  if(ok) {
-    Printer::moveTo(EEPROM::zProbeX2(), EEPROM::zProbeY2(), IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
-    last = Printer::runZProbe(false, false);
-    if(last == ILLEGAL_Z_PROBE) ok = false;
-    sum += last;
-  }
-  if(ok) {
-    Printer::moveTo(EEPROM::zProbeX3(), EEPROM::zProbeY3(), IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
-    last = Printer::runZProbe(false, true);
-    if(last == ILLEGAL_Z_PROBE) ok = false;
-    sum += last;
-  }
-  if(ok) {
-    sum *= 0.33333333333333;
-    Com::printF(PSTR("Z-probe average height:"), sum);
-    Com::printF(PSTR("\n"));
-    if(com->hasS() && com->S) {
-#if MAX_HARDWARE_ENDSTOP_Z
-#if DRIVE_SYSTEM == DELTA
-      Printer::updateCurrentPosition();
-      Printer::zLength += sum - Printer::currentPosition[Z_AXIS];
-      Printer::updateDerivedParameter();
-      Printer::homeAxis(true, true, true);
-#else
-      Printer::currentPositionSteps[Z_AXIS] = sum * Printer::axisStepsPerMM[Z_AXIS];
-      float zup = Printer::runZMaxProbe();
-      if(zup == ILLEGAL_Z_PROBE) {
-        ok = false;
-      } else
-        Printer::zLength = zup + sum - ENDSTOP_Z_BACK_ON_HOME;
-#endif // DELTA
-      Com::printF(PSTR("INFO Reset Z height\n"));
-      Com::printF(PSTR("Printer height:"), Printer::zLength);
-      Com::printF(PSTR("\n"));
-#else
-      Printer::currentPositionSteps[Z_AXIS] = sum * Printer::axisStepsPerMM[Z_AXIS];
-      Com::printF(PSTR("Adjusted z origin"));
-      Com::printF(PSTR("\n"));
-#endif // max z endstop
-    }
-    Printer::feedrate = oldFeedrate;
-    Printer::setAutolevelActive(oldAutolevel);
-    if(ok && com->hasS() && com->S == 2)
-      EEPROM::storeDataIntoEEPROM();
-  }
-  Printer::updateCurrentPosition(true);
-  printCurrentPosition();
-  Printer::finishProbing();
-  Printer::feedrate = oldFeedrate;
-  if(!ok) {
-    commandQueue.fatalError(PSTR("G29 leveling failed!"));
-    break;
-  }
-#if defined(Z_PROBE_MIN_TEMPERATURE) && Z_PROBE_MIN_TEMPERATURE && Z_PROBE_REQUIRES_HEATING
-#if ZHOME_HEAT_ALL
-  for(int i = 0; i < NUM_EXTRUDER; i++) {
-    Extruder::setTemperatureForExtruder(RMath::max(actTemp[i], static_cast<float>(ZPROBE_MIN_TEMPERATURE)), i, false, false);
-  }
-  for(int i = 0; i < NUM_EXTRUDER; i++) {
-    if(extruder[i].tempControl.currentTemperatureC < ZPROBE_MIN_TEMPERATURE)
-      Extruder::setTemperatureForExtruder(RMath::max(actTemp[i], static_cast<float>(ZPROBE_MIN_TEMPERATURE)), i, false, true);
-  }
-#else
-  if(extruder[Extruder::current->id].tempControl.currentTemperatureC < ZPROBE_MIN_TEMPERATURE)
-    Extruder::setTemperatureForExtruder(RMath::max(actTemp[Extruder::current->id], static_cast<float>(ZPROBE_MIN_TEMPERATURE)), Extruder::current->id, false, true);
-#endif
-#endif
-#endif // DISABLE
-}
-
-void
-Commands::processG030(gcodeCommand *com) {
-#if 0 // DISABLE
-  if (com->hasS()) {
-    Printer::measureZProbeHeight(com->hasZ() ? com->Z : Printer::currentPosition[Z_AXIS]);
-  } else {
-    uint8_t p = (com->hasP() ? (uint8_t)com->P : 3);
-    float z = Printer::runZProbe(p & 1, p & 2, Z_PROBE_REPETITIONS, true, false);
-    if(z == ILLEGAL_Z_PROBE) {
-      commandQueue.fatalError(PSTR("G30 probing failed!"));
-      break;
-    }
-    if(com->hasR() || com->hasH()) {
-      float h = Printer::convertToMM(com->hasH() ? com->H : 0);
-      float o = Printer::convertToMM(com->hasR() ? com->R : h);
-#if DISTORTION_CORRECTION
-      // Undo z distortion correction contained in z
-      float zCorr = 0;
-      if(Printer::distortion.isEnabled()) {
-        zCorr = Printer::distortion.correct(Printer::currentPositionSteps[X_AXIS], Printer::currentPositionSteps[Y_AXIS], Printer::zMinSteps) * Printer::invAxisStepsPerMM[Z_AXIS];
-        z -= zCorr;
-      }
-#endif
-      Printer::coordinateOffset[Z_AXIS] = o - h;
-      Printer::currentPosition[Z_AXIS] = Printer::lastCmdPos[Z_AXIS] = z + h + Printer::zMin;
-      Printer::updateCurrentPositionSteps();
-      Printer::setZHomed(true);
-      transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
-    } else {
-      Printer::updateCurrentPosition(p & 1);
-    }
-  }
-#endif // DISABLE
-}
-
-void
 Commands::processG100(gcodeCommand *com) {
 #if 0 // DISABLE
   // G100 Calibrate floor or rod radius
@@ -764,7 +625,7 @@ Commands::processG133(gcodeCommand *com) {
   Com::printF(PSTR("\n"));
 
   Printer::setAutolevelActive(oldAuto);
-  PrintLine::moveRelativeDistanceInSteps(0, 0, Printer::axisStepsPerMM[Z_AXIS] * -ENDSTOP_Z_BACK_MOVE, 0, Printer::homingFeedrate[Z_AXIS] / ENDSTOP_X_RETEST_REDUCTION_FACTOR, true, false);
+  PrintLine::moveRelativeDistanceInSteps(0, 0, Printer::axisStepsPerMM[Z_AXIS] * -10, 0, Printer::homingFeedrate[Z_AXIS] / 4, true, false);
   Printer::homeAxis(true, true, true);
 #endif // DISABLE
 }
@@ -819,27 +680,6 @@ Commands::processGCode(gcodeCommand *com) {
   //
   else if (com->G == 28) {
     Printer::homeAxis(true, true, true);
-  }
-
-  // G29 3 points, build average or distortion compensation
-  else if (com->G == 29) {
-    processG029(com);
-  }
-
-  // G30 [Pn] [S]
-  // G30 (the same as G30 P3) single probe set Z0
-  // G30 S1 Z<real_z_pos> - measures probe height (P is ignored) assuming we are at real height Z
-  // G30 H<height> R<offset> Make probe define new Z and z offset (R) at trigger point assuming z-probe measured an object of H height.
-  else if (com->G == 30) {
-    processG030(com);
-  }
-
-  // G31 display hall sensor output
-  else if (com->G == 31) {
-    Endstops::update();
-    Com::printF(PSTR("Z-probe state:"));
-    Com::printF(Endstops::zProbe() ? PSTR("H ") : PSTR("L "));
-    Com::printF(PSTR("\n"));
   }
 
   // G32 Auto-Bed leveling
@@ -1214,16 +1054,6 @@ Commands::processMCode(gcodeCommand *com) {
     Com::printF(PSTR("\n"));
     Com::printF(PSTR("CAP: AUTOREPORT_TEMP:1\n"));
     Com::printF(PSTR("CAP: EEPROM:1\n"));
-#if FEATURE_AUTOLEVEL && FEATURE_Z_PROBE
-    Com::printF(PSTR("CAP: AUTOLEVEL:1\n"));
-#else
-    Com::printF(PSTR("CAP: AUTOLEVEL:0\n"));
-#endif
-#if FEATURE_Z_PROBE
-    Com::printF(PSTR("CAP: Z_PROBE:1\n"));
-#else
-    Com::printF(PSTR("CAP: Z_PROBE:0\n"));
-#endif
     Com::printF(PSTR("CAP: PAUSESTOP:1\n"));
     Com::printF(PSTR("CAP: PREHEAT:1\n"));
     //reportPrinterUsage();
@@ -1241,9 +1071,9 @@ Commands::processMCode(gcodeCommand *com) {
 
   else if (com->M == 119) {
     Commands::waitUntilEndOfAllMoves();
-    Endstops::update();
-    Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
-    Endstops::report();
+    endstops.update();
+    endstops.update(); // double test to get right signal. Needed for crosstalk protection.
+    endstops.report();
   }
 
 

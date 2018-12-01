@@ -70,6 +70,7 @@
 #undef min
 #undef max
 #else
+#error OLD
 #include "WProgram.h"
 #define COMPAT_PRE1
 #endif
@@ -219,11 +220,7 @@ public:
   virtual int peek(void);
   virtual int read(void);
   virtual void flush(void);
-#ifdef COMPAT_PRE1
-  virtual void write(uint8_t);
-#else
   virtual size_t write(uint8_t);
-#endif
   using Print::write; // pull in write(str) and write(buf, size) from Print
   operator bool();
   int outputUnused(void); // Used for output in interrupts

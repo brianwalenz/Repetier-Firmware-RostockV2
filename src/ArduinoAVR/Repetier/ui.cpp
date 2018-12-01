@@ -812,7 +812,9 @@ void
 UIDisplay::refreshPage(void) {
   char    cache[UI_ROWS][MAX_COLS + 1] = {0};
 
-  Endstops::update();
+  //  Really doesn't belong here.
+#warning no endstops.update in refreshPage.
+  endstops.update();
 
   //  Figure out what to display.
 

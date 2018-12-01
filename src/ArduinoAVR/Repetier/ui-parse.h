@@ -169,36 +169,6 @@ UIDisplay::parse(const char *txt, bool ram) {
 
 
 
-    // Endstop positions
-    else if ((c1 == 's') && (c2 == 'x')) {
-      addOnOff(Endstops::xMin());
-    }
-
-    else if ((c1 == 's') && (c2 == 'X')) {
-      addOnOff(Endstops::xMax());
-    }
-
-    else if ((c1 == 's') && (c2 == 'y')) {
-      addOnOff(Endstops::yMin());
-    }
-
-    else if ((c1 == 's') && (c2 == 'Y')) {
-      addOnOff(Endstops::yMax());
-    }
-
-    else if ((c1 == 's') && (c2 == 'z')) {
-      addOnOff(Endstops::zMin());
-    }
-
-    else if ((c1 == 's') && (c2 == 'Z')) {
-      addOnOff(Endstops::zMax());
-    }
-
-    else if ((c1 == 's') && (c2 == 'P')) {
-      addOnOff(Endstops::zProbe());
-    }
-
-
     //  Fan speeds
     else if ((c1 == 'F') && (c2 == 's')) {
       addNumber(floor(Printer::getFanSpeed() * 100 / 255 + 0.5f), 3);

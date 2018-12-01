@@ -37,8 +37,6 @@ public:
   static void processG000(gcodeCommand *com);
   static void processG001(gcodeCommand *com);
   static void processG004(gcodeCommand *com);
-  static void processG029(gcodeCommand *com);
-  static void processG030(gcodeCommand *com);
   static void processG100(gcodeCommand *com);
   static void processG131(gcodeCommand *com);
   static void processG132(gcodeCommand *com);

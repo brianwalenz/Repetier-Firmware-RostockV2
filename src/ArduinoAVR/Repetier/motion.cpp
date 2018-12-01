@@ -33,22 +33,11 @@
 // ================ Sanity checks ================
 
 
-
-
-// ####################################################################################
-// #          No configuration below this line - just some error checking             #
-// ####################################################################################
-
-#if PRINTLINE_CACHE_SIZE < 4
-#error PRINTLINE_CACHE_SIZE must be at least 5
-#endif
-
-
 //Inactivity shutdown variables
 millis_t previousMillisCmd = 0;
 millis_t maxInactiveTime = MAX_INACTIVE_TIME * 1000L;
 millis_t stepperInactiveTime = STEPPER_INACTIVE_TIME * 1000L;
-long baudrate = BAUDRATE;         ///< Communication speed rate.
+
 #if USE_ADVANCE
 #if ENABLE_QUADRATIC_ADVANCE
 int maxadv = 0;
@@ -56,6 +45,7 @@ int maxadv = 0;
 int maxadv2 = 0;
 float maxadvspeed = 0;
 #endif
+
 uint8_t pwm_pos[NUM_PWM]; // 0-NUM_EXTRUDER = Heater 0-NUM_EXTRUDER of extruder, NUM_EXTRUDER = Heated bed, NUM_EXTRUDER+1 Board fan, NUM_EXTRUDER+2 = Fan
 volatile int waitRelax = 0; // Delay filament relax at the end of print, could be a simple timeout
 
@@ -204,24 +194,7 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
   // t = (v_end-v_start)/a
   float slowestAxisPlateauTimeRepro = 1e15; // 1/time to reduce division Unit: 1/s
   uint32_t *accel = (isEPositiveMove() ?  Printer::maxPrintAccelerationStepsPerSquareSecond : Printer::maxTravelAccelerationStepsPerSquareSecond);
-#if defined(INTERPOLATE_ACCELERATION_WITH_Z) && INTERPOLATE_ACCELERATION_WITH_Z != 0
-  uint32_t newAccel[4];
-  float accelFac = (100.0 + (EEPROM::accelarationFactorTop() - 100.0) * Printer::currentPosition[Z_AXIS] / Printer::zLength) * 0.01;
-#if INTERPOLATE_ACCELERATION_WITH_Z == 1 || INTERPOLATE_ACCELERATION_WITH_Z == 3
-  newAccel[X_AXIS] = static_cast<int32_t>(accel[X_AXIS] * accelFac);
-  newAccel[Y_AXIS] = static_cast<int32_t>(accel[Y_AXIS] * accelFac);
-#else
-  newAccel[X_AXIS] = accel[X_AXIS];
-  newAccel[Y_AXIS] = accel[Y_AXIS];
-#endif
-#if INTERPOLATE_ACCELERATION_WITH_Z == 2 || INTERPOLATE_ACCELERATION_WITH_Z == 3
-  newAccel[Z_AXIS] = static_cast<int32_t>(accel[Z_AXIS] * accelFac);
-#else
-  newAccel[Z_AXIS] = accel[Z_AXIS];
-#endif
-  newAccel[E_AXIS] = accel[E_AXIS];
-  accel = newAccel;
-#endif // INTERPOLATE_ACCELERATION_WITH_Z
+
   for(fast8_t i = 0; i < E_AXIS_ARRAY ; i++) {
     if(isMoveOfAxis(i))
       // v = a * t => t = v/a = F_CPU/(c*a) => 1/t = c*a/F_CPU
@@ -271,7 +244,7 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, fast
       maxadvspeed = fabs(speedE);
     }
   }
-#endif
+#endif  //  USE_ADVANCE
   uid.mediumAction(); // do check encoder
   updateTrapezoids();
   // how much steps on primary axis do we need to reach target feedrate
@@ -926,22 +899,11 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
 
 
 bool NonlinearSegment::checkEndstops(PrintLine *cur, bool checkall) {
-  fast8_t r = 0;
-  if(Printer::isZProbingActive()) {
-    Endstops::update();
-#if FEATURE_Z_PROBE
-    if(isZNegativeMove() && Endstops::zProbe()) {
-      cur->setXMoveFinished();
-      cur->setYMoveFinished();
-      cur->setZMoveFinished();
-      //dir = 0;
-      Printer::stepsRemainingAtZHit = cur->stepsRemaining;
-      cur->stepsRemaining = 0;
-      return true;
-    }
-#endif
-    if(isZPositiveMove() && isXPositiveMove() && isYPositiveMove() && Endstops::anyXYZMax())
-      {
+
+  if (Printer::isZProbingActive()) {
+    endstops.update();
+
+    if(isZPositiveMove() && isXPositiveMove() && isYPositiveMove() && endstops.anyXYZMax()) {
         cur->setXMoveFinished();
         cur->setYMoveFinished();
         cur->setZMoveFinished();
@@ -949,37 +911,39 @@ bool NonlinearSegment::checkEndstops(PrintLine *cur, bool checkall) {
         Printer::stepsRemainingAtZHit = cur->stepsRemaining;
         return true;
       }
+
   } else if(checkall) {
-    Endstops::update(); // do not test twice
-    if(!Endstops::anyXYZ()) // very quick check for the normal case
+    endstops.update(); // do not test twice
+    if(!endstops.anyXYZ()) // very quick check for the normal case
       return false;
   }
+
+  fast8_t r = 0;
+
   if(checkall) {
     // endstops are per motor and do not depend on global axis movement
-    if(isXPositiveMove() && Endstops::xMax()) {
+    if(isXPositiveMove() && endstops.xMax()) {
       if(Printer::stepsRemainingAtXHit < 0)
         Printer::stepsRemainingAtXHit = cur->stepsRemaining;
       setXMoveFinished();
       cur->setXMoveFinished();
       r++;
     }
-    if(isYPositiveMove() && Endstops::yMax()) {
+    if(isYPositiveMove() && endstops.yMax()) {
       if(Printer::stepsRemainingAtYHit < 0)
         Printer::stepsRemainingAtYHit = cur->stepsRemaining;
       setYMoveFinished();
       cur->setYMoveFinished();
       r++;
     }
-    if(isZPositiveMove() && Endstops::zMax()) {
-#if MAX_HARDWARE_ENDSTOP_Z
+    if(isZPositiveMove() && endstops.zMax()) {
       if(Printer::stepsRemainingAtZHit)
         Printer::stepsRemainingAtZHit = cur->stepsRemaining;
-#endif
       setZMoveFinished();
       cur->setZMoveFinished();
       r++;
     }
-    if(isZNegativeMove() && Endstops::zMin()) {
+    if(isZNegativeMove() && endstops.zMin()) {
       setZMoveFinished();
       cur->setZMoveFinished();
       r++;
@@ -1168,7 +1132,7 @@ uint8_t PrintLine::calculateDistance(float axisDistanceMM[], uint8_t dir, float 
   }
 }
 
-#if SOFTWARE_LEVELING
+#if FEATURE_SOFTWARE_LEVELING
 void PrintLine::calculatePlane(int32_t factors[], int32_t p1[], int32_t p2[], int32_t p3[]) {
   factors[0] = p1[1] * (p2[2] - p3[2]) + p2[1] * (p3[2] - p1[2]) + p3[1] * (p1[2] - p2[2]);
   factors[1] = p1[2] * (p2[0] - p3[0]) + p2[2] * (p3[0] - p1[0]) + p3[2] * (p1[0] - p2[0]);
@@ -1458,18 +1422,6 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         removeCurrentLineForbidInterrupt();
         return(wait); // waste some time for path optimization to fill up
       } // End if WARMUP
-#if FEATURE_Z_PROBE
-      // z move may consist of more then 1 z line segment, so we better ignore them
-      // if the probe was already hit.
-      if(Printer::isZProbingActive() && Printer::stepsRemainingAtZHit >= 0) {
-        removeCurrentLineForbidInterrupt();
-        if(linesCount == 0) {
-          uid.setStatusP(PSTR("Idle"));
-          uid.refreshPage();
-        }
-        return 1000;
-      }
-#endif
 
       if(cur->isEMove()) {
         Extruder::enable();

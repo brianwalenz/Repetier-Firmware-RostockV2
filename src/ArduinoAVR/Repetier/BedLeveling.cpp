@@ -50,7 +50,7 @@
   So the only useful position for a z endstop is z max position. Apart from not having the bed tilt problem it
   also allows homing with a full bed so you can continue an aborted print with some gcode tweaking. With z max
   homing we adjust the error by simply changing the max. z height. One thing you need to remember is setting
-  #define ENDSTOP_Z_BACK_ON_HOME 4
+  #define E N D S T O P _ Z _ B A C K _ O N _ H O M E  4 (unused!)
   so we release the z max endstop. This is very important if we move xy at z max. Auto leveling might want to
   increase z and the endstop might prevent it causing wrong position and a head crash if we later go down.
   The value should be larger then the maximum expected tilt.
@@ -89,17 +89,68 @@
 
 #include "rmath.h"
 
-#ifndef BED_LEVELING_METHOD
+
+#if 1  //  DISABLED
+
+
+
+/*
+  Define how we measure the bed rotation. 
+  All methods need at least 3 points to define the bed rotation correctly. The quality we get comes
+  from the selection of the right points and method.
+
+  BED_LEVELING_METHOD 0
+  This method measures at the 3 probe points and creates a plane through these points. If you have
+  a really planar bed this gives the optimum result. The 3 points must not be in one line and have
+  a long distance to increase numerical stability.
+
+  BED_LEVELING_METHOD 1
+  This measures a grid. Probe point 1 is the origin and points 2 and 3 span a grid. We measure
+  BED_LEVELING_GRID_SIZE points in each direction and compute a regression plane through all
+  points. This gives a good overall plane if you have small bumps measuring inaccuracies.
+
+  BED_LEVELING_METHOD 2
+  Bending correcting 4 point measurement. This is for cantilevered beds that have the rotation axis
+  not at the side but inside the bed. Here we can assume no bending on the axis and a symmetric
+  bending to both sides of the axis. So probe points 2 and 3 build the symmetric axis and
+  point 1 is mirrored to 1m across the axis. Using the symmetry we then remove the bending
+  from 1 and use that as plane.
+*/
 #define BED_LEVELING_METHOD 0
+
+// Grid size for grid based plane measurement
+#define BED_LEVELING_GRID_SIZE 4
+
+// Repetitions for motorized bed leveling
+#define BED_LEVELING_REPETITIONS 5
+
+
+
+/* Bending correction adds a value to a measured z-probe value. This may be
+   required when the z probe needs some force to trigger and this bends the
+   bed down. Currently the correction values A/B/C correspond to z probe
+   positions 1/2/3. In later versions a bending correction algorithm might be
+   introduced to give it other meanings.*/
+#define BENDING_CORRECTION_A 0
+#define BENDING_CORRECTION_B 0
+#define BENDING_CORRECTION_C 0
+
+
+#define Z_PROBE_X1 100
+#define Z_PROBE_Y1 20
+#define Z_PROBE_X2 160
+#define Z_PROBE_Y2 170
+#define Z_PROBE_X3 20
+#define Z_PROBE_Y3 170
+
+
+
+//  FromPrinter::setup()
+#if 0
+  SET_INPUT(Z_PROBE_PIN);
+  PULLUP(Z_PROBE_PIN, HIGH);
 #endif
 
-#ifndef BED_LEVELING_GRID_SIZE
-#define BED_LEVELING_GRID_SIZE 5
-#endif
-
-#ifndef BED_LEVELING_REPETITIONS
-#define BED_LEVELING_REPETITIONS 1
-#endif
 
 
 
@@ -289,18 +340,13 @@ bool runBedLeveling(int s) {
 #endif
   Printer::setAutolevelActive(false); // iterate
   Printer::resetTransformationMatrix(true); // in case we switch from matrix to motorized!
-#if DRIVE_SYSTEM == DELTA
+
   // It is not possible to go to the edges at the top, also users try
   // it often and wonder why the coordinate system is then wrong.
   // For that reason we ensure a correct behavior by code.
   Printer::homeAxis(true, true, true);
   Printer::moveTo(IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0), IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
-#else
-  if(!Printer::isXHomed() || !Printer::isYHomed())
-    Printer::homeAxis(true, true, false);
-  Printer::updateCurrentPosition(true);
-  Printer::moveTo(EEPROM::zProbeX1(), EEPROM::zProbeY1(), IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
-#endif
+
   Printer::coordinateOffset[X_AXIS] = Printer::coordinateOffset[Y_AXIS] = Printer::coordinateOffset[Z_AXIS] = 0;
   Printer::startProbing(true);
   //commandQueue.executeFString(PSTR(Z_PROBE_START_SCRIPT));
@@ -351,9 +397,9 @@ bool runBedLeveling(int s) {
   if(distEnabled)
     Printer::distortion.enable(false); // if level has changed, distortion is also invalid
 #endif
-#if DRIVE_SYSTEM == DELTA
+
   Printer::homeAxis(true, true, true); // shifting z makes positioning invalid, need to recalibrate
-#endif
+
   Printer::feedrate = oldFeedrate;
 
 #if defined(Z_PROBE_MIN_TEMPERATURE) && Z_PROBE_MIN_TEMPERATURE && Z_PROBE_REQUIRES_HEATING
@@ -401,7 +447,7 @@ float Printer::runZMaxProbe() {
   long probeDepth = 2 * (Printer::zMaxSteps - Printer::zMinSteps);
   stepsRemainingAtZHit = -1;
   setZProbingActive(true);
-  PrintLine::moveRelativeDistanceInSteps(0, 0, probeDepth, 0, homingFeedrate[Z_AXIS] / ENDSTOP_Z_RETEST_REDUCTION_FACTOR, true, true);
+  PrintLine::moveRelativeDistanceInSteps(0, 0, probeDepth, 0, homingFeedrate[Z_AXIS] / 4, true, true);
   if(stepsRemainingAtZHit < 0) {
     Com::printF(PSTR("ERROR: z-max homing failed\n"));
     return ILLEGAL_Z_PROBE;
@@ -436,17 +482,11 @@ bool Printer::startProbing(bool runScript, bool enforceStartHeight) {
 #if EXTRUDER_IS_Z_PROBE == 0
   float ZPOffsetX = EEPROM::zProbeXOffset();
   float ZPOffsetY = EEPROM::zProbeYOffset();
-#if DRIVE_SYSTEM == DELTA
+
   float rad = EEPROM::deltaMaxRadius();
   float dx = Printer::currentPosition[X_AXIS] - ZPOffsetX;
   float dy = Printer::currentPosition[Y_AXIS] - ZPOffsetY;
   if(sqrt(dx * dx + dy * dy) > rad)
-#else
-    if((ZPOffsetX > 0 && Printer::currentPosition[X_AXIS] - ZPOffsetX < Printer::xMin) ||
-       (ZPOffsetY > 0 && Printer::currentPosition[Y_AXIS] - ZPOffsetY < Printer::yMin) ||
-       (ZPOffsetX < 0 && Printer::currentPosition[X_AXIS] - ZPOffsetX > Printer::xMin + Printer::xLength) ||
-       (ZPOffsetY < 0 && Printer::currentPosition[Y_AXIS] - ZPOffsetY > Printer::yMin + Printer::yLength))
-#endif
       {
         Com::printErrorF(PSTR("Activating z-probe would lead to forbidden xy position: "));
         Com::print(Printer::currentPosition[X_AXIS] - ZPOffsetX);
@@ -682,6 +722,8 @@ void Printer::measureZProbeHeight(float curHeight) {
 #endif
 }
 
+
+
 float Printer::bendingCorrectionAt(float x, float y) {
   PlaneBuilder builder;
   builder.addPoint(EEPROM::zProbeX1(), EEPROM::zProbeY1(), EEPROM::bendingCorrectionA());
@@ -840,3 +882,7 @@ void Printer::buildTransformationMatrix(Plane &plane) {
   }
 */
 #endif
+
+
+
+#endif  //  DISABLED

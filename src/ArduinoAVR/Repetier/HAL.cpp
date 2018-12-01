@@ -903,11 +903,7 @@ void RFHardwareSerial::flush() {
   while (_tx_buffer->head != _tx_buffer->tail)
     ;
 }
-#ifdef COMPAT_PRE1
-void
-#else
 size_t
-#endif
 RFHardwareSerial::write(uint8_t c) {
   uint8_t i = (_tx_buffer->head + 1) & SERIAL_TX_BUFFER_MASK;
 
@@ -918,9 +914,7 @@ RFHardwareSerial::write(uint8_t c) {
   _tx_buffer->head = i;
 
   bit_set(*_ucsrb, _udrie);
-#ifndef COMPAT_PRE1
   return 1;
-#endif
 }
 
 // Preinstantiate Objects //////////////////////////////////////////////////////

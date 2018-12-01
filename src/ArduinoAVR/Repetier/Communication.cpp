@@ -24,6 +24,20 @@
 #include "Communication.h"
 
 
+//  Communication speed.
+//   - 250000 : Fastest with error rate of 0% with 16 or 32 MHz - update wiring_serial.c in your board files. See boards/readme.txt
+//   - 115200 : Fast, but may produce communication errors on quite regular basis, Error rate -3,5%
+//   - 76800  : Best setting for Arduino with 16 MHz, Error rate 0,2% page 198 AVR1284 Manual. Result: Faster communication then 115200
+//   - 57600  : Should produce nearly no errors, on my gen 6 it's faster than 115200 because there are no errors slowing down the connection
+//   - 38600
+//  Overridden if EEPROM activated.
+//
+#define BAUDRATE 250000
+
+long baudrate = BAUDRATE;
+
+
+
 void
 Com::printF(FSTRINGPARAM(ptr)) {
   while (pgm_read_byte(ptr) != 0)

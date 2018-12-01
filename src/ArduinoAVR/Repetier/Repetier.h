@@ -124,8 +124,6 @@
 
 #define PRINTER_MODE_FFF 0
 
-#define ILLEGAL_Z_PROBE -888
-
 // we can not prevent this as some configurations need a parameter and others not
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -141,16 +139,6 @@
 #endif
 
 
-#if FEATURE_Z_PROBE && Z_PROBE_PIN < 0
-#error You need to define Z_PROBE_PIN to use z probe!
-#endif
-
-#if DISTORTION_CORRECTION
-#if !FEATURE_Z_PROBE
-#error Distortion correction requires the z probe feature to be enabled and configured!
-#endif
-#endif
-
 #ifndef MAX_ROOM_TEMPERATURE
 #define MAX_ROOM_TEMPERATURE 40
 #endif
@@ -161,22 +149,12 @@
 #define BABYSTEP_MULTIPLICATOR 1
 #endif
 
-#if !defined(Z_PROBE_REPETITIONS) || Z_PROBE_REPETITIONS < 1
-#define Z_PROBE_SWITCHING_DISTANCE 0.5 // Distance to safely untrigger probe
-#define Z_PROBE_REPETITIONS 1
-#endif
-
-#define SOFTWARE_LEVELING ((FEATURE_SOFTWARE_LEVELING) && (DRIVE_SYSTEM==DELTA))
 /**  \brief Horizontal distance bridged by the diagonal push rod when the end effector is in the center. It is pretty close to 50% of the push rod length (250 mm).
  */
-#if !defined(ROD_RADIUS) && DRIVE_SYSTEM == DELTA
+#if !defined(ROD_RADIUS)
 #define ROD_RADIUS (PRINTER_RADIUS-END_EFFECTOR_HORIZONTAL_OFFSET-CARRIAGE_HORIZONTAL_OFFSET)
 #endif
 
-
-#ifdef FEATURE_Z_PROBE
-#define MANUAL_CONTROL 1
-#endif
 
 //Step to split a circle in small Lines
 #ifndef MM_PER_ARC_SEGMENT
@@ -242,23 +220,13 @@ extern volatile uint16_t osAnalogInputValues[ANALOG_INPUTS];
 
 extern uint8_t pwm_pos[NUM_PWM]; // 0-NUM_EXTRUDER = Heater 0-NUM_EXTRUDER of extruder, NUM_EXTRUDER = Heated bed, NUM_EXTRUDER+1 Board fan, NUM_EXTRUDER+2 = Fan
 
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
-extern int maxadv;
-#endif
-
-extern int maxadv2;
-extern float maxadvspeed;
-#endif
-
-
 void manage_inactivity(uint8_t debug);
 
 extern void finishNextSegment();
 
 extern uint8_t transformCartesianStepsToDeltaSteps(long cartesianPosSteps[], long deltaPosSteps[]);
 
-#if SOFTWARE_LEVELING
+#if FEATURE_SOFTWARE_LEVELING
 extern void calculatePlane(long factors[], long p1[], long p2[], long p3[]);
 extern float calcZOffset(long factors[], long pointX, long pointY);
 #endif

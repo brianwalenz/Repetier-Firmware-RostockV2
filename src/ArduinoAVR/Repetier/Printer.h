@@ -81,6 +81,7 @@ union floatLong {
 // define an integer number of steps more than large enough to get to end stop from anywhere
 #define HOME_DISTANCE_STEPS (Printer::zMaxSteps-Printer::zMinSteps+1000)
 #define HOME_DISTANCE_MM (HOME_DISTANCE_STEPS * invAxisStepsPerMM[Z_AXIS])
+
 // Some defines to make clearer reading, as we overload these Cartesian memory locations for delta
 #define towerAMaxSteps Printer::xMaxSteps
 #define towerBMaxSteps Printer::yMaxSteps
@@ -190,6 +191,7 @@ extern bool runBedLeveling(int save); // save = S parameter in gcode
 class Printer {
   static uint8_t debugLevel;
 public:
+
 #if USE_ADVANCE
   static volatile int extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
   static ufast8_t maxExtruderSpeed;            ///< Timer delay for end extruder speed
@@ -199,6 +201,7 @@ public:
   static long advanceExecuted;             ///< Executed advance steps
 #endif
 #endif
+
   static uint16_t menuMode;
   static float axisStepsPerMM[]; ///< Resolution of each axis in steps per mm.
   static float invAxisStepsPerMM[]; ///< 1/axisStepsPerMM for faster computation.
@@ -251,7 +254,7 @@ public:
   static int32_t stepsRemainingAtZHit;
   static int32_t stepsRemainingAtXHit;
   static int32_t stepsRemainingAtYHit;
-#if SOFTWARE_LEVELING
+#if FEATURE_SOFTWARE_LEVELING
   static int32_t levelingP1[3];
   static int32_t levelingP2[3];
   static int32_t levelingP3[3];
@@ -265,12 +268,14 @@ public:
 #endif
   //static float minimumSpeed;               ///< lowest allowed speed to keep integration error small
   //static float minimumZSpeed;              ///< lowest allowed speed to keep integration error small
+
   static int32_t xMaxSteps;                   ///< For software endstops, limit of move in positive direction.
   static int32_t yMaxSteps;                   ///< For software endstops, limit of move in positive direction.
   static int32_t zMaxSteps;                   ///< For software endstops, limit of move in positive direction.
   static int32_t xMinSteps;                   ///< For software endstops, limit of move in negative direction.
   static int32_t yMinSteps;                   ///< For software endstops, limit of move in negative direction.
   static int32_t zMinSteps;                   ///< For software endstops, limit of move in negative direction.
+
   static float xLength;
   static float xMin;
   static float yLength;
@@ -632,30 +637,27 @@ public:
     return (flag0 & PRINTER_FLAG0_AUTOLEVEL_ACTIVE) != 0;
   }
   static void setAutolevelActive(bool on);
+
   static INLINE void setZProbingActive(bool on) {
     flag0 = (on ? flag0 | PRINTER_FLAG0_ZPROBEING : flag0 & ~PRINTER_FLAG0_ZPROBEING);
   }
   static INLINE bool isZProbingActive() {
     return (flag0 & PRINTER_FLAG0_ZPROBEING);
   }
-  static INLINE void executeXYGantrySteps() {
-  }
-  static INLINE void executeXZGantrySteps() {
-  }
-  static INLINE void startXStep() {
-    WRITE(X_STEP_PIN, START_STEP_WITH_HIGH);
-  }
-  static INLINE void startYStep() {
-    WRITE(Y_STEP_PIN, START_STEP_WITH_HIGH);
-  }
-  static INLINE void startZStep() {
-    WRITE(Z_STEP_PIN, START_STEP_WITH_HIGH);
-  }
+
+  static INLINE void executeXYGantrySteps() {}
+  static INLINE void executeXZGantrySteps() {}
+
+  static INLINE void startXStep() {WRITE(X_STEP_PIN, START_STEP_WITH_HIGH);}
+  static INLINE void startYStep() {WRITE(Y_STEP_PIN, START_STEP_WITH_HIGH);}
+  static INLINE void startZStep() {WRITE(Z_STEP_PIN, START_STEP_WITH_HIGH);}
+
   static INLINE void endXYZSteps() {
     WRITE(X_STEP_PIN, !START_STEP_WITH_HIGH);
     WRITE(Y_STEP_PIN, !START_STEP_WITH_HIGH);
     WRITE(Z_STEP_PIN, !START_STEP_WITH_HIGH);
   }
+
   static INLINE speed_t updateStepsPerTimerCall(speed_t vbase) {
     if(vbase > STEP_DOUBLER_FREQUENCY) {
 #if ALLOW_QUADSTEPPING
@@ -771,26 +773,16 @@ public:
     currentNonlinearPositionSteps[C_TOWER] = zaxis;
   }
   static void deltaMoveToTopEndstops(float feedrate);
-#if MAX_HARDWARE_ENDSTOP_Z
-  static float runZMaxProbe();
-#endif
-#if FEATURE_Z_PROBE
-  static bool startProbing(bool runScript, bool enforceStartHeight = true);
-  static void finishProbing();
-  static float runZProbe(bool first, bool last, uint8_t repeat = Z_PROBE_REPETITIONS, bool runStartScript = true, bool enforceStartHeight = true);
-  static void measureZProbeHeight(float curHeight);
-  static void waitForZProbeStart();
-  static float bendingCorrectionAt(float x, float y);
-#endif
-  // Moved outside FEATURE_Z_PROBE to allow auto-level functional test on
-  // system without Z-probe
+
   static void transformToPrinter(float x, float y, float z, float &transX, float &transY, float &transZ);
   static void transformFromPrinter(float x, float y, float z, float &transX, float &transY, float &transZ);
+
 #if FEATURE_AUTOLEVEL
   static void resetTransformationMatrix(bool silent);
   //static void buildTransformationMatrix(float h1,float h2,float h3);
   static void buildTransformationMatrix(Plane &plane);
 #endif
+
 #if DISTORTION_CORRECTION
   static void measureDistortion(void);
   static Distortion distortion;
@@ -801,27 +793,12 @@ public:
 
   //static void showConfiguration();
 
-  static void homeXAxis();
-  static void homeYAxis();
   static void homeZAxis();
   static void pausePrint();
   static void continuePrint();
   static void stopPrint();
 
 	static void moveToParkPosition();
-
-
-#if FEATURE_Z_PROBE
-  /** \brief Prepares printer for probing commands.
-
-      Probing can not start under all conditions. This command therefore makes sure,
-      a probing command can be executed by:
-      - Ensuring all axes are homed.
-      - Going to a low z position for fast measuring.
-      - Go to a position, where enabling the z-probe is possible without leaving the valid print area.
-  */
-  static void prepareForProbing();
-#endif
 };
 
 #endif // PRINTER_H_INCLUDED

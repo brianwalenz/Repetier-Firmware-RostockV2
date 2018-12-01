@@ -26,6 +26,46 @@
 
 #include "rmath.h"
 
+
+
+#define DISTORTION_CORRECTION_POINTS  5
+/** Max. distortion value to enter. Used to prevent dangerous errors with big values. */
+#define DISTORTION_LIMIT_TO 2
+/* For delta printers you simply define the measured radius around origin */
+#define DISTORTION_CORRECTION_R       80
+/* For all others you define the correction rectangle by setting the min/max coordinates. Make sure the the probe can reach all points! */
+#define DISTORTION_XMIN 10
+#define DISTORTION_YMIN 10
+#define DISTORTION_XMAX 190
+#define DISTORTION_YMAX 190
+
+/** Uses EEPROM instead of ram. Allows bigger matrix (up to 22x22) without any ram cost.
+    Especially on arm based systems with cached EEPROM it is good, on AVR it has a small
+    performance penalty.
+*/
+#define DISTORTION_PERMANENT          1
+/** Correction computation is not a cheap operation and changes are only small. So it
+    is not necessary to update it for every sub-line computed. For example lets take DELTA_SEGMENTS_PER_SECOND_PRINT = 150
+    and fastest print speed 100 mm/s. So we have a maximum segment length of 100/150 = 0.66 mm.
+    Now lats say our point field is 200 x 200 mm with 9 x 9 points. So between 2 points we have
+    200 / (9-1) = 25 mm. So we need at least 25 / 0.66 = 37 lines to move to the next measuring
+    point. So updating correction every 15 calls gives us at least 2 updates between the
+    measured points.
+    NOTE: Explicit z changes will always trigger an update!
+*/
+#define DISTORTION_UPDATE_FREQUENCY   15
+/** z distortion degrades to 0 from this height on. You should start after the first layer to get
+    best bonding with surface. */
+#define DISTORTION_START_DEGRADE 0.5
+/** z distortion correction gets down to 0 at this height. */
+#define DISTORTION_END_HEIGHT 1.5
+/** If your corners measurement points are not measurable with given radius, you can
+    set this to 1. It then omits the outer measurement points allowing a larger correction area.*/
+#define DISTORTION_EXTRAPOLATE_CORNERS 0
+
+
+
+
 #if DISTORTION_CORRECTION
 
 Distortion Printer::distortion;
@@ -87,16 +127,9 @@ void Distortion::init() {
 }
 
 void Distortion::updateDerived() {
-#if DRIVE_SYSTEM == DELTA
   step = (2 * Printer::axisStepsPerMM[Z_AXIS] * DISTORTION_CORRECTION_R) / (DISTORTION_CORRECTION_POINTS - 1.0f);
   radiusCorrectionSteps = DISTORTION_CORRECTION_R * Printer::axisStepsPerMM[Z_AXIS];
-#else
-  xCorrectionSteps = (DISTORTION_XMAX - DISTORTION_XMIN) * Printer::axisStepsPerMM[X_AXIS] / (DISTORTION_CORRECTION_POINTS - 1);
-  xOffsetSteps = DISTORTION_XMIN * Printer::axisStepsPerMM[X_AXIS];
-  yCorrectionSteps = (DISTORTION_YMAX - DISTORTION_YMIN) * Printer::axisStepsPerMM[Y_AXIS] / (DISTORTION_CORRECTION_POINTS - 1);
-  yOffsetSteps = DISTORTION_YMIN * Printer::axisStepsPerMM[Y_AXIS];
 
-#endif
   zStart = DISTORTION_START_DEGRADE * Printer::axisStepsPerMM[Z_AXIS] + Printer::zMinSteps;
   zEnd = DISTORTION_END_HEIGHT * Printer::axisStepsPerMM[Z_AXIS] + Printer::zMinSteps;
 }
@@ -116,9 +149,7 @@ void Distortion::disable(bool permanent) {
   if(permanent)
     EEPROM::setZCorrectionEnabled(enabled);
 #endif
-#if DRIVE_SYSTEM != DELTA
-  Printer::zCorrectionStepsIncluded = 0;
-#endif
+
   Printer::updateCurrentPosition(false);
   Com::printF(PSTR("Z correction disabled\n"));
 }
@@ -187,18 +218,11 @@ bool Distortion::measure(void) {
   Com::printF(PSTR("\n"));
   updateDerived();
   /*
-    #if DRIVE_SYSTEM == DELTA
     // It is not possible to go to the edges at the top, also users try
     // it often and wonder why the coordinate system is then wrong.
     // For that reason we ensure a correct behavior by code.
     Printer::homeAxis(true, true, true);
     Printer::moveTo(IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeBedDistance() + (EEPROM::zProbeHeight() > 0 ? EEPROM::zProbeHeight() : 0), IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
-    #else
-    if(!Printer::isXHomed() || !Printer::isYHomed())
-    Printer::homeAxis(true, true, false);
-    Printer::updateCurrentPosition(true);
-    Printer::moveTo(Printer::invAxisStepsPerMM[X_AXIS] * ((isCorner(0, 0) ? 1 : 0) * xCorrectionSteps + xOffsetSteps), Printer::invAxisStepsPerMM[Y_AXIS] * ((DISTORTION_CORRECTION_POINTS - 1) * yCorrectionSteps + yOffsetSteps), IGNORE_COORDINATE, IGNORE_COORDINATE, EEPROM::zProbeXYSpeed());
-    #endif
   */
   //Com::printF(PSTR("radiusCorr:"), radiusCorrectionSteps);
   //Com::printF(PSTR("\n"));
@@ -210,16 +234,11 @@ bool Distortion::measure(void) {
   Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, z, IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
   for (iy = DISTORTION_CORRECTION_POINTS - 1; iy >= 0; iy--)
     for (ix = 0; ix < DISTORTION_CORRECTION_POINTS; ix++) {
-#if (DRIVE_SYSTEM == DELTA) && DISTORTION_EXTRAPOLATE_CORNERS
+#if DISTORTION_EXTRAPOLATE_CORNERS
       if (isCorner(ix, iy)) continue;
 #endif
-#if DRIVE_SYSTEM == DELTA
       float mtx = Printer::invAxisStepsPerMM[X_AXIS] * (ix * step - radiusCorrectionSteps);
       float mty = Printer::invAxisStepsPerMM[Y_AXIS] * (iy * step - radiusCorrectionSteps);
-#else
-      float mtx = Printer::invAxisStepsPerMM[X_AXIS] * (ix * xCorrectionSteps + xOffsetSteps);
-      float mty = Printer::invAxisStepsPerMM[Y_AXIS] * (iy * yCorrectionSteps + yOffsetSteps);
-#endif
       //Com::printF(PSTR("mx "),mtx);
       //Com::printF(PSTR("my "),mty);
       //Com::printF(PSTR("ix "),(int)ix);
@@ -241,7 +260,7 @@ bool Distortion::measure(void) {
                   matrixIndex(ix, iy));
       }
       Printer::finishProbing();
-#if (DRIVE_SYSTEM == DELTA) && DISTORTION_EXTRAPOLATE_CORNERS
+#if DISTORTION_EXTRAPOLATE_CORNERS
       extrapolateCorners();
 #endif
       // make average center
@@ -290,21 +309,14 @@ bool Distortion::measure(void) {
       Com::printF(PSTR("correcting ("), x);
       Com::printF(PSTR(","), y);
     }
-#if DRIVE_SYSTEM == DELTA
     x += radiusCorrectionSteps;
     y += radiusCorrectionSteps;
     int32_t fxFloor = (x - (x < 0 ? step - 1 : 0)) / step; // special case floor for negative integers!
     int32_t fyFloor = (y - (y < 0 ? step - 1 : 0)) / step;
-#else
-    x -= xOffsetSteps;
-    y -= yOffsetSteps;
-    int32_t fxFloor = (x - (x < 0 ? xCorrectionSteps - 1 : 0)) / xCorrectionSteps; // special case floor for negative integers!
-    int32_t fyFloor = (y - (y < 0 ? yCorrectionSteps - 1 : 0)) / yCorrectionSteps;
-#endif
     // indexes to the matrix
 
     // position between cells of matrix, range=0 to 1 - outside of the matrix the value will be outside this range and the value will be extrapolated
-#if DRIVE_SYSTEM == DELTA
+
     int32_t fx = x - fxFloor * step; // Grid normalized coordinates
     int32_t fy = y - fyFloor * step;
     if (fxFloor < 0) {
@@ -344,32 +356,7 @@ bool Distortion::measure(void) {
       Com::printF(PSTR(" ZCOR:"),correction_z);
       Com::printF(PSTR("\n"));
       }*/
-#else
-    int32_t fx = x - fxFloor * xCorrectionSteps; // Grid normalized coordinates
-    int32_t fy = y - fyFloor * yCorrectionSteps;
-    if (fxFloor < 0) {
-      fxFloor = 0;
-      fx = 0;
-    } else if (fxFloor >= DISTORTION_CORRECTION_POINTS - 1) {
-      fxFloor = DISTORTION_CORRECTION_POINTS - 2;
-      fx = xCorrectionSteps;
-    }
-    if (fyFloor < 0) {
-      fyFloor = 0;
-      fy = 0;
-    } else if (fyFloor >= DISTORTION_CORRECTION_POINTS - 1) {
-      fyFloor = DISTORTION_CORRECTION_POINTS - 2;
-      fy = yCorrectionSteps;
-    }
 
-    int32_t idx11 = matrixIndex(fxFloor, fyFloor);
-    int32_t m11 = getMatrix(idx11), m12 = getMatrix(idx11 + 1);
-    int32_t m21 = getMatrix(idx11 + DISTORTION_CORRECTION_POINTS);
-    int32_t m22 = getMatrix(idx11 + DISTORTION_CORRECTION_POINTS + 1);
-    int32_t zx1 = m11 + ((m12 - m11) * fx) / xCorrectionSteps;
-    int32_t zx2 = m21 + ((m22 - m21) * fx) / xCorrectionSteps;
-    int32_t correction_z = zx1 + ((zx2 - zx1) * fy) / yCorrectionSteps;
-#endif
     /* if(false) {
        Com::printF(PSTR(") by "), correction_z);
        Com::printF(PSTR(" ix= "), fxFloor);
@@ -409,13 +396,10 @@ bool Distortion::measure(void) {
       return;
     }
 #endif
-#if DRIVE_SYSTEM == DELTA
+
     int ix = (x * Printer::axisStepsPerMM[Z_AXIS] + radiusCorrectionSteps + step / 2) / step;
     int iy = (y * Printer::axisStepsPerMM[Z_AXIS] + radiusCorrectionSteps + step / 2) / step;
-#else
-    int ix = (x * Printer::axisStepsPerMM[X_AXIS] - xOffsetSteps + xCorrectionSteps / 2) / xCorrectionSteps;
-    int iy = (y * Printer::axisStepsPerMM[Y_AXIS] - yOffsetSteps + yCorrectionSteps / 2) / yCorrectionSteps;
-#endif
+
     if(ix < 0) ix = 0;
     if(iy < 0) iy = 0;
     if(ix >= DISTORTION_CORRECTION_POINTS - 1) ix = DISTORTION_CORRECTION_POINTS - 1;
@@ -427,13 +411,10 @@ bool Distortion::measure(void) {
   void Distortion::showMatrix() {
     for(int ix = 0; ix < DISTORTION_CORRECTION_POINTS; ix++) {
       for(int iy = 0; iy < DISTORTION_CORRECTION_POINTS; iy++) {
-#if DRIVE_SYSTEM == DELTA
+
         float x = (-radiusCorrectionSteps + ix * step) * Printer::invAxisStepsPerMM[Z_AXIS];
         float y = (-radiusCorrectionSteps + iy * step) * Printer::invAxisStepsPerMM[Z_AXIS];
-#else
-        float x = (xOffsetSteps + ix * xCorrectionSteps) * Printer::invAxisStepsPerMM[X_AXIS];
-        float y = (yOffsetSteps + iy * yCorrectionSteps) * Printer::invAxisStepsPerMM[Y_AXIS];
-#endif
+
         int32_t idx = matrixIndex(ix, iy);
         float z = getMatrix(idx) * Printer::invAxisStepsPerMM[Z_AXIS];
         Com::printF(PSTR("G33 X"), x, 2);

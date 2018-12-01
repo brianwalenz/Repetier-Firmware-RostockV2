@@ -161,18 +161,6 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 }
 void EEPROM::initalizeUncached()
 {
-  HAL::eprSetFloat(EPR_Z_PROBE_HEIGHT,Z_PROBE_HEIGHT);
-  HAL::eprSetFloat(EPR_Z_PROBE_SPEED,Z_PROBE_SPEED);
-  HAL::eprSetFloat(EPR_Z_PROBE_XY_SPEED,Z_PROBE_XY_SPEED);
-  HAL::eprSetFloat(EPR_Z_PROBE_X_OFFSET,Z_PROBE_X_OFFSET);
-  HAL::eprSetFloat(EPR_Z_PROBE_Y_OFFSET,Z_PROBE_Y_OFFSET);
-  HAL::eprSetFloat(EPR_Z_PROBE_X1,Z_PROBE_X1);
-  HAL::eprSetFloat(EPR_Z_PROBE_Y1,Z_PROBE_Y1);
-  HAL::eprSetFloat(EPR_Z_PROBE_X2,Z_PROBE_X2);
-  HAL::eprSetFloat(EPR_Z_PROBE_Y2,Z_PROBE_Y2);
-  HAL::eprSetFloat(EPR_Z_PROBE_X3,Z_PROBE_X3);
-  HAL::eprSetFloat(EPR_Z_PROBE_Y3,Z_PROBE_Y3);
-  HAL::eprSetFloat(EPR_Z_PROBE_BED_DISTANCE,Z_PROBE_BED_DISTANCE);
   HAL::eprSetInt16(EPR_DELTA_SEGMENTS_PER_SECOND_PRINT,DELTA_SEGMENTS_PER_SECOND_PRINT);
   HAL::eprSetInt16(EPR_DELTA_SEGMENTS_PER_SECOND_MOVE,DELTA_SEGMENTS_PER_SECOND_MOVE);
   HAL::eprSetFloat(EPR_DELTA_DIAGONAL_ROD_LENGTH,DELTA_DIAGONAL_ROD);
@@ -199,10 +187,7 @@ void EEPROM::initalizeUncached()
   HAL::eprSetFloat(EPR_RETRACTION_UNDO_EXTRA_LENGTH,RETRACTION_UNDO_EXTRA_LENGTH);
   HAL::eprSetFloat(EPR_RETRACTION_UNDO_EXTRA_LONG_LENGTH,RETRACTION_UNDO_EXTRA_LONG_LENGTH);
   HAL::eprSetFloat(EPR_RETRACTION_UNDO_SPEED,RETRACTION_UNDO_SPEED);
-  HAL::eprSetFloat(EPR_BENDING_CORRECTION_A,BENDING_CORRECTION_A);
-  HAL::eprSetFloat(EPR_BENDING_CORRECTION_B,BENDING_CORRECTION_B);
-  HAL::eprSetFloat(EPR_BENDING_CORRECTION_C,BENDING_CORRECTION_C);
-  HAL::eprSetFloat(EPR_ACCELERATION_FACTOR_TOP,ACCELERATION_FACTOR_TOP);
+
   HAL::eprSetFloat(EPR_PARK_X,PARK_POSITION_X);
   HAL::eprSetFloat(EPR_PARK_Y,PARK_POSITION_Y);
   HAL::eprSetFloat(EPR_PARK_Z,PARK_POSITION_Z_RAISE);
@@ -323,20 +308,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
   if(version != EEPROM_PROTOCOL_VERSION)
     {
       Com::printF(PSTR("INFO: Protocol version changed, upgrading\n"));
-      if(version < 3)
-        {
-          HAL::eprSetFloat(EPR_Z_PROBE_HEIGHT,Z_PROBE_HEIGHT);
-          HAL::eprSetFloat(EPR_Z_PROBE_SPEED,Z_PROBE_SPEED);
-          HAL::eprSetFloat(EPR_Z_PROBE_XY_SPEED,Z_PROBE_XY_SPEED);
-          HAL::eprSetFloat(EPR_Z_PROBE_X_OFFSET,Z_PROBE_X_OFFSET);
-          HAL::eprSetFloat(EPR_Z_PROBE_Y_OFFSET,Z_PROBE_Y_OFFSET);
-          HAL::eprSetFloat(EPR_Z_PROBE_X1,Z_PROBE_X1);
-          HAL::eprSetFloat(EPR_Z_PROBE_Y1,Z_PROBE_Y1);
-          HAL::eprSetFloat(EPR_Z_PROBE_X2,Z_PROBE_X2);
-          HAL::eprSetFloat(EPR_Z_PROBE_Y2,Z_PROBE_Y2);
-          HAL::eprSetFloat(EPR_Z_PROBE_X3,Z_PROBE_X3);
-          HAL::eprSetFloat(EPR_Z_PROBE_Y3,Z_PROBE_Y3);
-        }
       if(version < 4)
         {
           HAL::eprSetInt16(EPR_DELTA_SEGMENTS_PER_SECOND_PRINT,DELTA_SEGMENTS_PER_SECOND_PRINT);
@@ -366,10 +337,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
           HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_B,DELTA_DIAGONAL_CORRECTION_B);
           HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_C,DELTA_DIAGONAL_CORRECTION_C);
         }
-      if(version < 8)
-        {
-          HAL::eprSetFloat(EPR_Z_PROBE_BED_DISTANCE,Z_PROBE_BED_DISTANCE);
-        }
       if(version < 11)
         {
           HAL::eprSetByte(EPR_DISTORTION_CORRECTION_ENABLED, 0);
@@ -384,12 +351,7 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
           HAL::eprSetFloat(EPR_RETRACTION_UNDO_EXTRA_LONG_LENGTH,RETRACTION_UNDO_EXTRA_LONG_LENGTH);
           HAL::eprSetFloat(EPR_RETRACTION_UNDO_SPEED,RETRACTION_UNDO_SPEED);
         }
-      if(version < 16) {
-        HAL::eprSetFloat(EPR_BENDING_CORRECTION_A,BENDING_CORRECTION_A);
-        HAL::eprSetFloat(EPR_BENDING_CORRECTION_B,BENDING_CORRECTION_B);
-        HAL::eprSetFloat(EPR_BENDING_CORRECTION_C,BENDING_CORRECTION_C);
-        HAL::eprSetFloat(EPR_ACCELERATION_FACTOR_TOP,ACCELERATION_FACTOR_TOP);
-      }
+
       if(version < 17) {
         heatedBedController.preheatTemperature = HEATED_BED_PREHEAT_TEMP;
         extruder[0].tempControl.preheatTemperature = EXT0_PREHEAT_TEMP;
@@ -408,17 +370,11 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
 
 void EEPROM::initBaudrate()
 {
-  // Invariant - baudrate is initialized with or without eeprom!
-  baudrate = BAUDRATE;
   if(HAL::eprGetByte(EPR_MAGIC_BYTE) == EEPROM_MODE)
     {
       baudrate = HAL::eprGetInt32(EPR_BAUDRATE);
     }
 }
-
-#ifndef USE_CONFIGURATION_BAUD_RATE
-#define USE_CONFIGURATION_BAUD_RATE 0
-#endif // USE_CONFIGURATION_BAUD_RATE
 
 void EEPROM::init()
 {
@@ -427,20 +383,6 @@ void EEPROM::init()
   if(HAL::eprGetByte(EPR_MAGIC_BYTE) == EEPROM_MODE && storedcheck == check)
     {
       readDataFromEEPROM(true);
-      if (USE_CONFIGURATION_BAUD_RATE)
-        {
-          // Used if eeprom gets unusable baud rate set and communication wont work at all.
-          if(HAL::eprGetInt32(EPR_BAUDRATE) != BAUDRATE)
-            {
-              HAL::eprSetInt32(EPR_BAUDRATE,BAUDRATE);
-              baudrate = BAUDRATE;
-              uint8_t newcheck = computeChecksum();
-              if(newcheck != HAL::eprGetByte(EPR_INTEGRITY_BYTE))
-                HAL::eprSetByte(EPR_INTEGRITY_BYTE,newcheck);
-            }
-          Com::printF(PSTR("EEPROM baud rate restored from configuration.\n"));
-          Com::printF(PSTR("RECOMPILE WITH USE_CONFIGURATION_BAUD_RATE == 0 to alter baud rate via EEPROM\n"));
-        }
     }
   else
     {
@@ -503,9 +445,7 @@ void EEPROM::writeSettings()
   //epr_out_float(EPR_Z_MAX_START_SPEED,PSTR("Z-axis start speed [mm/s]"));
   writeFloat(EPR_Z_MAX_ACCEL, PSTR("Acceleration [mm/s^2]"));
   writeFloat(EPR_Z_MAX_TRAVEL_ACCEL, PSTR("Travel acceleration [mm/s^2]"));
-#if defined(INTERPOLATE_ACCELERATION_WITH_Z) && INTERPOLATE_ACCELERATION_WITH_Z != 0
-  writeFloat(EPR_ACCELERATION_FACTOR_TOP, PSTR("Acceleration factor at top [%,100=like bottom]"));
-#endif
+
   writeFloat(EPR_DELTA_DIAGONAL_ROD_LENGTH, PSTR("Diagonal rod length [mm]"));
   writeFloat(EPR_DELTA_HORIZONTAL_RADIUS, PSTR("Horizontal rod radius at 0,0 [mm]"));
   writeFloat(EPR_DELTA_MAX_RADIUS, PSTR("Max printable radius [mm]"));
@@ -523,28 +463,9 @@ void EEPROM::writeSettings()
   writeFloat(EPR_DELTA_DIAGONAL_CORRECTION_C, PSTR("Corr. diagonal C [mm]"));
 #endif
 
-#if FEATURE_Z_PROBE
-  writeFloat(EPR_Z_PROBE_HEIGHT, PSTR("Z-probe height [mm]"));
-  writeFloat(EPR_Z_PROBE_BED_DISTANCE, PSTR("Max. z-probe - bed dist. [mm]"));
-  writeFloat(EPR_Z_PROBE_SPEED, PSTR("Z-probe speed [mm/s]"));
-  writeFloat(EPR_Z_PROBE_XY_SPEED, PSTR("Z-probe x-y-speed [mm/s]"));
-  writeFloat(EPR_Z_PROBE_X_OFFSET, PSTR("Z-probe offset x [mm]"));
-  writeFloat(EPR_Z_PROBE_Y_OFFSET, PSTR("Z-probe offset y [mm]"));
-  writeFloat(EPR_Z_PROBE_X1, PSTR("Z-probe X1 [mm]"));
-  writeFloat(EPR_Z_PROBE_Y1, PSTR("Z-probe Y1 [mm]"));
-  writeFloat(EPR_Z_PROBE_X2, PSTR("Z-probe X2 [mm]"));
-  writeFloat(EPR_Z_PROBE_Y2, PSTR("Z-probe Y2 [mm]"));
-  writeFloat(EPR_Z_PROBE_X3, PSTR("Z-probe X3 [mm]"));
-  writeFloat(EPR_Z_PROBE_Y3, PSTR("Z-probe Y3 [mm]"));
-  writeFloat(EPR_BENDING_CORRECTION_A, PSTR("Z-probe bending correction A [mm]"));
-  writeFloat(EPR_BENDING_CORRECTION_B, PSTR("Z-probe bending correction B [mm]"));
-  writeFloat(EPR_BENDING_CORRECTION_C, PSTR("Z-probe bending correction C [mm]"));
-#endif
 #if FEATURE_AUTOLEVEL
   writeByte(EPR_AUTOLEVEL_ACTIVE, PSTR("Autolevel active (1/0)"));
 #endif
-
-
 
   writeInt(EPR_BED_PREHEAT_TEMP, PSTR("Bed Preheat temp. [°C]"));
   writeByte(EPR_BED_HEAT_MANAGER, PSTR("Bed Heat Manager [0-3]"));

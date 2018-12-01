@@ -21,183 +21,99 @@
   Functions in this file are used to communicate using ascii or repetier protocol.
 */
 
-#include "Repetier.h"
-#include "motion.h"
+#include "Endstops.h"
+#include "Printer.h"
 
-flag8_t Endstops::lastState = 0;
-flag8_t Endstops::lastRead = 0;
-flag8_t Endstops::accumulator = 0;
+#define ENDSTOP_X_MIN_INVERTING true    //  true to invert the logic of endstops.
+#define ENDSTOP_Y_MIN_INVERTING true
+#define ENDSTOP_Z_MIN_INVERTING true
+#define ENDSTOP_X_MAX_INVERTING false
+#define ENDSTOP_Y_MAX_INVERTING false
+#define ENDSTOP_Z_MAX_INVERTING false
 
-void Endstops::update() {
-  flag8_t newRead = 0;
+Endstops  endstops;
 
-#if (Y_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Y
-  if(READ(Y_MIN_PIN) != ENDSTOP_Y_MIN_INVERTING)
-    newRead |= ENDSTOP_Y_MIN_ID;
-#endif
+void
+Endstops::update(void) {
+  uint8_t state = 0;
 
-#if (Y_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Y
-  if(READ(Y_MAX_PIN) != ENDSTOP_Y_MAX_INVERTING)
-    newRead |= ENDSTOP_Y_MAX_ID;
-#endif
+  //
+  //  Disable/enable based on what endstops exist.
+  //    Rostock has no min endstops.
+  //
 
-#if (X_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_X
-  if(READ(X_MIN_PIN) != ENDSTOP_X_MIN_INVERTING) {
-    newRead |= ENDSTOP_X_MIN_ID;
+  //if (READ(Y_MIN_PIN) != ENDSTOP_Y_MIN_INVERTING)
+  //  state |= ENDSTOP_Y_MIN_ID;
+
+  //if (READ(X_MIN_PIN) != ENDSTOP_X_MIN_INVERTING)
+  //  state |= ENDSTOP_X_MIN_ID;
+
+  //if (READ(Z_MIN_PIN) != ENDSTOP_Z_MIN_INVERTING)
+  //  state |= ENDSTOP_Z_MIN_ID;
+
+  if (READ(Y_MAX_PIN) != ENDSTOP_Y_MAX_INVERTING)
+    state |= ENDSTOP_Y_MAX_ID;
+
+  if (READ(X_MAX_PIN) != ENDSTOP_X_MAX_INVERTING)
+    state |= ENDSTOP_X_MAX_ID;
+
+  if (READ(Z_MAX_PIN) != ENDSTOP_Z_MAX_INVERTING)
+    state |= ENDSTOP_Z_MAX_ID;
+
+  InterruptProtectedBlock noInts;
+
+  //  The effect of the below is to require a switch to be on for two cycles
+  //  before it's retained in currState.
+
+  //  Debounce.  If any switches were on then and now, keep them on.  Otherwise, turn them off.
+  _lastRead &= state;
+
+  //  If the debounced state diffes from the current state, reset.
+  if (_lastRead != _currState) {
+    //if (Printer::debugEndStop()) {
+    Com::printF(PSTR("endstops changed:\n"));
+    Com::printF(PSTR("  x_min:"));   Com::printF(xMin(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(xMin(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
+    Com::printF(PSTR("  x_max:"));   Com::printF(xMax(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(xMax(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
+    Com::printF(PSTR("  y_min:"));   Com::printF(yMin(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(yMin(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
+    Com::printF(PSTR("  y_max:"));   Com::printF(yMax(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(yMax(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
+    Com::printF(PSTR("  z_min:"));   Com::printF(zMin(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(zMin(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
+    Com::printF(PSTR("  z_max:"));   Com::printF(zMax(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(zMax(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
+    //}
+
+    _currState    = _lastRead;
+    _accumulated |= _lastRead;
   }
-#endif
 
-#if (X_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_X
-  if(READ(X_MAX_PIN) != ENDSTOP_X_MAX_INVERTING)
-    newRead |= ENDSTOP_X_MAX_ID;
-#endif
-
-#if (Z_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Z
-  if(READ(Z_MIN_PIN) != ENDSTOP_Z_MIN_INVERTING)
-    newRead |= ENDSTOP_Z_MIN_ID;
-#endif
-
-#if (Z_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Z
-  if(READ(Z_MAX_PIN) != ENDSTOP_Z_MAX_INVERTING)
-    newRead |= ENDSTOP_Z_MAX_ID;
-#endif
-
-#if FEATURE_Z_PROBE
-#if Z_PROBE_PIN == Z_MIN_PIN && MIN_HARDWARE_ENDSTOP_Z
-  if(newRead & ENDSTOP_Z_MIN_ID) // prevent different results causing confusion
-    newRead |= ENDSTOP_Z_PROBE_ID;
-  if(!Printer::isHoming())
-    newRead &= ~ENDSTOP_Z_MIN_ID; // could cause wrong signals depending on probe position
-#else
-  if(Z_PROBE_ON_HIGH ? READ(Z_PROBE_PIN) : !READ(Z_PROBE_PIN))
-    newRead |= ENDSTOP_Z_PROBE_ID;
-#endif
-#endif
-
-  InterruptProtectedBlock noInts; // bad idea to run this from different interrupts at once!
-  lastRead &= newRead;
-  if(lastRead != lastState
-     ) { // Report endstop hit changes
-    lastState = lastRead;
-    accumulator |= lastState;
-    if (Printer::debugEndStop())  Endstops::report();
-  } else {
-    lastState = lastRead;
-  }
-  lastRead = newRead;
+  //  Regardless of state change, update the last read to whatever we just read.
+  _lastRead = state;
 }
 
 
 
-
-void Endstops::report() {
-  Com::printF(PSTR("endstops hit: "));
-
-#if (X_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_X
-  Com::printF(PSTR("x_min:"));
-  Com::printF(xMin() ? PSTR("H ") : PSTR("L "));
-#endif
-
-#if (X_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_X
-  Com::printF(PSTR("x_max:"));
-  Com::printF(xMax() ? PSTR("H ") : PSTR("L "));
-#endif
-
-#if (Y_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Y
-  Com::printF(PSTR("y_min:"));
-  Com::printF(yMin() ? PSTR("H ") : PSTR("L "));
-#endif
-
-#if (Y_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Y
-  Com::printF(PSTR("y_max:"));
-  Com::printF(yMax() ? PSTR("H ") : PSTR("L "));
-#endif
-
-#if (Z_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Z
-  Com::printF(PSTR("z_min:"));
-  Com::printF(zMin() ? PSTR("H ") : PSTR("L "));
-#endif
-
-#if (Z_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Z
-  Com::printF(PSTR("z_max:"));
-  Com::printF(zMax() ? PSTR("H ") : PSTR("L "));
-#endif
-
-#if FEATURE_Z_PROBE
-  Com::printF(PSTR("Z-probe state:"));
-  Com::printF(zProbe() ? PSTR("H ") : PSTR("L "));
-#endif
+void
+Endstops::report(void) {
+  Com::printF(PSTR("endstops hit:\n"));
+  Com::printF(PSTR("  x_min:"));   Com::printF(xMin() ? PSTR("H\n") : PSTR("L\n"));
+  Com::printF(PSTR("  x_max:"));   Com::printF(xMax() ? PSTR("H\n") : PSTR("L\n"));
+  Com::printF(PSTR("  y_min:"));   Com::printF(yMin() ? PSTR("H\n") : PSTR("L\n"));
+  Com::printF(PSTR("  y_max:"));   Com::printF(yMax() ? PSTR("H\n") : PSTR("L\n"));
+  Com::printF(PSTR("  z_min:"));   Com::printF(zMin() ? PSTR("H\n") : PSTR("L\n"));
+  Com::printF(PSTR("  z_max:"));   Com::printF(zMax() ? PSTR("H\n") : PSTR("L\n"));
   Com::printF(PSTR("\n"));
 }
 
 
 
-
-void Endstops::setup() {
-  // Set end stops to input and enable pullup if required
-#if MIN_HARDWARE_ENDSTOP_X
-#if X_MIN_PIN > -1
-  SET_INPUT(X_MIN_PIN);
-#if ENDSTOP_PULLUP_X_MIN
-  PULLUP(X_MIN_PIN, HIGH);
-#endif
-#else
-#error You have defined hardware x min endstop without pin assignment. Set pin number for X_MIN_PIN
-#endif
-#endif
-
-#if MIN_HARDWARE_ENDSTOP_Y
-#if Y_MIN_PIN > -1
-  SET_INPUT(Y_MIN_PIN);
-#if ENDSTOP_PULLUP_Y_MIN
-  PULLUP(Y_MIN_PIN, HIGH);
-#endif
-#else
-#error You have defined hardware y min endstop without pin assignment. Set pin number for Y_MIN_PIN
-#endif
-#endif
-
-#if MIN_HARDWARE_ENDSTOP_Z
-#if Z_MIN_PIN > -1
-  SET_INPUT(Z_MIN_PIN);
-#if ENDSTOP_PULLUP_Z_MIN
-  PULLUP(Z_MIN_PIN, HIGH);
-#endif
-#else
-#error You have defined hardware z min endstop without pin assignment. Set pin number for Z_MIN_PIN
-#endif
-#endif
-
-#if MAX_HARDWARE_ENDSTOP_X
-#if X_MAX_PIN > -1
-  SET_INPUT(X_MAX_PIN);
-#if ENDSTOP_PULLUP_X_MAX
-  PULLUP(X_MAX_PIN, HIGH);
-#endif
-#else
-#error You have defined hardware x max endstop without pin assignment. Set pin number for X_MAX_PIN
-#endif
-#endif
-
-#if MAX_HARDWARE_ENDSTOP_Y
-#if Y_MAX_PIN > -1
-  SET_INPUT(Y_MAX_PIN);
-#if ENDSTOP_PULLUP_Y_MAX
-  PULLUP(Y_MAX_PIN, HIGH);
-#endif
-#else
-#error You have defined hardware y max endstop without pin assignment. Set pin number for Y_MAX_PIN
-#endif
-#endif
-
-#if MAX_HARDWARE_ENDSTOP_Z
-#if Z_MAX_PIN>-1
-  SET_INPUT(Z_MAX_PIN);
-#if ENDSTOP_PULLUP_Z_MAX
-  PULLUP(Z_MAX_PIN, HIGH);
-#endif
-#else
-#error You have defined hardware z max endstop without pin assignment. Set pin number for Z_MAX_PIN
-#endif
-#endif
+//
+//  If there is a pullup resistor on the endstop, make sure PULLUP() is enabled.
+//  Comment out if any pin isn't defined.
+//
+void
+Endstops::setup(void) {
+  SET_INPUT(X_MIN_PIN);   PULLUP(X_MIN_PIN, HIGH);
+  SET_INPUT(Y_MIN_PIN);   PULLUP(Y_MIN_PIN, HIGH);
+  SET_INPUT(Z_MIN_PIN);   PULLUP(Z_MIN_PIN, HIGH);
+  SET_INPUT(X_MAX_PIN);   PULLUP(X_MAX_PIN, HIGH);
+  SET_INPUT(Y_MAX_PIN);   PULLUP(Y_MAX_PIN, HIGH);
+  SET_INPUT(Z_MAX_PIN);   PULLUP(Z_MAX_PIN, HIGH);
 }

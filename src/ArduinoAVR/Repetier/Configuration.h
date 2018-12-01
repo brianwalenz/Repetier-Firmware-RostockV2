@@ -43,99 +43,34 @@
 */
 
 
-// BASIC SETTINGS: select your board type, thermistor type, axis scaling, and endstop configuration
-
 /** Number of extruders. Maximum 6 extruders. */
 #define NUM_EXTRUDER 1
 
 #include "pins.h"
-
-// Override pin definitions from pins.h
-//#define FAN_PIN   4  // Extruder 2 uses the default fan output, so move to an other pin
-
 
 //  use Arduino serial library instead of build in. Requires more ram, has only 63 byte input buffer.
 //  this is enabled because it was enabled before
 #define EXTERNALSERIAL
 
 
-// Uncomment the following line if you are using Arduino compatible firmware made for Arduino version earlier then 1.0
-// If it is incompatible you will get compiler errors about write functions not being compatible!
-//#define COMPAT_PRE1
-
-/* Define the type of axis movements needed for your printer. The typical case
-   is a full cartesian system where x, y and z moves are handled by separate motors.
-
-   0 = full cartesian system, xyz have separate motors.
-   1 = z axis + xy H-gantry (x_motor = x+y, y_motor = x-y)
-   2 = z axis + xy H-gantry (x_motor = x+y, y_motor = y-x)
-   3 = Delta printers (Rostock, Kossel, RostockMax, Cerberus, etc)
-   4 = Tuga printer (Scott-Russell mechanism)
-   5 = Bipod system (not implemented)
-   8 = y axis + xz H-gantry (x_motor = x+z, z_motor = x-z)
-   9 = y axis + xz H-gantry (x_motor = x+z, z_motor = z-x)
-   Cases 1, 2, 8 and 9 cover all needed xy and xz H gantry systems. If you get results mirrored etc. you can swap motor connections for x and y.
-   If a motor turns in the wrong direction change INVERT_X_DIR or INVERT_Y_DIR.
-*/
-
-#define DRIVE_SYSTEM DELTA    //  UNUSED
-#define NONLINEAR_SYSTEM 1    //  UNUSED
-
-
 // ##########################################################################################
 // ##                               Calibration                                            ##
 // ##########################################################################################
 
-/** Drive settings for the Delta printers
- */
-#if DRIVE_SYSTEM == DELTA
-// ***************************************************
-// *** These parameter are only for Delta printers ***
-// ***************************************************
-
-/** \brief Delta drive type: 0 - belts and pulleys, 1 - filament drive */
-#define DELTA_DRIVE_TYPE 0
-
-#if DELTA_DRIVE_TYPE == 0
-/** \brief Pitch in mm of drive belt. GT2 = 2mm */
-#define BELT_PITCH 2
-/** \brief Number of teeth on X, Y and Z tower pulleys */
-#define PULLEY_TEETH 20
+#define BELT_PITCH 2         /** \brief Pitch in mm of drive belt. GT2 = 2mm */
+#define PULLEY_TEETH 20      /** \brief Number of teeth on X, Y and Z tower pulleys */
 #define PULLEY_CIRCUMFERENCE (BELT_PITCH * PULLEY_TEETH)
-#elif DELTA_DRIVE_TYPE == 1
-/** \brief Filament pulley diameter in millimeters */
-#define PULLEY_DIAMETER 10
-#define PULLEY_CIRCUMFERENCE (PULLEY_DIAMETER * 3.1415927)
-#endif
 
-/** \brief Steps per rotation of stepper motor */
-#define STEPS_PER_ROTATION 200
+#define STEPS_PER_ROTATION 200  /** \brief Steps per rotation of stepper motor */
 
-/** \brief Micro stepping rate of X, Y and Y tower stepper drivers */
-#define MICRO_STEPS 16
+#define MICRO_STEPS 16    /** \brief Micro stepping rate of X, Y and Y tower stepper drivers */
 
 // Calculations
 #define AXIS_STEPS_PER_MM ((float)(MICRO_STEPS * STEPS_PER_ROTATION) / PULLEY_CIRCUMFERENCE)
 #define XAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
 #define YAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
 #define ZAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
-#else
-// *******************************************************
-// *** These parameter are for all other printer types ***
-// *******************************************************
 
-/** Drive settings for printers with cartesian drive systems */
-/** \brief Number of steps for a 1mm move in x direction.
-    For xy gantry use 2*belt moved!
-    Overridden if EEPROM activated. */
-#define XAXIS_STEPS_PER_MM 98.425196
-/** \brief Number of steps for a 1mm move in y direction.
-    For xy gantry use 2*belt moved!
-    Overridden if EEPROM activated.*/
-#define YAXIS_STEPS_PER_MM 98.425196
-/** \brief Number of steps for a 1mm move in z direction  Overridden if EEPROM activated.*/
-#define ZAXIS_STEPS_PER_MM 2560
-#endif
 
 // ##########################################################################################
 // ##                           Extruder configuration                                     ##
@@ -534,40 +469,6 @@
 
 #define DEFAULT_PRINTER_MODE PRINTER_MODE_FFF
 
-// ##########################################################################################
-// ##                            Endstop configuration                                     ##
-// ##########################################################################################
-
-/* By default all endstops are pulled up to HIGH. You need a pull-up if you
-   use a mechanical endstop connected with GND. Set value to false for no pull-up
-   on this endstop.
-*/
-#define ENDSTOP_PULLUP_X_MIN true
-#define ENDSTOP_PULLUP_Y_MIN true
-#define ENDSTOP_PULLUP_Z_MIN true
-#define ENDSTOP_PULLUP_X_MAX true
-#define ENDSTOP_PULLUP_Y_MAX true
-#define ENDSTOP_PULLUP_Z_MAX true
-
-//set to true to invert the logic of the endstops
-#define ENDSTOP_X_MIN_INVERTING true
-#define ENDSTOP_Y_MIN_INVERTING true
-#define ENDSTOP_Z_MIN_INVERTING true
-#define ENDSTOP_X_MAX_INVERTING false
-#define ENDSTOP_Y_MAX_INVERTING false
-#define ENDSTOP_Z_MAX_INVERTING false
-
-// Set the values true where you have a hardware endstop. The Pin number is taken from pins.h.
-
-#define MIN_HARDWARE_ENDSTOP_X false
-#define MIN_HARDWARE_ENDSTOP_Y false
-#define MIN_HARDWARE_ENDSTOP_Z false
-#define MAX_HARDWARE_ENDSTOP_X true
-#define MAX_HARDWARE_ENDSTOP_Y true
-#define MAX_HARDWARE_ENDSTOP_Z true
-
-//If your axes are only moving in one direction, make sure the endstops are connected properly.
-//If your axes move in one direction ONLY when the endstops are triggered, set ENDSTOPS_INVERTING to true here
 
 //// ADVANCED SETTINGS - to tweak parameters
 
@@ -582,44 +483,6 @@
 #define INVERT_Y_DIR 1
 #define INVERT_Z_DIR 0
 
-//// ENDSTOP SETTINGS:
-// Sets direction of endstops when homing; 1=MAX, -1=MIN
-#define X_HOME_DIR 1
-#define Y_HOME_DIR 1
-#define Z_HOME_DIR 1
-
-// Delta robot radius endstop
-#define max_software_endstop_r true
-
-//If true, axis won't move to coordinates less than zero.
-#define min_software_endstop_x false
-#define min_software_endstop_y false
-#define min_software_endstop_z false
-
-//If true, axis won't move to coordinates greater than the defined lengths below.
-#define max_software_endstop_x true
-#define max_software_endstop_y true
-#define max_software_endstop_z true
-
-// If during homing the endstop is reached, ho many mm should the printer move back for the second try
-#define ENDSTOP_X_BACK_MOVE 10
-#define ENDSTOP_Y_BACK_MOVE 10
-#define ENDSTOP_Z_BACK_MOVE 10
-
-// For higher precision you can reduce the speed for the second test on the endstop
-// during homing operation. The homing speed is divided by the value. 1 = same speed, 2 = half speed
-#define ENDSTOP_X_RETEST_REDUCTION_FACTOR 4
-#define ENDSTOP_Y_RETEST_REDUCTION_FACTOR 4
-#define ENDSTOP_Z_RETEST_REDUCTION_FACTOR 4
-
-// When you have several endstops in one circuit you need to disable it after homing by moving a
-// small amount back. This is also the case with H-belt systems.
-#define ENDSTOP_X_BACK_ON_HOME 5
-#define ENDSTOP_Y_BACK_ON_HOME 5
-#define ENDSTOP_Z_BACK_ON_HOME 5
-// If you do z min homing, you might want to rise extruder a bit after homing so it does not heat
-// touching your bed.
-#define Z_UP_AFTER_HOME 0
 
 // maximum positions in mm - only fixed numbers!
 // For delta robot Z_MAX_LENGTH is the maximum travel of the towers and should be set to the distance between the hotend
@@ -846,19 +709,7 @@
 #define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_X 3000
 #define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Y 3000
 #define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Z 3000
-/** If you print on a moving bed, it can become more shaky the higher and bigger
-    your print gets. Therefore it might be helpfull to reduce acceleration with
-    increasing print height. You can define here how acceleration should change.
-    You set ACCELERATION_FACTOR_TOP to the factor in percent for the top position
-    of your printer. Acceleration will then be modified linear over height.
-    INTERPOLATE_ACCELERATION_WITH_Z sets, which accelerations get changed:
-    0 = do not interpolate at all
-    1 = interpolate x and y acceleration
-    2 = interpolate z acceleration
-    3 = interpolate x,y and z acceleration
-*/
-#define INTERPOLATE_ACCELERATION_WITH_Z 0
-#define ACCELERATION_FACTOR_TOP 100
+
 
 /** \brief Maximum allowable jerk.
 
@@ -886,12 +737,17 @@
 #define MAX_JERK 35.0
 #define MAX_ZJERK 35.0
 
-/** \brief Number of moves we can cache in advance.
 
-    This number of moves can be cached in advance. If you want to cache more, increase this. Especially on
-    many very short moves the cache may go empty. The minimum value is 5.
-*/
+//  Number of moves we can cache in advance.
+//
+//  This number of moves can be cached in advance. If you want to cache more, increase
+//  this. Especially on many very short moves the cache may go empty.
+//
+//  The minimum value is 5 or maybe 4.
+
 #define PRINTLINE_CACHE_SIZE 16
+
+
 
 /** \brief Low filled cache size.
 
@@ -943,19 +799,6 @@
 
 //// AD595 THERMOCOUPLE SUPPORT UNTESTED... USE WITH CAUTION!!!!
 
-/** \brief Communication speed.
-
-    - 250000 : Fastest with error rate of 0% with 16 or 32 MHz - update wiring_serial.c in your board files. See boards/readme.txt
-    - 115200 : Fast, but may produce communication errors on quite regular basis, Error rate -3,5%
-    - 76800 : Best setting for Arduino with 16 MHz, Error rate 0,2% page 198 AVR1284 Manual. Result: Faster communication then 115200
-    - 57600 : Should produce nearly no errors, on my gen 6 it's faster than 115200 because there are no errors slowing down the connection
-    - 38600
-
-    Overridden if EEPROM activated.
-*/
-//#define BAUDRATE 76800
-//#define BAUDRATE 115200
-#define BAUDRATE 250000
 
 /**
    Some boards like Gen7 have a power on pin, to enable the ATX power supply. If this is defined,
@@ -1003,96 +846,14 @@
    is always running and is not hung up for some unknown reason. */
 #define FEATURE_WATCHDOG 1
 
-/* Z-Probing */
 
-#define FEATURE_Z_PROBE 0
-// Especially if you have more then 1 extruder acting as z probe this is important!
-#define EXTRUDER_IS_Z_PROBE 0
-// Disable all heaters before probing - required for inductive sensors
-#define Z_PROBE_DISABLE_HEATERS 0
-#define Z_PROBE_PIN 63
-#define Z_PROBE_PULLUP 1
-#define Z_PROBE_ON_HIGH 1
-#define Z_PROBE_X_OFFSET 0
-#define Z_PROBE_Y_OFFSET 0
-#define Z_PROBE_BED_DISTANCE 5.0 // Higher than max bed level distance error in mm
-
-// Waits for a signal to start. Valid signals are probe hit and ok button.
-// This is needful if you have the probe trigger by hand.
-#define Z_PROBE_WAIT_BEFORE_TEST 0
-/** Speed of z-axis in mm/s when probing */
-#define Z_PROBE_SPEED 2
-/** Delay before going down. Needed for piezo endstops to reload safely. */
-#define Z_PROBE_DELAY 0
-#define Z_PROBE_XY_SPEED 150
-#define Z_PROBE_SWITCHING_DISTANCE 1.5 // Distance to safely switch off probe after it was activated
-#define Z_PROBE_REPETITIONS 5 // Repetitions for probing at one point.
-/** Distance between nozzle and bed when probe triggers. */
-#define Z_PROBE_HEIGHT 39.91
-/** Set 1 if you need a hot extruder for good probe results. Normally only required if nozzle is probe. */
-#define Z_PROBE_REQUIRES_HEATING 0
-/** Minimum extruder temperature for probing. If it is lower, it will be increased to that value. */
-#define Z_PROBE_MIN_TEMPERATURE 150
-
-/*
-  Define how we measure the bed rotation. 
-  All methods need at least 3 points to define the bed rotation correctly. The quality we get comes
-  from the selection of the right points and method.
-
-  BED_LEVELING_METHOD 0
-  This method measures at the 3 probe points and creates a plane through these points. If you have
-  a really planar bed this gives the optimum result. The 3 points must not be in one line and have
-  a long distance to increase numerical stability.
-
-  BED_LEVELING_METHOD 1
-  This measures a grid. Probe point 1 is the origin and points 2 and 3 span a grid. We measure
-  BED_LEVELING_GRID_SIZE points in each direction and compute a regression plane through all
-  points. This gives a good overall plane if you have small bumps measuring inaccuracies.
-
-  BED_LEVELING_METHOD 2
-  Bending correcting 4 point measurement. This is for cantilevered beds that have the rotation axis
-  not at the side but inside the bed. Here we can assume no bending on the axis and a symmetric
-  bending to both sides of the axis. So probe points 2 and 3 build the symmetric axis and
-  point 1 is mirrored to 1m across the axis. Using the symmetry we then remove the bending
-  from 1 and use that as plane.
-*/
-#define BED_LEVELING_METHOD 0
-
-// Grid size for grid based plane measurement
-#define BED_LEVELING_GRID_SIZE 4
-
-// Repetitions for motorized bed leveling
-#define BED_LEVELING_REPETITIONS 5
-
-/* These are the motor positions relative to bed origin. Only needed for
-   motorized bed leveling */
-#define BED_MOTOR_1_X 0
-#define BED_MOTOR_1_Y 0
-#define BED_MOTOR_2_X 200
-#define BED_MOTOR_2_Y 0
-#define BED_MOTOR_3_X 100
-#define BED_MOTOR_3_Y 200
 
 /* Autoleveling allows it to z-probe 3 points to compute the inclination and compensates the error for the print.
    This feature requires a working z-probe and you should have z-endstop at the top not at the bottom.
    The same 3 points are used for the G29 command.
 */
 #define FEATURE_AUTOLEVEL 0
-#define Z_PROBE_X1 100
-#define Z_PROBE_Y1 20
-#define Z_PROBE_X2 160
-#define Z_PROBE_Y2 170
-#define Z_PROBE_X3 20
-#define Z_PROBE_Y3 170
 
-/* Bending correction adds a value to a measured z-probe value. This may be
-   required when the z probe needs some force to trigger and this bends the
-   bed down. Currently the correction values A/B/C correspond to z probe
-   positions 1/2/3. In later versions a bending correction algorithm might be
-   introduced to give it other meanings.*/
-#define BENDING_CORRECTION_A 0
-#define BENDING_CORRECTION_B 0
-#define BENDING_CORRECTION_C 0
 
 /* DISTORTION_CORRECTION compensates the distortion caused by mechanical imprecisions of nonlinear (i.e. DELTA) printers
  * assumes that the floor is plain (i.e. glass plate)
@@ -1104,50 +865,15 @@
  * more points means better compensation, but consumes more memory and takes more time
  * DISTORTION_CORRECTION_R is the distance of last row or column from center
  */
-
 #define DISTORTION_CORRECTION         0
-#define DISTORTION_CORRECTION_POINTS  5
-/** Max. distortion value to enter. Used to prevent dangerous errors with big values. */
-#define DISTORTION_LIMIT_TO 2
-/* For delta printers you simply define the measured radius around origin */
-#define DISTORTION_CORRECTION_R       80
-/* For all others you define the correction rectangle by setting the min/max coordinates. Make sure the the probe can reach all points! */
-#define DISTORTION_XMIN 10
-#define DISTORTION_YMIN 10
-#define DISTORTION_XMAX 190
-#define DISTORTION_YMAX 190
-
-/** Uses EEPROM instead of ram. Allows bigger matrix (up to 22x22) without any ram cost.
-    Especially on arm based systems with cached EEPROM it is good, on AVR it has a small
-    performance penalty.
-*/
-#define DISTORTION_PERMANENT          1
-/** Correction computation is not a cheap operation and changes are only small. So it
-    is not necessary to update it for every sub-line computed. For example lets take DELTA_SEGMENTS_PER_SECOND_PRINT = 150
-    and fastest print speed 100 mm/s. So we have a maximum segment length of 100/150 = 0.66 mm.
-    Now lats say our point field is 200 x 200 mm with 9 x 9 points. So between 2 points we have
-    200 / (9-1) = 25 mm. So we need at least 25 / 0.66 = 37 lines to move to the next measuring
-    point. So updating correction every 15 calls gives us at least 2 updates between the
-    measured points.
-    NOTE: Explicit z changes will always trigger an update!
-*/
-#define DISTORTION_UPDATE_FREQUENCY   15
-/** z distortion degrades to 0 from this height on. You should start after the first layer to get
-    best bonding with surface. */
-#define DISTORTION_START_DEGRADE 0.5
-/** z distortion correction gets down to 0 at this height. */
-#define DISTORTION_END_HEIGHT 1.5
-/** If your corners measurement points are not measurable with given radius, you can
-    set this to 1. It then omits the outer measurement points allowing a larger correction area.*/
-#define DISTORTION_EXTRAPOLATE_CORNERS 0
-
-
 
 
 /** \brief Experimental calibration utility for delta printers
  * Change 1 to 0 to disable
  */
 #define FEATURE_SOFTWARE_LEVELING 0
+
+
 
 /* Babystepping allows to change z height during print without changing official z height */
 #define FEATURE_BABYSTEPPING 1
