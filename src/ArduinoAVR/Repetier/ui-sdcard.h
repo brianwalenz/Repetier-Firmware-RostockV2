@@ -50,7 +50,7 @@ UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
 #endif
 
   while (file.openNext(root, O_READ)) {
-    HAL::pingWatchdog();
+    hal.pingWatchdog();
 
     bool isDir = file.isDir();
 
@@ -241,7 +241,7 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
          (rowi < UI_ROWS) &&
          (file.openNext(root, O_READ))) {
 
-    HAL::pingWatchdog();
+    hal.pingWatchdog();
 
     bool isDir = file.isDir();
 

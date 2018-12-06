@@ -24,7 +24,7 @@
  */
 #include "../../../Repetier.h"
 #include "FatFile.h"
-#if SDSUPPORT
+
 //------------------------------------------------------------------------------
 //
 uint8_t FatFile::lfnChecksum(uint8_t* name) {
@@ -638,4 +638,4 @@ done:
   return true;
 }
 #endif  // #if USE_LONG_FILE_NAMES
-#endif
+

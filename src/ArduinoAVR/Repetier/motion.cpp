@@ -27,8 +27,16 @@
 #include "motion.h"
 #include "Printer.h"
 #include "Extruder.h"
+#include "temperatures.h"
 
 #include "rmath.h"
+
+
+// Maximum speed with 100% interrupt utilization is 27000 Hz at 16MHz cpu
+// leave some margin for all the extra transformations. So we keep inside clean timings.
+#define LIMIT_INTERVAL ((F_CPU/30000)+1)
+
+
 
 // ================ Sanity checks ================
 
@@ -38,15 +46,10 @@ uint32_t previousMillisCmd = 0;
 uint32_t maxInactiveTime = MAX_INACTIVE_TIME * 1000L;
 uint32_t stepperInactiveTime = STEPPER_INACTIVE_TIME * 1000L;
 
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
 int maxadv = 0;
-#endif
 int maxadv2 = 0;
 float maxadvspeed = 0;
-#endif
 
-uint8_t pwm_pos[NUM_PWM]; // 0-NUM_EXTRUDER = Heater 0-NUM_EXTRUDER of extruder, NUM_EXTRUDER = Heated bed, NUM_EXTRUDER+1 Board fan, NUM_EXTRUDER+2 = Fan
 volatile int waitRelax = 0; // Delay filament relax at the end of print, could be a simple timeout
 
 PrintLine PrintLine::lines[PRINTLINE_CACHE_SIZE]; ///< Cache for print moves.
@@ -70,7 +73,7 @@ uint8_t PrintLine::linesPos = 0;                 ///< Position for executing lin
    \param pathOptimize If false start and end speeds get fixed to minimum values.
 */
 void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool checkEndstop, bool pathOptimize) {
-  if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0))
+  if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && extruderTemp.getCurrentTemperature() < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()))
     e = 0; // should not be allowed for current temperature
 
   float savedFeedrate = Printer::feedrate;
@@ -86,7 +89,7 @@ void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int
   Printer::updateCurrentPosition(false);
   if(waitEnd)
     Commands::waitUntilEndOfAllMoves();
-  previousMillisCmd = HAL::timeInMilliseconds();
+  previousMillisCmd = millis();
 }
 
 /** Adds the steps converted to mm to the lastCmdPos position and moves to that position using Printer::moveToReal.
@@ -109,7 +112,7 @@ void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z,
     return; // ignore move
   }
 
-  if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0))
+  if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && extruderTemp.getCurrentTemperature() < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()))
     e = 0; // should not be allowed for current temperature
 
   Printer::moveToReal(Printer::lastCmdPos[X_AXIS], Printer::lastCmdPos[Y_AXIS], Printer::lastCmdPos[Z_AXIS],
@@ -117,7 +120,7 @@ void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z,
   Printer::updateCurrentPosition();
   if(waitEnd)
     Commands::waitUntilEndOfAllMoves();
-  previousMillisCmd = HAL::timeInMilliseconds();
+  previousMillisCmd = millis();
 }
 
 
@@ -137,7 +140,7 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, int8
     //critical = true;
   }
   timeInTicks = timeForMove;
-  uid.mediumAction(); // do check encoder
+
   // Compute the slowest allowed interval (ticks/step), so maximum feedrate is not violated
   int32_t limitInterval0;
   int32_t limitInterval = limitInterval0 = timeForMove / stepsRemaining; // until not violated by other constraints it is your target speed
@@ -220,42 +223,32 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, int8
   // if(p->vMax>46000)  // gets overflow in N computation
   //   p->vMax = 46000;
   //p->plateauN = (p->vMax*p->vMax/p->accelerationPrim)>>1;
-#if USE_ADVANCE
   if(!isXYZMove() || !isEPositiveMove()) {
-#if ENABLE_QUADRATIC_ADVANCE
     advanceRate = 0; // No head move or E move only or sucking filament back
     advanceFull = 0;
-#endif
     advanceL = 0;
   } else {
-    float advlin = fabs(speedE) * Extruder::current->advanceL * 0.001 * Printer::axisStepsPerMM[E_AXIS];
+    float advlin = fabs(speedE) * extruder.advanceL * 0.001 * Printer::axisStepsPerMM[E_AXIS];
     advanceL = (uint16_t)((65536L * advlin) / vMax); //advanceLscaled = (65536*vE*k2)/vMax
-#if ENABLE_QUADRATIC_ADVANCE
-    advanceFull = 65536 * Extruder::current->advanceK * speedE * speedE; // Steps*65536 at full speed
-    long steps = (HAL::U16SquaredToU32(vMax)) / (accelerationPrim << 1); // v^2/(2*a) = steps needed to accelerate from 0-vMax
+    advanceFull = 65536 * extruder.advanceK * speedE * speedE; // Steps*65536 at full speed
+    long steps = (U16SquaredToU32(vMax)) / (accelerationPrim << 1); // v^2/(2*a) = steps needed to accelerate from 0-vMax
     advanceRate = advanceFull / steps;
     if((advanceFull >> 16) > maxadv) {
       maxadv = (advanceFull >> 16);
       maxadvspeed = fabs(speedE);
     }
-#endif
     if(advlin > maxadv2) {
       maxadv2 = advlin;
       maxadvspeed = fabs(speedE);
     }
   }
-#endif  //  USE_ADVANCE
-  uid.mediumAction(); // do check encoder
+
   updateTrapezoids();
   // how much steps on primary axis do we need to reach target feedrate
   //p->plateauSteps = (long) (((float)p->acceleration *0.5f / slowest_axis_plateau_time_repro + p->vMin) *1.01f/slowest_axis_plateau_time_repro);
 #else
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
   advanceRate = 0; // No advance for constant speeds
   advanceFull = 0;
-#endif
-#endif
 #endif
 
 
@@ -271,7 +264,7 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, int8
   // Make result permanent
   if (pathOptimize) waitRelax = 70;
   pushLine();
-  //HAL::printFreeMemory();
+  //hal.printFreeMemory();
 }
 
 /**
@@ -420,7 +413,7 @@ void PrintLine::updateTrapezoids() {
 
 */
 inline void PrintLine::computeMaxJunctionSpeed(PrintLine *previous, PrintLine *current) {
-#if USE_ADVANCE
+
   if(Printer::isAdvanceActivated()) {
     // if we start/stop extrusion we need to do so with lowest possible end speed
     // or advance would leave a drolling extruder and can not adjust fast enough.
@@ -433,7 +426,7 @@ inline void PrintLine::computeMaxJunctionSpeed(PrintLine *previous, PrintLine *c
       return;
     }
   }
-#endif // USE_ADVANCE
+
   // if we are here we have to identical move types
   // either pure extrusion -> pure extrusion or
   // move -> move (with or without extrusion)
@@ -462,8 +455,8 @@ inline void PrintLine::computeMaxJunctionSpeed(PrintLine *previous, PrintLine *c
       factor = Printer::maxJerk / (2.0 * maxJoinSpeed);
   }
   float eJerk = fabs(current->speedE - previous->speedE);
-  if(eJerk > Extruder::current->maxStartFeedrate)
-    factor = RMath::min(factor, Extruder::current->maxStartFeedrate / eJerk);
+  if(eJerk > extruder.maxStartFeedrate)
+    factor = RMath::min(factor, extruder.maxStartFeedrate / eJerk);
 
   previous->maxJunctionSpeed = maxJoinSpeed * factor; // set speed limit
 #ifdef DEBUG_QUEUE_MOVE
@@ -486,16 +479,13 @@ void PrintLine::updateStepsParameter() {
   vStart = vMax * startFactor; //starting speed
   vEnd   = vMax * endFactor;
 
-  uint32_t vmax2 = HAL::U16SquaredToU32(vMax);
-  accelSteps = ((vmax2 - HAL::U16SquaredToU32(vStart)) / (accelerationPrim << 1)) + 1; // Always add 1 for missing precision
-  decelSteps = ((vmax2 - HAL::U16SquaredToU32(vEnd))  / (accelerationPrim << 1)) + 1;
+  uint32_t vmax2 = U16SquaredToU32(vMax);
+  accelSteps = ((vmax2 - U16SquaredToU32(vStart)) / (accelerationPrim << 1)) + 1; // Always add 1 for missing precision
+  decelSteps = ((vmax2 - U16SquaredToU32(vEnd))  / (accelerationPrim << 1)) + 1;
 
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
   advanceStart = (float)advanceFull * startFactor * startFactor;
   advanceEnd   = (float)advanceFull * endFactor   * endFactor;
-#endif
-#endif
+
   if(static_cast<int32_t>(accelSteps + decelSteps) >= stepsRemaining) { // can't reach limit speed
     uint32_t red = (accelSteps + decelSteps - stepsRemaining) >> 1;
     accelSteps = accelSteps - RMath::min(static_cast<int32_t>(accelSteps), static_cast<int32_t>(red));
@@ -614,9 +604,9 @@ inline float PrintLine::safeSpeed(int8_t drivingAxis) {
   float safe(xyMin);
   if(isEMove()) {
     if(isXYZMove())
-      safe = RMath::min(safe, (float)(0.5 * Extruder::current->maxStartFeedrate * fullSpeed / fabs(speedE)));
+      safe = RMath::min(safe, (float)(0.5 * extruder.maxStartFeedrate * fullSpeed / fabs(speedE)));
     else
-      safe = 0.5 * Extruder::current->maxStartFeedrate; // This is a retraction move
+      safe = 0.5 * extruder.maxStartFeedrate; // This is a retraction move
   }
   // Check for minimum speeds needed for numerical robustness
   if(drivingAxis == X_AXIS || drivingAxis == Y_AXIS || drivingAxis == Z_AXIS) // enforce minimum speed for numerical stability of explicit speed integration
@@ -668,14 +658,10 @@ void PrintLine::logLine() {
   Com::printF(PSTR("\n"));
   Com::printF(PSTR("Remaining steps:"), stepsRemaining);
   Com::printF(PSTR("\n"));
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
   Com::printF(PSTR("advanceFull:"), advanceFull >> 16);
   Com::printF(PSTR("\n"));
   Com::printF(PSTR("advanceRate:"), advanceRate);
   Com::printF(PSTR("\n"));
-#endif
-#endif
 #endif // DEBUG_QUEUE_MOVE
 }
 
@@ -807,7 +793,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
       return(0);
     }
 
-    deltaPosSteps[A_TOWER] = SQRT(opt - temp) + zSteps;
+    deltaPosSteps[A_TOWER] = integerSqrt(opt - temp) + zSteps;
 
     if (deltaPosSteps[A_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) {
       Com::printF(PSTR("A hit floor\n"));
@@ -845,7 +831,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
       return(0);
     }
 
-    deltaPosSteps[B_TOWER] = SQRT(opt - temp) + zSteps ;
+    deltaPosSteps[B_TOWER] = integerSqrt(opt - temp) + zSteps ;
 
     if (deltaPosSteps[B_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) {
       Com::printF(PSTR("B hit floor\n"));
@@ -884,7 +870,7 @@ uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t
       return(0);
     }
 
-    deltaPosSteps[C_TOWER] = SQRT(opt - temp) + zSteps;
+    deltaPosSteps[C_TOWER] = integerSqrt(opt - temp) + zSteps;
 
     if (deltaPosSteps[C_TOWER] < Printer::deltaFloorSafetyMarginSteps && !Printer::isZProbingActive()) {
       Com::printF(PSTR("C hit floor\n"));
@@ -1045,9 +1031,9 @@ inline uint16_t PrintLine::calculateNonlinearSubSegments(uint8_t softEndstop) {
       else if(s == 4)
         destinationSteps[i] += (diff >> 2);
       else if(diff < 0)
-        destinationSteps[i] -= HAL::Div4U2U(-diff, s);
+        destinationSteps[i] -= Div4U2U(-diff, s);
       else
-        destinationSteps[i] += HAL::Div4U2U(diff, s);
+        destinationSteps[i] += Div4U2U(diff, s);
     }
 #else
     float segment = static_cast<float>(numNonlinearSegments - s + 1);
@@ -1189,7 +1175,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
   //if (softEndstop && Printer::destinationSteps[Z_AXIS] < 0) Printer::destinationSteps[Z_AXIS] = 0; // now constrained at entry level including cylinder test
   int32_t difference[E_AXIS_ARRAY];
   float axisDistanceMM[VIRTUAL_AXIS_ARRAY]; // Real cartesian axis movement in mm. Virtual axis in 4;
-  uint8_t secondSpeed = Printer::fanSpeed;
+
   for(int8_t axis = 0; axis < E_AXIS_ARRAY; axis++) {
     difference[axis] = Printer::destinationSteps[axis] - Printer::currentPositionSteps[axis];
     if(axis == E_AXIS) {
@@ -1306,7 +1292,6 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
     }
 
     p->joinFlags = 0;
-    p->secondSpeed = secondSpeed;
     p->moveID = lastMoveID;
 
     // Only set fixed on last segment
@@ -1385,7 +1370,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       setCurrentLine();
       if(cur->isBlocked()) { // This step is in computation - shouldn't happen
         if(lastblk != (int)cur) {
-          HAL::allowInterrupts();
+          allowInterrupts();
           lastblk = (int)cur;
           Com::printF(PSTR("BLK "), (int32_t)linesCount);
           Com::printF(PSTR("\n"));
@@ -1393,7 +1378,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         cur = NULL;
         return 2000;
       }
-      HAL::allowInterrupts();
+      allowInterrupts();
       lastblk = -1;
 
 #if 1
@@ -1424,7 +1409,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       } // End if WARMUP
 
       if(cur->isEMove()) {
-        Extruder::enable();
+        extruder.enable();
       }
       cur->fixStartAndEndSpeed();
       // Set up delta segments
@@ -1457,26 +1442,21 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       Printer::vMaxReached = cur->vStart;
       Printer::stepNumber = 0;
       Printer::timer = 0;
-      HAL::forbidInterrupts();
-#if USE_ADVANCE
+      forbidInterrupts();
+
       if(!Printer::isAdvanceActivated()) // Set direction if no advance/OPS enabled
-#endif
-        Extruder::setDirection(cur->isEPositiveMove());
+
+        extruder.setDirection(cur->isEPositiveMove());
 #if defined(DIRECTION_DELAY) && DIRECTION_DELAY > 0
-      // HAL::delayMicroseconds(DIRECTION_DELAY); // We leave interrupt without step so no delay needed here
+      // delayMicroseconds(DIRECTION_DELAY); // We leave interrupt without step so no delay needed here
 #endif
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
+
       Printer::advanceExecuted = cur->advanceStart;
-#endif
       cur->updateAdvanceSteps(cur->vStart, 0, false);
-#endif
-      if(Printer::mode == PRINTER_MODE_FFF) {
-        Printer::setFanSpeedDirectly(cur->secondSpeed);
-      }
+
       return Printer::interval; // Wait an other 50% from last step to make the 100% full
     } // End cur=0
-  HAL::allowInterrupts();
+  allowInterrupts();
 
   if(curd != NULL) {
     if(curd->checkEndstops(cur, (cur->isCheckEndstops()))) { // should stop move
@@ -1494,29 +1474,21 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       }
       cur = NULL;
       Printer::disableAllowedStepper();
-      if(Printer::mode == PRINTER_MODE_FFF) {
-        Printer::setFanSpeedDirectly(Printer::fanSpeed);
-      }
+      //if(Printer::mode == PRINTER_MODE_FFF) {
+      //  Printer::setFanSpeedDirectly(Printer::fanSpeed);
+      //}
       return Printer::interval;
     }
   }
   int maxLoops = (Printer::stepsPerTimerCall <= cur->stepsRemaining ? Printer::stepsPerTimerCall : cur->stepsRemaining);
-  HAL::forbidInterrupts();
+  forbidInterrupts();
   for(int loop = 0; loop < maxLoops; loop++) {
 #if STEPPER_HIGH_DELAY + DOUBLE_STEP_DELAY
     if(loop > 0)
-      HAL::delayMicroseconds(STEPPER_HIGH_DELAY + DOUBLE_STEP_DELAY);
+      delayMicroseconds(STEPPER_HIGH_DELAY + DOUBLE_STEP_DELAY);
 #endif
     if((cur->error[E_AXIS] -= cur->delta[E_AXIS]) < 0) {
-#if USE_ADVANCE
-      if(Printer::isAdvanceActivated()) { // Use interrupt for movement
-        if(cur->isEPositiveMove())
-          Printer::extruderStepsNeeded++;
-        else
-          Printer::extruderStepsNeeded--;
-      } else
-#endif
-        Extruder::step();
+        extruder.step();
       cur->error[E_AXIS] += cur_errupd;
     }
     if (curd) {
@@ -1558,10 +1530,8 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     }
     Printer::insertStepperHighDelay();
     Printer::endXYZSteps();
-#if USE_ADVANCE
     if(!Printer::isAdvanceActivated()) // Use interrupt for movement
-#endif
-      Extruder::unstep();
+      extruder.unstep();
     if (!stepsPerSegRemaining) { // start new nonlinear segment
       if (cur->numNonlinearSegments && curd != NULL) {
 #if FEATURE_BABYSTEPPING
@@ -1586,7 +1556,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         Printer::setYDirection(curd->dir & Y_DIRPOS);
         Printer::setZDirection(curd->dir & Z_DIRPOS);
 #if defined(DIRECTION_DELAY) && DIRECTION_DELAY > 0
-        HAL::delayMicroseconds(DIRECTION_DELAY);
+        delayMicroseconds(DIRECTION_DELAY);
 #endif
 
       } else
@@ -1595,21 +1565,21 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     }
   } // for loop
 
-  HAL::allowInterrupts(); // Allow interrupts for other types, timer1 is still disabled
+  allowInterrupts(); // Allow interrupts for other types, timer1 is still disabled
 #if RAMP_ACCELERATION
   //If acceleration is enabled on this move and we are in the acceleration segment, calculate the current interval
   if (cur->moveAccelerating()) {
-    Printer::vMaxReached = HAL::ComputeV(Printer::timer, cur->fAcceleration) + cur->vStart;
+    Printer::vMaxReached = ComputeV(Printer::timer, cur->fAcceleration) + cur->vStart;
     if(Printer::vMaxReached > cur->vMax) Printer::vMaxReached = cur->vMax;
     uint16_t v = Printer::updateStepsPerTimerCall(Printer::vMaxReached);
-    Printer::interval = HAL::CPUDivU2(v);
+    Printer::interval = CPUDivU2(v);
     // if(Printer::maxInterval < Printer::interval) // fix timing for very slow speeds
     //    Printer::interval = Printer::maxInterval;
     Printer::timer += Printer::interval;
     cur->updateAdvanceSteps(Printer::vMaxReached, maxLoops, true);
     Printer::stepNumber += maxLoops; // is only used by moveAccelerating
   } else if (cur->moveDecelerating()) { // time to slow down
-    uint16_t v = HAL::ComputeV(Printer::timer, cur->fAcceleration);
+    uint16_t v = ComputeV(Printer::timer, cur->fAcceleration);
     if (v > Printer::vMaxReached)   // if deceleration goes too far it can become too large
       v = cur->vEnd;
     else {
@@ -1618,7 +1588,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     }
     cur->updateAdvanceSteps(v, maxLoops, false);
     v = Printer::updateStepsPerTimerCall(v);
-    Printer::interval = HAL::CPUDivU2(v);
+    Printer::interval = CPUDivU2(v);
     // if(Printer::maxInterval < Printer::interval) // fix timing for very slow speeds
     //    Printer::interval = Printer::maxInterval;
     Printer::timer += Printer::interval;
@@ -1670,12 +1640,12 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         uid.setStatusP(PSTR("Idle"));
         uid.refreshPage();
       }
-      if(Printer::mode == PRINTER_MODE_FFF) {
-        Printer::setFanSpeedDirectly(Printer::fanSpeed);
-      }
+      //if(Printer::mode == PRINTER_MODE_FFF) {
+      //  Printer::setFanSpeedDirectly(Printer::fanSpeed);
+      //}
     }
     Printer::interval >>= 1; // 50% of time to next call to do cur=0
-    //HAL::printFreeMemory();
+    //hal.printFreeMemory();
   } // Do even
   return Printer::interval;
 }

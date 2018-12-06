@@ -192,15 +192,11 @@ class Printer {
   static uint8_t debugLevel;
 public:
 
-#if USE_ADVANCE
   static volatile int extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
   static uint8_t maxExtruderSpeed;            ///< Timer delay for end extruder speed
   //static uint8_t extruderAccelerateDelay;     ///< delay between 2 speec increases
   static int advanceStepsSet;
-#if ENABLE_QUADRATIC_ADVANCE
   static long advanceExecuted;             ///< Executed advance steps
-#endif
-#endif
 
   static uint16_t menuMode;
   static float axisStepsPerMM[]; ///< Resolution of each axis in steps per mm.
@@ -286,7 +282,7 @@ public:
   static int feedrateMultiply;             ///< Multiplier for feedrate in percent (factor 1 = 100)
   static unsigned int extrudeMultiply;     ///< Flow multiplier in percent (factor 1 = 100)
   static float maxJerk;                    ///< Maximum allowed jerk in mm/s
-  static uint8_t interruptEvent;           ///< Event generated in interrupts that should/could be handled in main thread
+
   static float offsetX;                     ///< X-offset for different tool positions.
   static float offsetY;                     ///< Y-offset for different tool positions.
   static float offsetZ;                     ///< Z-offset for different tool positions.
@@ -311,12 +307,6 @@ public:
   static char printName[21]; // max. 20 chars + 0
   static float progress;
 
-  static void handleInterruptEvent();
-
-  static INLINE void setInterruptEvent(uint8_t evt, bool highPriority) {
-    if(highPriority || interruptEvent == 0)
-      interruptEvent = evt;
-  }
   static INLINE void setMenuMode(uint16_t mode, bool on) {
     if(on)
       menuMode |= mode;
@@ -373,10 +363,6 @@ public:
   }
 
 
-  /** Sets the pwm for the fan speed. Gets called by motion control or Commands::setFanSpeed. */
-  static void setFanSpeedDirectly(uint8_t speed);
-  /** Sets the pwm for the fan 2 speed. Gets called by motion control or Commands::setFan2Speed. */
-  static void setFan2SpeedDirectly(uint8_t speed);
   /** \brief Disable stepper motor for x direction. */
   static INLINE void disableXStepper() {
 #if (X_ENABLE_PIN > -1)
@@ -613,9 +599,6 @@ public:
   }
   static INLINE void unsetAllSteppersDisabled() {
     flag0 &= ~PRINTER_FLAG0_STEPPER_DISABLED;
-#if FAN_BOARD_PIN > -1
-    pwm_pos[PWM_BOARD_FAN] = BOARD_FAN_SPEED;
-#endif // FAN_BOARD_PIN
   }
   static INLINE bool isAnyTempsensorDefect() {
     return (flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT);
@@ -698,7 +681,7 @@ public:
   }
   static INLINE void insertStepperHighDelay() {
 #if STEPPER_HIGH_DELAY>0
-    HAL::delayMicroseconds(STEPPER_HIGH_DELAY);
+    delayMicroseconds(STEPPER_HIGH_DELAY);
 #endif
   }
   static void updateDerivedParameter();
@@ -747,7 +730,7 @@ public:
   static void kill(uint8_t only_steppers);
   static void updateAdvanceFlags();
   static void setup();
-  static void defaultLoopActions();
+
   static void homeAxis(bool xaxis, bool yaxis, bool zaxis); /// Home axis
   static void setOrigin(float xOff, float yOff, float zOff);
   /** \brief Tests if the target position is allowed.
@@ -761,12 +744,7 @@ public:
       \param x Z position in mm.
       \return true if position is valid and can be reached. */
   static bool isPositionAllowed(float x, float y, float z);
-  static INLINE int getFanSpeed() {
-    return (int)pwm_pos[PWM_FAN1];
-  }
-  static INLINE int getFan2Speed() {
-    return (int)pwm_pos[PWM_FAN2];
-  }
+
   static INLINE void setDeltaPositions(long xaxis, long yaxis, long zaxis) {
     currentNonlinearPositionSteps[A_TOWER] = xaxis;
     currentNonlinearPositionSteps[B_TOWER] = yaxis;
@@ -799,6 +777,8 @@ public:
   static void stopPrint();
 
 	static void moveToParkPosition();
+
+  static void selectExtruderById(uint8_t extruderId);
 };
 
 #endif // PRINTER_H_INCLUDED

@@ -26,11 +26,6 @@
 extern UIDisplay uid;
 
 
-const long baudrates[] PROGMEM = {9600, 14400, 19200, 28800, 38400, 56000,
-                                  57600, 76800, 111112, 115200, 128000, 230400,
-                                  250000, 256000, 460800, 500000, 921600, 1000000, 1500000, 0 };
-
-
 bool
 UIDisplay::doEncoderChange_file(int16_t encoderChange) {
 
@@ -148,7 +143,7 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
   //  Then, use that time to increase the acceleration if we're near the minimal time, decrease it
   //  if we're somewhat slow, and reset it if we've been idle for a second or more.
 
-  uint32_t thisEncoderTime = HAL::timeInMilliseconds();
+  uint32_t thisEncoderTime = millis();
   uint32_t dtActual        = thisEncoderTime - lastEncoderTime;
 
   lastEncoderTime = thisEncoderTime;
@@ -310,51 +305,64 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
   }
 
 
-  else if (entryAction == ACT_BED_T_TARGET) {
-    int temp = (int)heatedBedController.targetTemperatureC;  //  is float
+  else if ((entryAction == ACT_EXT_T_TARGET) ||
+           (entryAction == ACT_BED_T_TARGET)) {
+    tempControl  *tc = NULL;
 
-    if (temp < UI_SET_MIN_HEATED_BED_TEMP)
-      temp = 0;
+    if (entryAction == ACT_EXT_T_TARGET)   tc = &extruderTemp;
+    if (entryAction == ACT_BED_T_TARGET)   tc = &bedTemp;
 
-    if (temp == 0 && encoderChange > 0)
-      temp = UI_SET_MIN_HEATED_BED_TEMP;
-    else
+    float temp = tc->getTargetTemperature();
+    float mint = tc->getTargetTemperatureMin();
+    float maxt = tc->getTargetTemperatureMax();
+
+    //Com::printf(PSTR("setTemp for %d to %.2f <= %.2f <= %.2f  encoderChange = %d\n"),
+    //            tc->id(), mint, temp, maxt, encoderChange);
+
+    if ((temp < mint) &&       //  If currently below the min, but a positive
+        (encoderChange > 0))   //  change, set to the minimum.
+      temp  = mint;            //
+    else                       //  Otherwise, add the change to the current temp.
       temp += encoderChange;
 
-    if (temp < UI_SET_MIN_HEATED_BED_TEMP)
+    if (temp < mint)           //  If below the min, reset to OFF.
       temp = 0;
-    else if (temp > UI_SET_MAX_HEATED_BED_TEMP)
-      temp = UI_SET_MAX_HEATED_BED_TEMP;
 
-    Extruder::setHeatedBedTemperature(temp);
+    if (temp > maxt)           //  If above the max, reset to max.
+      temp = maxt;
+
+    tc->setTargetTemperature(temp);
   }
 
 
-  else if (entryAction == ACT_EXT_T_TARGET) {
-    int temp = (int)extruder[0].tempControl.targetTemperatureC;  //  is float
+  else if ((entryAction == ACT_EXTRUDER_FAN_CHANGE) ||
+           (entryAction == ACT_LAYER_FAN_CHANGE)) {
+    tempControl *tc = NULL;
 
-    if (temp < UI_SET_MIN_EXTRUDER_TEMP)
-      temp = 0;
+    if (entryAction == ACT_EXTRUDER_FAN_CHANGE)   tc = &extruderTemp;
+    if (entryAction == ACT_LAYER_FAN_CHANGE)      tc = &layerFan;
 
-    if (temp == 0 && encoderChange > 0)
-      temp = UI_SET_MIN_EXTRUDER_TEMP;
+    uint8_t speed = tc->getFanSpeed();
+
+    if      ((encoderChange < 0) && (speed <   0 - encoderChange))
+      tc->setFanSpeed(0);
+
+    else if ((encoderChange > 0) && (speed > 255 - encoderChange))
+      tc->setFanSpeed(255);
+
     else
-      temp += encoderChange;
-
-    if (temp < UI_SET_MIN_EXTRUDER_TEMP)
-      temp = 0;
-
-    if (temp > UI_SET_MAX_EXTRUDER_TEMP)
-      temp = UI_SET_MAX_EXTRUDER_TEMP;
-
-    Extruder::setTemperatureForExtruder(temp, 0);
+      tc->setFanSpeed(speed + encoderChange);
   }
-
-
-  else if (entryAction == ACT_FAN_CHANGE) {
-    Commands::setFanSpeed(Printer::getFanSpeed() + encoderChange, true);
+    
+  else if (entryAction == ACT_PID_P) {
+    bedTemp._pidPGain += encoderChange * 0.1;
   }
-
+  else if (entryAction == ACT_PID_I) {
+    bedTemp._pidIGain += encoderChange * 0.1;
+  }
+  else if (entryAction == ACT_PID_D) {
+    bedTemp._pidDGain += encoderChange * 0.1;
+  }
 
   else if (entryAction == ACT_SPEED_CHANGE) {
     Commands::changeFeedrateMultiply(Printer::feedrateMultiply + encoderChange);

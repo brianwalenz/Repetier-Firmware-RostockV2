@@ -28,6 +28,8 @@
 #include "Commands.h"
 
 #include "motion.h"
+#include "temperatures.h"
+
 #include "Extruder.h"
 
 #include "uimenu.h"       //  Menu definitions.
@@ -78,14 +80,7 @@
 //UI_STRING(ui_selected,   cSEL);
 //UI_STRING(ui_unselected, cUNSEL);
 
-
-
-
-
 UIDisplay uid;
-
-
-static TemperatureController *currHeaterForSetup;    // pointer to extruder or heatbed temperature controller
 
 
 
@@ -170,8 +165,8 @@ UIDisplay::uiChirp(void) {
 
   SET_OUTPUT(BEEPER_PIN);
 
-  WRITE(BEEPER_PIN, HIGH);   HAL::delayMilliseconds(1);
-  WRITE(BEEPER_PIN, LOW);    HAL::delayMilliseconds(1);
+  WRITE(BEEPER_PIN, HIGH);   delay(1);
+  WRITE(BEEPER_PIN, LOW);    delay(1);
 }
 
 
@@ -182,8 +177,8 @@ UIDisplay::uiAlert(uint8_t n) {
   SET_OUTPUT(BEEPER_PIN);
 
   for (uint8_t i=0; i<n; i++) {
-    WRITE(BEEPER_PIN, HIGH);   HAL::delayMilliseconds(50);
-    WRITE(BEEPER_PIN, LOW);    HAL::delayMilliseconds(100);
+    WRITE(BEEPER_PIN, HIGH);   delay(50);
+    WRITE(BEEPER_PIN, LOW);    delay(100);
   }
 }
 
@@ -212,13 +207,13 @@ WRITE(UI_DISPLAY_D4_PIN, value & 1);
  WRITE(UI_DISPLAY_D5_PIN, value & 2);
  WRITE(UI_DISPLAY_D6_PIN, value & 4);
  WRITE(UI_DISPLAY_D7_PIN, value & 8);
- HAL::delayMicroseconds(1);
+ delayMicroseconds(1);
 
  WRITE(UI_DISPLAY_ENABLE_PIN, HIGH);
- HAL::delayMicroseconds(2);        //  The enable pulse must be more than 450ns.  We wait 2000ns.
+ delayMicroseconds(2);        //  The enable pulse must be more than 450ns.  We wait 2000ns.
 
  WRITE(UI_DISPLAY_ENABLE_PIN, LOW);
- HAL::delayMicroseconds(UI_DELAYPERCHAR);
+ delayMicroseconds(UI_DELAYPERCHAR);
 }
 
 
@@ -230,10 +225,10 @@ void lcdWriteByte(uint8_t c, uint8_t rs) {
   WRITE(UI_DISPLAY_D5_PIN, c & 0x20);
   WRITE(UI_DISPLAY_D6_PIN, c & 0x40);
   WRITE(UI_DISPLAY_D7_PIN, c & 0x80);
-  HAL::delayMicroseconds(2);
+  delayMicroseconds(2);
 
   WRITE(UI_DISPLAY_ENABLE_PIN, HIGH);
-  HAL::delayMicroseconds(2);
+  delayMicroseconds(2);
 
   WRITE(UI_DISPLAY_ENABLE_PIN, LOW);
 
@@ -241,13 +236,13 @@ void lcdWriteByte(uint8_t c, uint8_t rs) {
   WRITE(UI_DISPLAY_D5_PIN, c & 0x02);
   WRITE(UI_DISPLAY_D6_PIN, c & 0x04);
   WRITE(UI_DISPLAY_D7_PIN, c & 0x08);
-  HAL::delayMicroseconds(2);
+  delayMicroseconds(2);
 
   WRITE(UI_DISPLAY_ENABLE_PIN, HIGH);
-  HAL::delayMicroseconds(2);
+  delayMicroseconds(2);
 
   WRITE(UI_DISPLAY_ENABLE_PIN, LOW);
-  HAL::delayMicroseconds(100);
+  delayMicroseconds(100);
 }
 
 
@@ -269,7 +264,7 @@ UIDisplay::initialize() {
   _menuSel  = 255;    //  But no action selected.
   _menuTop  = 0;      //
 
-  uint32_t timeNow = HAL::timeInMilliseconds();
+  uint32_t timeNow = millis();
 
   _stopChangeTime  = timeNow;
   _stopMenuTime    = timeNow;
@@ -333,7 +328,7 @@ UIDisplay::initialize() {
   //  Set up the LCD!
   //
 
-  HAL::delayMilliseconds(235);
+  delay(235);
 
   SET_OUTPUT(UI_DISPLAY_D4_PIN);
   SET_OUTPUT(UI_DISPLAY_D5_PIN);
@@ -351,7 +346,7 @@ UIDisplay::initialize() {
   //  Probably not necessary, since the time to initialize the CPU
   //  should be at least as long.
 
-  HAL::delayMilliseconds(100);
+  delay(100);
 
   //  Pull both RS and R/W low to begin commands.  We don't have an R/W pin
   //  so assume it's tied to LOW.
@@ -359,17 +354,17 @@ UIDisplay::initialize() {
   WRITE(UI_DISPLAY_RS_PIN,     LOW);
   WRITE(UI_DISPLAY_ENABLE_PIN, LOW);
 
-  HAL::delayMicroseconds(100);
+  delayMicroseconds(100);
 
   //  Put LCD into 4-bit mode.
   //
   //  To do this, send the high nibble of the first four initialization
   //  commands:
   //    
-  lcdWriteNibble(0x03);    HAL::delayMicroseconds(4100);   //  Function set.  Wait at least 4.1ms
-  lcdWriteNibble(0x03);    HAL::delayMicroseconds(100);    //  Function set.  Wait at least 0.1ms
-  lcdWriteNibble(0x03);    HAL::delayMicroseconds(100);    //  Function set.  No wait specified, but we'll still wait.
-  lcdWriteNibble(0x02);    HAL::delayMicroseconds(100);    //  Function set, set interface to 4-bit mode.
+  lcdWriteNibble(0x03);    delayMicroseconds(4100);   //  Function set.  Wait at least 4.1ms
+  lcdWriteNibble(0x03);    delayMicroseconds(100);    //  Function set.  Wait at least 0.1ms
+  lcdWriteNibble(0x03);    delayMicroseconds(100);    //  Function set.  No wait specified, but we'll still wait.
+  lcdWriteNibble(0x02);    delayMicroseconds(100);    //  Function set, set interface to 4-bit mode.
 
   //
   //  See page 24, Table 6 for instructions.
@@ -381,29 +376,29 @@ UIDisplay::initialize() {
   //                v---- format:         1=5x10     0=5x7
   //                 xx-- don't care
   lcdCommand(0b00101000);
-  HAL::delayMicroseconds(200);
+  delayMicroseconds(200);
 
   //                  v-- CLEAR DISPLAY - wait for at least 1.52ms, else the next command is lost.
   lcdCommand(0b00000001);
-  HAL::delayMicroseconds(2500);
+  delayMicroseconds(2500);
 
   //                 v--- DISPLAY AND CURSOR HOME (moves cursor to home, unshifts display)
   //                  v-- don't care
   lcdCommand(0b00000010);
-  HAL::delayMicroseconds(200);
+  delayMicroseconds(200);
 
   //               v----- DISPLAY ON/OFF and CURSOR MODE
   //                v---- display on           1=on    0=off
   //                 v--- cursor underlining:  1=on    0=off
   //                  v-- cursor blinking:     1=blink 0=off
   lcdCommand(0b00001100);
-  HAL::delayMicroseconds(200);
+  delayMicroseconds(200);
 
   //                v---- CHARACTER ENTRY MOVEMENT and DISPLAY SHIFT
   //                 v--- direction         1=increment 0=decrement
   //                  v-- display shift     1=shift     0=off
   lcdCommand(0b00000110);
-  HAL::delayMicroseconds(200);
+  delayMicroseconds(200);
 
   // MenuBack  Degrees   Selected  Unsel     Temp      Folder    Ready   
   // ..*..  4  ..*..  4  .....  0  .....  0  ..*..  4  .....  0  *...* 17
@@ -438,31 +433,31 @@ UIDisplay::initialize() {
 
   //  Show the start screen for 2 seconds.
 #if 1
-  HAL::delayMilliseconds(2000);
+  delay(2000);
 #else
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("                   b"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("                  br"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("                 bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("                bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("               bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("              bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("             bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("            bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("           bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("          bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("         bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("        bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("       bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("      bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("     bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("    bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("   bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("  bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR(" bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("bri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("ri"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR("i"));
-  HAL::delayMilliseconds(282);   printRowP(3, PSTR(""));
+  delay(282);   printRowP(3, PSTR("                   b"));
+  delay(282);   printRowP(3, PSTR("                  br"));
+  delay(282);   printRowP(3, PSTR("                 bri"));
+  delay(282);   printRowP(3, PSTR("                bri"));
+  delay(282);   printRowP(3, PSTR("               bri"));
+  delay(282);   printRowP(3, PSTR("              bri"));
+  delay(282);   printRowP(3, PSTR("             bri"));
+  delay(282);   printRowP(3, PSTR("            bri"));
+  delay(282);   printRowP(3, PSTR("           bri"));
+  delay(282);   printRowP(3, PSTR("          bri"));
+  delay(282);   printRowP(3, PSTR("         bri"));
+  delay(282);   printRowP(3, PSTR("        bri"));
+  delay(282);   printRowP(3, PSTR("       bri"));
+  delay(282);   printRowP(3, PSTR("      bri"));
+  delay(282);   printRowP(3, PSTR("     bri"));
+  delay(282);   printRowP(3, PSTR("    bri"));
+  delay(282);   printRowP(3, PSTR("   bri"));
+  delay(282);   printRowP(3, PSTR("  bri"));
+  delay(282);   printRowP(3, PSTR(" bri"));
+  delay(282);   printRowP(3, PSTR("bri"));
+  delay(282);   printRowP(3, PSTR("ri"));
+  delay(282);   printRowP(3, PSTR("i"));
+  delay(282);   printRowP(3, PSTR(""));
 #endif
 }
 
@@ -983,7 +978,7 @@ UIDisplay::refreshPage(void) {
 
 // Gets calls from main tread only
 void UIDisplay::slowAction(bool allowMoves) {
-  uint32_t time    = HAL::timeInMilliseconds();
+  uint32_t time    = millis();
   uint8_t  refresh = 0;
 
   // delayed action open?
@@ -1115,10 +1110,6 @@ void UIDisplay::slowAction(bool allowMoves) {
 
 
 
-void UIDisplay::mediumAction() {
-}
-
-
 
 // Gets called from inside an interrupt with interrupts allowed!
 //
@@ -1133,7 +1124,7 @@ UIDisplay::fastAction(void) {
     uint16_t nextAction = uiCheckKeys();
 
     if (lastButtonAction != nextAction) {
-      lastButtonStart = HAL::timeInMilliseconds();
+      lastButtonStart = millis();
       lastButtonAction = nextAction;
 
       flags |= UI_FLAG_FAST_KEY_ACTION;

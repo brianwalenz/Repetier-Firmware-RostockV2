@@ -27,6 +27,8 @@
 #include "Eeprom.h"
 #include "motion.h"
 #include "Printer.h"
+
+#include "temperatures.h"
 #include "Extruder.h"
 
 #include "rmath.h"
@@ -48,56 +50,60 @@
 
 
 
-const int8_t sensitive_pins[] PROGMEM = SENSITIVE_PINS; // Sensitive pin list for M42
-
-
-
 void Commands::commandLoop() {
-
-#ifdef DEBUG_PRINT
-  debugWaitLoop = 1;
-#endif
 
   if (Printer::isBlockingReceive() == false) {
     commandQueue.executeNext();
-
-    //uid.slowAction()  //  do slow events?  was disabled
-
-    uid.mediumAction(); // do check encoder
-
-    gcodeCommand *code = commandQueue.popCommand();
-
-    if (code) {
-      if (Printer::debugEcho())
-        code->printCommand();
-
-      Commands::executeGCode(code);
-    }
+    executeGCode(commandQueue.popCommand());
 
   } else {
     commandQueue.keepAlive(GCODE_PAUSED);
-    uid.mediumAction();
   }
 
-  Printer::defaultLoopActions();
+  checkForPeriodicalActions(true);
+
+#if 0
+  uint32_t curtime = millis();
+
+  if(PrintLine::hasLines() || Printer::isMenuMode(MODE_PRINTING | MODE_PAUSED))
+    previousMillisCmd = curtime;
+  else {
+    curtime -= previousMillisCmd;
+
+    if(maxInactiveTime != 0 && curtime >  maxInactiveTime )
+      Printer::kill(false);
+    else
+      Printer::setAllKilled(false); // prevent repeated kills
+
+    if(stepperInactiveTime != 0 && curtime >  stepperInactiveTime )
+      Printer::kill(true);
+  }
+#endif
+
 }
 
-void Commands::checkForPeriodicalActions(bool allowNewMoves) {
 
-  Printer::handleInterruptEvent();
 
-  if(executePeriodical == false)
-    return; // gets true every 100ms
+//  Called explicitly when waiting for temperatures to stabilize - waitForTargetTemperature().
+//  Called explicitly when waiting for the printer to print      - waitForXFreeLines()
+//  Called explicitly when waiting for movements to end          - waitUntilEndOfAllMoves() (here)
+//  Called explicitly when                                       -  waitUntilEndOfAllBuffers() (here)
+//  Called explicitly in G004
+//
+void
+Commands::checkForPeriodicalActions(bool allowNewMoves) {
 
-  executePeriodical = 0;
+  if (hal.execute100ms == 0)
+    return;
 
-  Extruder::manageTemperatures();
+  hal.execute100ms = 0;
 
-  if (--counter500ms == 0) {
-    if(manageMonitor)
-      writeMonitor();
-    counter500ms = 5;
-  }
+  //Com::printf(PSTR("checkForPeriodicalAction()\n"), hal.counter100ms);
+
+  extruderTemp.manageTemperature();
+  bedTemp.manageTemperature();
+
+  sd.automount();
 
   // If called from queueDelta etc. it is an error to start a new move since it
   // would invalidate old computation resulting in unpredicted behavior.
@@ -114,39 +120,29 @@ void Commands::checkForPeriodicalActions(bool allowNewMoves) {
     commands and manages temperatures.
 */
 void Commands::waitUntilEndOfAllMoves() {
-#ifdef DEBUG_PRINT
-  debugWaitLoop = 8;
-#endif
+
   while(PrintLine::hasLines()) {
     checkForPeriodicalActions(false);
     commandQueue.keepAlive(GCODE_PROCESSING);
-    uid.mediumAction();
   }
 }
+
+
 
 void Commands::waitUntilEndOfAllBuffers() {
   gcodeCommand *code = NULL;
 
-#ifdef DEBUG_PRINT
-  debugWaitLoop = 9;
-#endif
-
-  while(PrintLine::hasLines() || (code != NULL)) {
-    uid.mediumAction(); // do check encoder
-
+  while (PrintLine::hasLines() || (code != NULL)) {
     code = commandQueue.popCommand();
 
-    if (code) {
-      if (Printer::debugEcho())
-        code->printCommand();
+    if (code)
+      executeGCode(code);
 
-      Commands::executeGCode(code);
-    }
-
-    Commands::checkForPeriodicalActions(false); // only called from memory
-    uid.mediumAction();
+    checkForPeriodicalActions(false);
   }
 }
+
+
 
 void Commands::printCurrentPosition() {
   float x, y, z;
@@ -173,40 +169,6 @@ void Commands::printCurrentPosition() {
 
 
 
-void Commands::printTemperatures(bool showRaw) {
-  int error;
-  float temp = Extruder::current->tempControl.currentTemperatureC;
-#if HEATED_BED_SENSOR_TYPE == 0
-  Com::printF(PSTR("T:"), temp);
-  Com::printF(PSTR(" /"), Extruder::current->tempControl.targetTemperatureC, 0);
-#else
-  Com::printF(PSTR("T:"), temp);
-  Com::printF(PSTR(" /"), Extruder::current->tempControl.targetTemperatureC, 0);
-  Com::printF(PSTR(" B:"), Extruder::getHeatedBedTemperature());
-  Com::printF(PSTR(" /"), heatedBedController.targetTemperatureC, 0);
-  if((error = heatedBedController.errorState()) > 0) {
-    Com::printF(PSTR(" DB:"), error);
-  }
-  if(showRaw) {
-    Com::printF(PSTR(" RAW"), (int)NUM_EXTRUDER);
-    Com::printF(PSTR(":"), (1023 << (2 - ANALOG_REDUCE_BITS)) - heatedBedController.currentTemperature);
-  }
-  Com::printF(PSTR(" B@:"), (pwm_pos[heatedBedController.pwmIndex])); // Show output of auto tune when tuning!
-#endif
-  Com::printF(PSTR(" @:"), (autotuneIndex == 255 ? pwm_pos[Extruder::current->id] : pwm_pos[autotuneIndex])); // Show output of auto tune when tuning!
-  if((error = extruder[0].tempControl.errorState()) > 0) {
-    Com::printF(PSTR(" D0:"), error);
-  }
-  if(showRaw) {
-    Com::printF(PSTR(" RAW"), (int)0);
-    Com::printF(PSTR(":"), (1023 << (2 - ANALOG_REDUCE_BITS)) - extruder[0].tempControl.currentTemperature);
-  }
-  Com::printF(PSTR("\n"));
-}
-
-
-
-
 //  Change the speed of the entire print - both the flow and printhead speed change.
 void
 Commands::changeFeedrateMultiply(int factor) {
@@ -230,84 +192,13 @@ Commands::changeFlowrateMultiply(int factor) {
 
   Printer::extrudeMultiply = factor;
 
-  if (Extruder::current->diameter <= 0)
+  if (extruder.diameter <= 0)
     Printer::extrusionFactor = 0.01f * factor;
   else
-    Printer::extrusionFactor = 0.04f * factor / (Extruder::current->diameter * Extruder::current->diameter * 3.141592654f);
+    Printer::extrusionFactor = 0.04f * factor / (extruder.diameter * extruder.diameter * 3.141592654f);
 
   Com::printF(PSTR("FlowMultiply:"), factor);
   Com::printF(PSTR("\n"));
-}
-
-
-
-#if FEATURE_FAN_CONTROL
-uint8_t fanKickstart;
-#endif
-#if FEATURE_FAN2_CONTROL
-uint8_t fan2Kickstart;
-#endif
-
-void Commands::setFanSpeed(int speed, bool immediately) {
-#if FAN_PIN >- 1 && FEATURE_FAN_CONTROL
-  if(Printer::fanSpeed == speed)
-    return;
-  speed = constrain(speed, 0, 255);
-  //Printer::setMenuMode(MODE_FAN_RUNNING, speed != 0);
-  Printer::fanSpeed = speed;
-  if(PrintLine::linesCount == 0 || immediately) {
-    if(Printer::mode == PRINTER_MODE_FFF) {
-      for(int8_t i = 0; i < PRINTLINE_CACHE_SIZE; i++)
-        PrintLine::lines[i].secondSpeed = speed;         // fill all printline buffers with new fan speed value
-    }
-    Printer::setFanSpeedDirectly(speed);
-  }
-  Com::printF(PSTR("Fanspeed:"), speed); // send only new values to break update loops!
-  Com::printF(PSTR("\n"));
-#endif
-}
-void Commands::setFan2Speed(int speed) {
-#if FAN2_PIN >- 1 && FEATURE_FAN2_CONTROL
-  speed = constrain(speed, 0, 255);
-  Printer::setFan2SpeedDirectly(speed);
-  Com::printF(PSTR("Fanspeed2:"), speed); // send only new values to break update loops!
-  Com::printF(PSTR("\n"));
-#endif
-}
-
-
-
-
-// Digipot methods for controling current and microstepping
-
-void digitalPotWrite(int address, uint16_t value) { // From Arduino DigitalPotControl example
-  if(value > 255)
-    value = 255;
-  WRITE(DIGIPOTSS_PIN, LOW); // take the SS pin low to select the chip
-  HAL::spiSend(address); //  send in the address and value via SPI:
-  HAL::spiSend(value);
-  WRITE(DIGIPOTSS_PIN, HIGH); // take the SS pin high to de-select the chip:
-  //delay(10);
-}
-
-void setMotorCurrent(uint8_t driver, uint16_t current) {
-  if(driver > 4) return;
-  const uint8_t digipot_ch[] = DIGIPOT_CHANNELS;
-  digitalPotWrite(digipot_ch[driver], current);
-}
-
-void setMotorCurrentPercent( uint8_t channel, float level) {
-  uint16_t raw_level = ( level * 255 / 100 );
-  setMotorCurrent(channel, raw_level);
-}
-
-void motorCurrentControlInit() { //Initialize Digipot Motor Current
-  HAL::spiInit(0); //SPI.begin();
-  SET_OUTPUT(DIGIPOTSS_PIN);
-  const float digipot_motor_current[] = MOTOR_CURRENT_PERCENT;
-  for(int i = 0; i <= 4; i++)
-    //digitalPotWrite(digipot_ch[i], digipot_motor_current[i]);
-    setMotorCurrentPercent(i, digipot_motor_current[i]);
 }
 
 
@@ -442,7 +333,7 @@ Commands::processG004(gcodeCommand *com) {
 
   Commands::waitUntilEndOfAllMoves();
 
-  uint32_t  endTime = HAL::timeInMilliseconds();   //  Overflows at 49.71 days.
+  uint32_t  endTime = millis();   //  Overflows at 49.71 days.
 
   if (com->hasP())             //  Milliseconds to wait.
     endTime += com->P;
@@ -450,7 +341,7 @@ Commands::processG004(gcodeCommand *com) {
   if (com->hasS())             //  Seconds to wait.
     endTime += com->S * 1000;
 
-  while (HAL::timeInMilliseconds() < endTime) {
+  while (millis() < endTime) {
     commandQueue.keepAlive(GCODE_PROCESSING);
     Commands::checkForPeriodicalActions(true);
   }
@@ -508,7 +399,7 @@ Commands::processG100(gcodeCommand *com) {
           // square root (rod length squared minus rod radius squared)
           // Reverse that to get calculated Rod Radius given B height
           h -= RMath::sqr(bSteps);
-          h = SQRT(h);
+          h = integerSqrt(h);
           EEPROM::setRodRadius(h * Printer::invAxisStepsPerMM[Z_AXIS]);
         }
       } else
@@ -651,12 +542,12 @@ Commands::processGCode(gcodeCommand *com) {
 
   // G10 S<1 = long retract, 0 = short retract = default> retracts filament according to stored setting
   else if (com->G == 10) {
-    Extruder::current->retract(true, false);
+    extruder.retract(true, false);
   }
 
   // G11 S<1 = long retract, 0 = short retract = default> = Undo retraction according to stored setting
   else if (com->G == 11) {
-    Extruder::current->retract(false, false);
+    extruder.retract(false, false);
   }
 
   // G20 Units to inches
@@ -789,7 +680,7 @@ Commands::processGCode(gcodeCommand *com) {
     com->printCommand();
   }
 
-  previousMillisCmd = HAL::timeInMilliseconds();
+  previousMillisCmd = millis();
 }
 
 
@@ -819,50 +710,15 @@ Commands::processMCode(gcodeCommand *com) {
     }
     if(com->hasE()) {
       named = true;
-      Extruder::disableCurrentExtruderMotor();
+      extruder.disable();
     }
     if(!named) {
       Printer::disableXStepper();
       Printer::disableYStepper();
       Printer::disableZStepper();
-      Extruder::disableAllExtruderMotors();
+      extruder.disable();
     }
   }
-
-  //  M42 set hardware pin
-#if 0
-  else if (com->M == 42) {
-    if (com->hasP()) {
-      int pin_number = com->P;
-      for(uint8_t i = 0; i < (uint8_t)sizeof(sensitive_pins); i++) {
-        if (pgm_read_byte(&sensitive_pins[i]) == pin_number) {
-          pin_number = -1;
-          goto endMcode;
-        }
-      }
-      if (pin_number > -1) {
-        if(com->hasS()) {
-          if(com->S >= 0 && com->S <= 255) {
-            pinMode(pin_number, OUTPUT);
-            digitalWrite(pin_number, com->S);
-            analogWrite(pin_number, com->S);
-            Com::printF(PSTR("Set output: "), pin_number);
-            Com::printF(PSTR(" to "), (int)com->S);
-            Com::printF(PSTR("\n"));
-          } else
-            Com::printF(PSTR("ERROR: Illegal S value for M42\n"));
-        } else {
-          pinMode(pin_number, INPUT_PULLUP);
-          Com::printF(PSTR(" to "), pin_number);
-          Com::printF(PSTR(" is "), digitalRead(pin_number));
-          Com::printF(PSTR("\n"));
-        }
-      } else {
-        Com::printF(PSTR("ERROR: Pin can not be set by M42, is in sensitive pins!\n"));
-      }
-    }
-  }
-#endif
 
   //  M82 set extruder to absolute mode
   else if (com->M == 82) {
@@ -898,10 +754,12 @@ Commands::processMCode(gcodeCommand *com) {
     if(com->hasX()) Printer::axisStepsPerMM[X_AXIS] = com->X;
     if(com->hasY()) Printer::axisStepsPerMM[Y_AXIS] = com->Y;
     if(com->hasZ()) Printer::axisStepsPerMM[Z_AXIS] = com->Z;
+
     Printer::updateDerivedParameter();
+
     if(com->hasE()) {
-      Extruder::current->stepsPerMM = com->E;
-      Extruder::selectExtruderById(Extruder::current->id);
+      extruder.stepsPerMM = com->E;
+      Printer::selectExtruderById(0);
     }
   }
 
@@ -918,89 +776,77 @@ Commands::processMCode(gcodeCommand *com) {
   //  M116 P<tool> H<heater> C<chamber>  - wait for temps to stabilize
 
   else if (com->M == 104) {
-    if (Printer::debugDryrun())
-      goto endMcode;
-    if (reportTempsensorError())
-      goto endMcode;
+    if (Printer::debugDryrun())    goto endMcode;
 
-    previousMillisCmd = HAL::timeInMilliseconds();
+    previousMillisCmd = millis();
 
     if ((com->hasS() && com->S == 0))
       Commands::waitUntilEndOfAllMoves();
 
-    if (com->hasS()) {
-      if(com->hasT() && com->T < NUM_EXTRUDER)
-        Extruder::setTemperatureForExtruder(com->S, com->T, com->hasF() && com->F > 0);
-      else
-        Extruder::setTemperatureForExtruder(com->S, Extruder::current->id, com->hasF() && com->F > 0);
-    }
+    //  com->hasT() not used; picks extruder to set temperature for.
+
+    if (com->hasS())
+      extruderTemp.setTargetTemperature(com->S);
   }
 
   else if (com->M == 140) {
-    if (Printer::debugDryrun())
-      goto endMcode;
-    if (reportTempsensorError())
-      goto endMcode;
+    if (Printer::debugDryrun())    goto endMcode;
 
-    previousMillisCmd = HAL::timeInMilliseconds();
+    previousMillisCmd = millis();
 
     if (com->hasS())
-      Extruder::setHeatedBedTemperature(com->S);
+      bedTemp.setTargetTemperature(com->S);
   }
 
+  //  Report current temperatures
+  //    ok T:201 B:117
+  //
   else if (com->M == 105) {
-    printTemperatures(com->hasX());
   }
 
   else if (com->M == 109) {
-    if(Printer::debugDryrun())
-      goto endMcode;
-    if(reportTempsensorError())
-      goto endMcode;
+    if (Printer::debugDryrun())    goto endMcode;
 
-    previousMillisCmd = HAL::timeInMilliseconds();
+    previousMillisCmd = millis();
 
     Commands::waitUntilEndOfAllMoves();
 
-    Extruder *actExtruder = Extruder::current;
-
-    if(com->hasT() && com->T < NUM_EXTRUDER)
-      actExtruder = &extruder[com->T];
-
     if (com->hasS())
-      Extruder::setTemperatureForExtruder(com->S, actExtruder->id, com->hasF() && com->F > 0, true);
+      extruderTemp.setTargetTemperature(com->S);
 
-    previousMillisCmd = HAL::timeInMilliseconds();
+    extruderTemp.waitForTargetTemperature();
+
+    previousMillisCmd = millis();
   }
 
   else if (com->M == 190) {
     if (Printer::debugDryrun())   goto endMcode;
-    if (reportTempsensorError())  goto endMcode;
 
     Commands::waitUntilEndOfAllMoves();
 
     if (com->hasS())
-      Extruder::setHeatedBedTemperature(com->S);
+      bedTemp.setTargetTemperature(com->S);
 
     //  If the bed is within 5 degrees, don't wait.
     //
     //if (abs(heatedBedController.currentTemperatureC - heatedBedController.targetTemperatureC) < 5)
     //  break;
 
-    tempController[HEATED_BED_INDEX]->waitForTargetTemperature();
+    bedTemp.waitForTargetTemperature();
 
-    previousMillisCmd = HAL::timeInMilliseconds();
+    previousMillisCmd = millis();
   }
 
+#if 0
   else if (com->M == 155) {
     Printer::setAutoreportTemp((com->hasS() && com->S != 0) || !com->hasS() );
-    Printer::lastTempReport = HAL::timeInMilliseconds();
+    Printer::lastTempReport = millis();
   }
+#endif
 
   else if (com->M == 116) {
-    for(int8_t h = 0; h <= HEATED_BED_INDEX; h++) {
-      tempController[h]->waitForTargetTemperature();
-    }
+    bedTemp.waitForTargetTemperature();
+    extruderTemp.waitForTargetTemperature();
   }
 
   else if (com->M == 106) {
@@ -1011,19 +857,13 @@ Commands::processMCode(gcodeCommand *com) {
         Printer::flag2 &= ~PRINTER_FLAG2_IGNORE_M106_COMMAND;
     }
     if(!(Printer::flag2 & PRINTER_FLAG2_IGNORE_M106_COMMAND)) {
-      if(com->hasP() && com->P == 1)
-        setFan2Speed(com->hasS() ? com->S : 255);
-      else
-        setFanSpeed(com->hasS() ? com->S : 255);
+      layerFan.setFanSpeed(com->hasS() ? com->S : 255);
     }
   }
 
   else if (com->M == 107) {
     if(!(Printer::flag2 & PRINTER_FLAG2_IGNORE_M106_COMMAND)) {
-      if(com->hasP() && com->P == 1)
-        setFan2Speed(0);
-      else
-        setFanSpeed(0);
+      layerFan.setFanSpeed(0);
     }
   }
 
@@ -1035,15 +875,17 @@ Commands::processMCode(gcodeCommand *com) {
   //  M111 set debug level
   //
   else if (com->M == 111) {
+#if 0
     if(com->hasS()) Printer::setDebugLevel(static_cast<uint8_t>(com->S));
     if(com->hasP()) {
       if (com->P > 0) Printer::debugSet(static_cast<uint8_t>(com->P));
       else Printer::debugReset(static_cast<uint8_t>(-com->P));
     }
     if(Printer::debugDryrun()) { // simulate movements without printing
-      Extruder::setTemperatureForExtruder(0, 0);
-      Extruder::setHeatedBedTemperature(0);
+      extruderTemp.setTargetTemperature(0);
+      bedTemp.setTargetTemperature(0);
     }
+#endif
   }
 
   //  M112 emergency stop.
@@ -1103,33 +945,6 @@ Commands::processMCode(gcodeCommand *com) {
 #endif
 
 
-  else if (com->M == 203) {
-    if(com->hasS())
-      manageMonitor = com->S != 255;
-    else
-      manageMonitor = 0;
-  }
-
-  //  M204 set PID parameters (non-standard)
-  //  M204 X[Kp] Y[Ki] Z[Kd]
-#if 0
-  else if (com->M == 204) {
-    TemperatureController *temp = &Extruder::current->tempControl;
-
-    if(com->hasS()) {
-      if(com->S < 0) break;
-      if(com->S < NUM_EXTRUDER) temp = &extruder[com->S].tempControl;
-      else temp = &heatedBedController;
-    }
-    if(com->hasX())  temp->pidPGain = com->X;
-    if(com->hasY())  temp->pidIGain = com->Y;
-    if(com->hasZ())  temp->pidDGain = com->Z;
-
-    temp->updateTempControlVars();
-  }
-#endif
-
-
   else {
     if(Printer::debugErrors()) {
       Com::printF(PSTR("Unknown command:"));
@@ -1146,6 +961,11 @@ Commands::processMCode(gcodeCommand *com) {
 void
 Commands::executeGCode(gcodeCommand *com) {
 
+  if (com == NULL)
+    return;
+
+  //com->printCommand();
+
   if      (com->hasG()) {
     processGCode(com);
   }
@@ -1156,7 +976,7 @@ Commands::executeGCode(gcodeCommand *com) {
 
   else if (com->hasT()) {
     Commands::waitUntilEndOfAllMoves();
-    Extruder::selectExtruderById(com->T);
+    Printer::selectExtruderById(com->T);
   }
 
   else if (Printer::debugErrors()) {
@@ -1172,30 +992,26 @@ void Commands::emergencyStop() {
   //  Kill by resetting the controller itself.  This assumes the reset will home
   //  the machine and reset heaters.
 
-  HAL::resetHardware();
+  hal.resetHardware();
 
   //  The alternate is to shutdown everyting manually and freeze.
+  //  Nicer in that we can bump the head off the object and NOT
+  //  home on the reset.
+
 #if 0
-  //HAL::forbidInterrupts(); // Don't allow interrupts to do their work
+  forbidInterrupts(); // Don't allow interrupts to do their work
+
   Printer::kill(false);
-  Extruder::manageTemperatures();
-  for(uint8_t i = 0; i < NUM_EXTRUDER + 3; i++)
-    pwm_pos[i] = 0;
 
-#if EXT0_HEATER_PIN > -1
-  WRITE(EXT0_HEATER_PIN, HEATER_PINS_INVERTED);
-#endif
+  extruderTemp.manageTemperature();
+  bedTemp.manageTemperature();
 
-#if FAN_PIN > -1 && FEATURE_FAN_CONTROL
-  WRITE(FAN_PIN, 0);
-#endif
+  extruderTemp.disable();
+  bedTemp.disable();
 
-  WRITE(HEATED_BED_HEATER_PIN, HEATER_PINS_INVERTED);
+  layerFan.setFanSpeed(0);
 
-  uid.setStatusP(PSTR("Killed"));
-  uid.refreshPage();
-
-  HAL::delayMilliseconds(200);
+  delay(200);
 
   InterruptProtectedBlock noInts;
 

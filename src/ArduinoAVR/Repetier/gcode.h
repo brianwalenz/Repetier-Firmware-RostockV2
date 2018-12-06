@@ -24,8 +24,6 @@ class Commands;
 
 //#define ARRAY_SIZE(_x)	(sizeof(_x)/sizeof(_x[0]))
 
-//  &RFSERIAL
-
 // This class defines the general interface to handle gcode communication with the firmware. This
 // allows it to connect to different data sources and handle them all inside the same data structure.
 // If several readers are active, the first one sending a byte pauses all other inputs until the command
@@ -237,7 +235,7 @@ private:
     //  If no SD card file active, return the status of the serial port.
 
     if (_sdCardActive == false)
-      return(RFSERIAL.available());
+      return(Serial.available());
 
     //  Otherwise, the status of the file on the SD card.
 
@@ -265,7 +263,7 @@ private:
     //  If no SD card file active, read from the serial port.
 
     if (_sdCardActive == false)
-      return(RFSERIAL.read());
+      return(Serial.read());
 
     //  Otherwise, try to read a byte from the card.
 
@@ -283,14 +281,6 @@ private:
 
 
 public:
-  //  Unused.  It parsed the PGB stored string, then:
-  //    if ((cmd.parseCommand(buf)) &&
-  //        (cmd.hasT() || cmd.hasM() || cmd.hasG())) {
-  //      Commands::executeGCode(&cmd);
-  //      Printer::defaultLoopActions();
-  //    }
-  //
-  //void      executeFString(FSTRINGPARAM(cmd));
   void      executeNext(void);
 
   void      fatalError(FSTRINGPARAM(message));
@@ -310,7 +300,7 @@ public:
         (KEEP_ALIVE_INTERVAL == 0))
       return;
 
-    uint32_t now = HAL::timeInMilliseconds();
+    uint32_t now = millis();
 
     if (now - lastBusySignal < KEEP_ALIVE_INTERVAL)   //  No need to send keepalive
       return;

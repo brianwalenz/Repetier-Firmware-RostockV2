@@ -581,7 +581,7 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
   //int32_t updateZ = 0;
   waitForZProbeStart();
 #if defined(Z_PROBE_DELAY) && Z_PROBE_DELAY > 0
-	HAL::delayMilliseconds(Z_PROBE_DELAY);
+	delay(Z_PROBE_DELAY);
 #endif
   Endstops::update();
   Endstops::update(); // need to call twice for full update!
@@ -591,14 +591,14 @@ float Printer::runZProbe(bool first, bool last, uint8_t repeat, bool runStartScr
   }
 #if Z_PROBE_DISABLE_HEATERS
 	Extruder::pauseExtruders(true);
-	HAL::delayMilliseconds(70);
+	delay(70);
 #endif
   for(int8_t r = 0; r < repeat; r++) {
     probeDepth = 2 * (Printer::zMaxSteps - Printer::zMinSteps); // probe should always hit within this distance
     stepsRemainingAtZHit = -1; // Marker that we did not hit z probe
     setZProbingActive(true);
 #if defined(Z_PROBE_DELAY) && Z_PROBE_DELAY > 0
-    HAL::delayMilliseconds(Z_PROBE_DELAY);
+    delay(Z_PROBE_DELAY);
 #endif
     PrintLine::moveRelativeDistanceInSteps(0, 0, -probeDepth, 0, EEPROM::zProbeSpeed(), true, true);
     setZProbingActive(false);
@@ -741,24 +741,20 @@ void Printer::waitForZProbeStart() {
   if(Endstops::zProbe()) return;
   uid.setStatusP(PSTR("Hit z-probe"));
   uid.refreshPage();
-#ifdef DEBUG_PRINT
-  debugWaitLoop = 3;
-#endif
+
   while(!Endstops::zProbe()) {
     defaultLoopActions();
     Endstops::update();
     Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
   }
-#ifdef DEBUG_PRINT
-  debugWaitLoop = 4;
-#endif
-  HAL::delayMilliseconds(30);
+
+  delay(30);
   while(Endstops::zProbe()) {
     defaultLoopActions();
     Endstops::update();
     Endstops::update(); // double test to get right signal. Needed for crosstalk protection.
   }
-  HAL::delayMilliseconds(30);
+  delay(30);
   uid.clearStatus();
 #endif
 }

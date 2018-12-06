@@ -30,18 +30,29 @@
 //   - 76800  : Best setting for Arduino with 16 MHz, Error rate 0,2% page 198 AVR1284 Manual. Result: Faster communication then 115200
 //   - 57600  : Should produce nearly no errors, on my gen 6 it's faster than 115200 because there are no errors slowing down the connection
 //   - 38600
-//  Overridden if EEPROM activated.
-//
-#define BAUDRATE 250000
 
-long baudrate = BAUDRATE;
+#if 0
+const
+long
+baudrates[] PROGMEM = {9600, 14400, 19200, 28800, 38400, 56000, 57600, 76800, 111112, 115200, 128000, 230400, 250000, 256000, 460800, 500000, 921600, 1000000, 1500000, 0 };
+#endif
+
+#if 0
+ void     serialSetBaudrate(long baud)  { Serial.begin(baud);            }
+ bool     serialByteAvailable(void)     { return Serial.available() > 0; }
+ uint8_t  serialReadByte(void)          { return Serial.read();          }
+ void     serialWriteByte(char b)       { Serial.write(b);               }
+ void     serialFlush(void)             { Serial.flush();                }
+#endif
+
+
 
 
 
 void
 Com::printF(FSTRINGPARAM(ptr)) {
   while (pgm_read_byte(ptr) != 0)
-    RFSERIAL.write(pgm_read_byte(ptr++));
+    Serial.write(pgm_read_byte(ptr++));
 }
 
 
@@ -49,12 +60,12 @@ Com::printF(FSTRINGPARAM(ptr)) {
 void
 Com::print(const char *text) {
   while (*text != 0)
-    RFSERIAL.write(*text++);
+    Serial.write(*text++);
 }
 
 void
 Com::print(const char c) {
-  RFSERIAL.write(c);
+  Serial.write(c);
 }
 
 
@@ -66,13 +77,6 @@ Com::printF(FSTRINGPARAM(text), const char *msg) {
   Com::printF(text);
   Com::print(msg);
 }
-#if 0
-void
-Com::printF(FSTRINGPARAM(text), int value) {
-  Com::printF(text);
-  Com::print((int32_t)value);
-}
-#endif
 void
 Com::printF(FSTRINGPARAM(text), int8_t value) {
   Com::printF(text);

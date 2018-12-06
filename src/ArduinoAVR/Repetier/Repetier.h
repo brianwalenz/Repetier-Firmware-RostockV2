@@ -40,8 +40,6 @@
 // Echo all ascii commands after receiving
 //#define DEBUG_ECHO_ASCII
 
-//#define DEBUG_ADVANCE
-
 /** If enabled, writes the created generic table to serial port at startup. */
 //#define DEBUG_GENERIC
 
@@ -52,7 +50,6 @@
 //#define DEBUG_COM_ERRORS
 
 /** Adds a menu point in quick settings to write debug informations to the host in case of hangs where the ui still works. */
-//#define DEBUG_PRINT
 //#define DEBUG_DELTA_OVERFLOW
 //#define DEBUG_DELTA_REALPOS
 //#define DEBUG_SPLIT
@@ -94,12 +91,6 @@
 #define TOWER_ARRAY 3
 #define E_TOWER_ARRAY 4
 
-#define ANALOG_REF_AREF 0
-#define ANALOG_REF_AVCC _BV(REFS0)
-#define ANALOG_REF_INT_1_1 _BV(REFS1)
-#define ANALOG_REF_INT_2_56 _BV(REFS0) | _BV(REFS1)
-#define ANALOG_REF ANALOG_REF_AVCC
-
 //direction flags
 #define X_DIRPOS 1
 #define Y_DIRPOS 2
@@ -129,10 +120,6 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
 #include "Configuration.h"
-
-#ifndef BOARD_FAN_SPEED
-#define BOARD_FAN_SPEED
-#endif
 
 #ifndef MAX_JERK_DISTANCE
 #define MAX_JERK_DISTANCE 0.6
@@ -173,22 +160,6 @@
 #define START_STEP_WITH_HIGH 1
 #endif
 
-// Test for shared coolers between extruders and mainboard
-#if EXT0_EXTRUDER_COOLER_PIN > -1 && EXT0_EXTRUDER_COOLER_PIN == FAN_BOARD_PIN
-#define SHARED_COOLER_BOARD_EXT 1
-#else
-#define SHARED_COOLER_BOARD_EXT 0
-#endif
-
-
-
-#define EXT0_SENSOR_INDEX  0
-#define BED_SENSOR_INDEX  1
-
-#define NUM_ANALOG_TEMP_SENSORS 2
-#define ANALOG_INPUTS           2
-
-#define ANALOG_INPUT_CHANNELS {EXT0_TEMPSENSOR_PIN, HEATED_BED_SENSOR_PIN}
 
 
 
@@ -197,28 +168,7 @@
 
 
 
-#if !defined(MAX_FAN_PWM) || MAX_FAN_PWM == 255
-#define TRIM_FAN_PWM(x) x
-#undef MAX_FAN_PWM
-#define MAX_FAN_PWM 255
-#else
-#define TRIM_FAN_PWM(x) static_cast<uint8_t>(static_cast<unsigned int>(x) * MAX_FAN_PWM / 255)
-#endif
 
-extern const uint8_t osAnalogInputChannels[] PROGMEM;
-
-#if ANALOG_INPUTS > 0
-extern volatile uint16_t osAnalogInputValues[ANALOG_INPUTS];
-#endif
-
-#define PWM_HEATED_BED    NUM_EXTRUDER
-#define PWM_BOARD_FAN     PWM_HEATED_BED + 1
-#define PWM_FAN1          PWM_BOARD_FAN + 1
-#define PWM_FAN2          PWM_FAN1 + 1
-#define PWM_FAN_THERMO    PWM_FAN2 + 1
-#define NUM_PWM           PWM_FAN_THERMO + 1
-
-extern uint8_t pwm_pos[NUM_PWM]; // 0-NUM_EXTRUDER = Heater 0-NUM_EXTRUDER of extruder, NUM_EXTRUDER = Heated bed, NUM_EXTRUDER+1 Board fan, NUM_EXTRUDER+2 = Fan
 
 void manage_inactivity(uint8_t debug);
 
@@ -235,31 +185,12 @@ extern void linear_move(long steps_remaining[]);
 
 
 extern void setupTimerInterrupt();
-extern void motorCurrentControlInit();
 extern void microstepInit();
 
-extern long baudrate;
 
 
-
-extern unsigned int counterPeriodical;
-extern volatile uint8_t executePeriodical;
-extern uint8_t counter500ms;
-extern void writeMonitor();
-
-#if FEATURE_FAN_CONTROL
-extern uint8_t fanKickstart;
-#endif
-
-#if FEATURE_FAN2_CONTROL
-extern uint8_t fan2Kickstart;
-#endif
 
 extern volatile int waitRelax; // Delay filament relax at the end of print, could be a simple timeout
-
-#ifdef DEBUG_PRINT
-extern int debugWaitLoop;
-#endif
 
 #define NUM_AXIS 4
 

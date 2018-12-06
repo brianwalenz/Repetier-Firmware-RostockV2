@@ -44,7 +44,7 @@ SDCard::SDCard() {
 
 
 
-//  This is called from Printer::defaultLoopActions()
+//  Called in commandLoop()
 void
 SDCard::automount(void) {
   uint8_t  inserted = (READ(SDCARDDETECT) == 0);   //  If inserted, pin is low.
@@ -97,14 +97,14 @@ SDCard::mount() {
   if (READ(SDCARDDETECT) != 0)
     return;
 
-  HAL::pingWatchdog();
-  HAL::delayMilliseconds(50);
+  hal.pingWatchdog();
+  delay(50);
 
   _fat.begin(SDSS, SD_SCK_MHZ(50)); // dummy init of SD_CARD (???)
 
-  HAL::delayMilliseconds(50);
+  delay(50);
 
-  HAL::pingWatchdog();
+  hal.pingWatchdog();
 
   //  Try to initialize the card.  If it fals, alert the user.
 
@@ -138,7 +138,7 @@ SDCard::mount() {
 
   Printer::setMenuMode(MODE_CARD_PRESENT, true);
 
-  HAL::pingWatchdog();
+  hal.pingWatchdog();
 
   _fat.chdir();
 

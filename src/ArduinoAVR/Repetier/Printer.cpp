@@ -25,13 +25,15 @@
 #include "Printer.h"
 #include "Extruder.h"
 
+#include "temperatures.h"
+
 #include "rmath.h"
 
-#if USE_ADVANCE
+
 uint8_t Printer::maxExtruderSpeed;            ///< Timer delay for end extruder speed
 volatile int Printer::extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
 //uint8_t Printer::extruderAccelerateDelay;     ///< delay between 2 speec increases
-#endif
+
 uint8_t Printer::unitIsInches = 0; ///< 0 = Units are mm, 1 = units are inches.
 //Stepper Movement Variables
 float Printer::axisStepsPerMM[E_AXIS_ARRAY] = {XAXIS_STEPS_PER_MM, YAXIS_STEPS_PER_MM, ZAXIS_STEPS_PER_MM, 1}; ///< Number of steps per mm needed.
@@ -77,7 +79,7 @@ uint8_t Printer::mode = DEFAULT_PRINTER_MODE;
 uint8_t Printer::fanSpeed = 0; // Last fan speed set with M106/M107
 float Printer::extrudeMultiplyError = 0;
 float Printer::extrusionFactor = 1.0;
-uint8_t Printer::interruptEvent = 0;
+
 int Printer::currentLayer = 0;
 int Printer::maxLayer = -1; // -1 = unknown
 char Printer::printName[21] = ""; // max. 20 chars + 0
@@ -92,12 +94,8 @@ uint32_t Printer::interval = 30000;           ///< Last step duration in ticks.
 uint32_t Printer::timer;              ///< used for acceleration/deceleration timing
 uint32_t Printer::stepNumber;         ///< Step number in current move.
 
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
 int32_t Printer::advanceExecuted;             ///< Executed advance steps
-#endif
 int Printer::advanceStepsSet;
-#endif
 
 int32_t Printer::maxDeltaPositionSteps;
 floatLong Printer::deltaDiagonalStepsSquaredA;
@@ -161,16 +159,12 @@ float Printer::maxRealSegmentLength = 0;
 float Printer::maxRealJerk = 0;
 #endif
 
-#ifdef DEBUG_PRINT
-int debugWaitLoop = 0;
-#endif
-
 void Printer::setDebugLevel(uint8_t newLevel) {
   if(newLevel != debugLevel) {
     debugLevel = newLevel;
     if(debugDryrun()) {
-      // Disable all heaters in case they were on
-      Extruder::disableAllHeater();
+      extruderTemp.disable();
+      bedTemp.disable();
     }
   }
 }
@@ -189,34 +183,7 @@ bool Printer::isPositionAllowed(float x, float y, float z) {
   return allowed;
 }
 
-void Printer::setFanSpeedDirectly(uint8_t speed) {
-	uint8_t trimmedSpeed = TRIM_FAN_PWM(speed);
-#if FAN_PIN > -1 && FEATURE_FAN_CONTROL
-  if(pwm_pos[PWM_FAN1] == trimmedSpeed)
-    return;
-#if FAN_KICKSTART_TIME
-  if(fanKickstart == 0 && speed > pwm_pos[PWM_FAN1] && speed < 85) {
-    if(pwm_pos[PWM_FAN1]) fanKickstart = FAN_KICKSTART_TIME / 100;
-    else                  fanKickstart = FAN_KICKSTART_TIME / 25;
-  }
-#endif
-  pwm_pos[PWM_FAN1] = trimmedSpeed;
-#endif
-}
-void Printer::setFan2SpeedDirectly(uint8_t speed) {
-	uint8_t trimmedSpeed = TRIM_FAN_PWM(speed);
-#if FAN2_PIN > -1 && FEATURE_FAN2_CONTROL
-  if(pwm_pos[PWM_FAN2] == trimmedSpeed)
-    return;
-#if FAN_KICKSTART_TIME
-  if(fan2Kickstart == 0 && speed > pwm_pos[PWM_FAN2] && speed < 85) {
-    if(pwm_pos[PWM_FAN2]) fan2Kickstart = FAN_KICKSTART_TIME / 100;
-    else                  fan2Kickstart = FAN_KICKSTART_TIME / 25;
-  }
-#endif
-  pwm_pos[PWM_FAN2] = trimmedSpeed;
-#endif
-}
+
 
 void Printer::updateDerivedParameter() {
   travelMovesPerSecond = EEPROM::deltaSegmentsPerSecondMove();
@@ -320,19 +287,18 @@ void Printer::updateDerivedParameter() {
 void Printer::kill(uint8_t onlySteppers) {
   if(areAllSteppersDisabled() && onlySteppers) return;
   if(Printer::isAllKilled()) return;
+
   disableXStepper();
   disableYStepper();
   disableZStepper();
-  Extruder::disableAllExtruderMotors();
+
+  extruder.disable();
+
   setAllSteppersDiabled();
   unsetHomedAll();
   if(!onlySteppers) {
-    for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
-      Extruder::setTemperatureForExtruder(0, i);
-    Extruder::setHeatedBedTemperature(0);
-
-    uid.setStatusP(PSTR("Standby"));
-    uid.refreshPage();
+    extruderTemp.setTargetTemperature(0);
+    bedTemp.setTargetTemperature(0);
 
 #if defined(PS_ON_PIN) && PS_ON_PIN>-1 && !defined(NO_POWER_TIMEOUT)
     //pinMode(PS_ON_PIN,INPUT);
@@ -341,32 +307,17 @@ void Printer::kill(uint8_t onlySteppers) {
     Printer::setPowerOn(false);
 #endif
     Printer::setAllKilled(true);
-  } else {
-    uid.setStatusP(PSTR("Stepper disabled"));
-    uid.refreshPage();
   }
-
-#if FAN_BOARD_PIN > -1
-#if HAVE_HEATED_BED
-  if(heatedBedController.targetTemperatureC < 15)      // turn off FAN_BOARD only if bed heater is off
-#endif
-    pwm_pos[PWM_BOARD_FAN] = BOARD_FAN_MIN_SPEED;
-#endif // FAN_BOARD_PIN
-  Commands::printTemperatures(false);
 }
 
 void Printer::updateAdvanceFlags() {
   Printer::setAdvanceActivated(false);
-#if USE_ADVANCE
-  for(uint8_t i = 0; i < NUM_EXTRUDER; i++) {
-    if(extruder[i].advanceL != 0) {
-      Printer::setAdvanceActivated(true);
-    }
-#if ENABLE_QUADRATIC_ADVANCE
-    if(extruder[i].advanceK != 0) Printer::setAdvanceActivated(true);
-#endif
-  }
-#endif
+
+  if(extruder.advanceL != 0)
+    Printer::setAdvanceActivated(true);
+
+  if(extruder.advanceK != 0)
+    Printer::setAdvanceActivated(true);
 }
 
 void Printer::moveToParkPosition() {
@@ -420,7 +371,7 @@ uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pa
   destinationSteps[Z_AXIS] = static_cast<int32_t>(floor(z * axisStepsPerMM[Z_AXIS] + 0.5f));
   if(e != IGNORE_COORDINATE && !Printer::debugDryrun()
 #if MIN_EXTRUDER_TEMP > 30
-     && (Extruder::current->tempControl.currentTemperatureC > MIN_EXTRUDER_TEMP || Printer::isColdExtrusionAllowed() || Extruder::current->tempControl.sensorType == 0)
+     && (extruderTemp.getCurrentTemperature() > MIN_EXTRUDER_TEMP || Printer::isColdExtrusionAllowed())
 #endif
      ) {
     destinationSteps[E_AXIS] = e * axisStepsPerMM[E_AXIS];
@@ -515,7 +466,7 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
     if(relativeCoordinateMode || relativeExtruderCoordinateMode) {
       if(
 #if MIN_EXTRUDER_TEMP > 20
-         (Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0) ||
+         (extruderTemp.getCurrentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()) ||
 #endif
          fabs(com->E) * extrusionFactor > EXTRUDE_MAXLENGTH)
         p = 0;
@@ -523,7 +474,7 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
     } else {
       if(
 #if MIN_EXTRUDER_TEMP > 20
-         (Extruder::current->tempControl.currentTemperatureC < MIN_EXTRUDER_TEMP  && !Printer::isColdExtrusionAllowed() && Extruder::current->tempControl.sensorType != 0) ||
+         (extruderTemp.getCurrentTemperatureC < MIN_EXTRUDER_TEMP  && !Printer::isColdExtrusionAllowed()) ||
 #endif
          fabs(p - currentPositionSteps[E_AXIS]) * extrusionFactor > EXTRUDE_MAXLENGTH * axisStepsPerMM[E_AXIS])
         currentPositionSteps[E_AXIS] = p;
@@ -543,125 +494,57 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
   return !com->hasNoXYZ() || (com->hasE() && destinationSteps[E_AXIS] != currentPositionSteps[E_AXIS]); // ignore unproductive moves
 }
 
-void Printer::setup() {
-  HAL::stopWatchdog();
-
-  for(uint8_t i = 0; i < NUM_PWM; i++)
-    pwm_pos[i] = 0;
 
 
-#if defined(MB_SETUP)
-  MB_SETUP;
-#endif
 
-  //HAL::delayMilliseconds(500);  // add a delay at startup to give hardware time for initalization
+void
+Printer::setup() {
 
-#if defined(EEPROM_AVAILABLE) && defined(EEPROM_SPI_ALLIGATOR) && EEPROM_AVAILABLE == EEPROM_SPI_ALLIGATOR
-  HAL::spiBegin();
-#endif
+  Com::printf(PSTR("Printer Initializing.\n"));
 
-  HAL::hwSetup();
-
-#if defined(ENABLE_POWER_ON_STARTUP) && ENABLE_POWER_ON_STARTUP && (PS_ON_PIN>-1)
   SET_OUTPUT(PS_ON_PIN); //GND
   WRITE(PS_ON_PIN, LOW);
   Printer::setPowerOn(true);
-#else
-#if PS_ON_PIN > -1
-  SET_OUTPUT(PS_ON_PIN); //GND
-  WRITE(PS_ON_PIN, HIGH);
-  Printer::setPowerOn(false);
-#else
-  Printer::setPowerOn(true);
-#endif
-#endif
-  //power to SD reader
-#if SDPOWER > -1
-  SET_OUTPUT(SDPOWER);
-  WRITE(SDPOWER, HIGH);
-#endif
-#if defined(SDCARDDETECT) && SDCARDDETECT > -1
+
   SET_INPUT(SDCARDDETECT);
   PULLUP(SDCARDDETECT, HIGH);
-#endif
-
 
   //Initialize Step Pins
   SET_OUTPUT(X_STEP_PIN);
   SET_OUTPUT(Y_STEP_PIN);
   SET_OUTPUT(Z_STEP_PIN);
+
   endXYZSteps();
+
   //Initialize Dir Pins
-#if X_DIR_PIN > -1
   SET_OUTPUT(X_DIR_PIN);
-#endif
-#if Y_DIR_PIN > -1
   SET_OUTPUT(Y_DIR_PIN);
-#endif
-#if Z_DIR_PIN > -1
   SET_OUTPUT(Z_DIR_PIN);
-#endif
 
   //Steppers default to disabled.
-#if X_ENABLE_PIN > -1
   SET_OUTPUT(X_ENABLE_PIN);
   WRITE(X_ENABLE_PIN, !X_ENABLE_ON);
-#endif
-#if Y_ENABLE_PIN > -1
+
   SET_OUTPUT(Y_ENABLE_PIN);
   WRITE(Y_ENABLE_PIN, !Y_ENABLE_ON);
-#endif
-#if Z_ENABLE_PIN > -1
+
   SET_OUTPUT(Z_ENABLE_PIN);
   WRITE(Z_ENABLE_PIN, !Z_ENABLE_ON);
-#endif
-
-	endstops.setup();
-
-#if FAN_PIN > -1 && FEATURE_FAN_CONTROL
-  SET_OUTPUT(FAN_PIN);
-  WRITE(FAN_PIN, LOW);
-#endif
-#if FAN2_PIN > -1 && FEATURE_FAN2_CONTROL
-  SET_OUTPUT(FAN2_PIN);
-  WRITE(FAN2_PIN, LOW);
-#endif
-#if FAN_BOARD_PIN>-1
-  SET_OUTPUT(FAN_BOARD_PIN);
-  WRITE(FAN_BOARD_PIN, LOW);
-  pwm_pos[PWM_BOARD_FAN] = BOARD_FAN_MIN_SPEED;
-#endif
-#if defined(EXT0_HEATER_PIN) && EXT0_HEATER_PIN>-1
-  SET_OUTPUT(EXT0_HEATER_PIN);
-  WRITE(EXT0_HEATER_PIN, HEATER_PINS_INVERTED);
-#endif
-
-#if defined(EXT0_EXTRUDER_COOLER_PIN) && EXT0_EXTRUDER_COOLER_PIN>-1
-  SET_OUTPUT(EXT0_EXTRUDER_COOLER_PIN);
-  WRITE(EXT0_EXTRUDER_COOLER_PIN, LOW);
-#endif
-
-#if defined(UI_VOLTAGE_LEVEL) && defined(EXP_VOLTAGE_LEVEL_PIN) && EXP_VOLTAGE_LEVEL_PIN >-1
-  SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
-  WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
-#endif // UI_VOLTAGE_LEVEL
-
-  motorCurrentControlInit(); // Set current if it is firmware controlled
 
   microstepInit();
+
 #if FEATURE_AUTOLEVEL
   resetTransformationMatrix(true);
 #endif // FEATURE_AUTOLEVEL
+
   feedrate = 50; ///< Current feedrate in mm/s.
   feedrateMultiply = 100;
   extrudeMultiply = 100;
   lastCmdPos[X_AXIS] = lastCmdPos[Y_AXIS] = lastCmdPos[Z_AXIS] = 0;
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
+
   advanceExecuted = 0;
-#endif
   advanceStepsSet = 0;
-#endif
+
   maxJerk = MAX_JERK;
   offsetX = offsetY = offsetZ = 0;
   interval = 5000;
@@ -676,33 +559,22 @@ void Printer::setup() {
   yMin = Y_MIN_POS;
   zMin = Z_MIN_POS;
   radius0 = ROD_RADIUS;
-#if USE_ADVANCE
-  extruderStepsNeeded = 0;
-#endif
-  EEPROM::initBaudrate();
-  HAL::serialSetBaudrate(baudrate);
 
-  Extruder::initExtruder();
-  // sets auto leveling in eeprom init
-  EEPROM::init(); // Read settings from eeprom if wanted
-  uid.initialize();
+  extruderStepsNeeded = 0;
+
   for(uint8_t i = 0; i < E_AXIS_ARRAY; i++) {
     currentPositionSteps[i] = 0;
   }
-  currentPosition[X_AXIS] = currentPosition[Y_AXIS] = currentPosition[Z_AXIS] =  0.0;
-  //Commands::printCurrentPosition();
+  currentPosition[X_AXIS] = 0.0;
+  currentPosition[Y_AXIS] = 0.0;
+  currentPosition[Z_AXIS] = 0.0;
+
+
 #if DISTORTION_CORRECTION
   distortion.init();
 #endif // DISTORTION_CORRECTION
 
   updateDerivedParameter();
-
-  HAL::printFreeMemory();
-  HAL::setupTimer();
-
-#if FEATURE_WATCHDOG
-  HAL::startWatchdog();
-#endif // FEATURE_WATCHDOG
 
   sd.automount();
 
@@ -711,36 +583,18 @@ void Printer::setup() {
 #if DELTA_HOME_ON_POWER
   homeAxis(true, true, true);
 #endif
+
   Commands::printCurrentPosition();
 
-  Extruder::selectExtruderById(0);
+  selectExtruderById(0);
 
   //  You can now send some initialization gcode to the printer.
   //commandQueue.executeFString(PSTR(STARTUP_GCODE));
+
+  Com::printf(PSTR("Printer Initialized.\n"));
 }
 
-void Printer::defaultLoopActions() {
-  Commands::checkForPeriodicalActions(true);  //check heater every n milliseconds
-  uid.mediumAction(); // do check encoder
-  uint32_t curtime = HAL::timeInMilliseconds();
-  if(PrintLine::hasLines() || isMenuMode(MODE_PRINTING | MODE_PAUSED))
-    previousMillisCmd = curtime;
-  else {
-    curtime -= previousMillisCmd;
-    if(maxInactiveTime != 0 && curtime >  maxInactiveTime )
-      Printer::kill(false);
-    else
-      Printer::setAllKilled(false); // prevent repeated kills
-    if(stepperInactiveTime != 0 && curtime >  stepperInactiveTime )
-      Printer::kill(true);
-  }
-  sd.automount();
-#if defined(EEPROM_AVAILABLE) && EEPROM_AVAILABLE == EEPROM_SDCARD
-  HAL::syncEEPROM();
-#endif
 
-  //HAL::printFreeMemory();
-}
 
 void Printer::MemoryPosition() {
   Commands::waitUntilEndOfAllMoves();
@@ -889,7 +743,9 @@ Printer::homeZAxis(void) {
   realDeltaPositionSteps[C_TOWER] = currentNonlinearPositionSteps[C_TOWER];
   //maxDeltaPositionSteps = currentDeltaPositionSteps[X_AXIS];
   maxDeltaPositionSteps += axisStepsPerMM[Z_AXIS] * 5;
-  Extruder::selectExtruderById(Extruder::current->id);
+
+  selectExtruderById(extruder.id);
+
 #if FEATURE_BABYSTEPPING
   Printer::zBabysteps = 0;
 #endif
@@ -951,33 +807,24 @@ void Printer::zBabystep() {
   Printer::setYDirection(dir);
   Printer::setZDirection(dir);
 #if defined(DIRECTION_DELAY) && DIRECTION_DELAY > 0
-  HAL::delayMicroseconds(DIRECTION_DELAY);
+  delayMicroseconds(DIRECTION_DELAY);
 #else
-  HAL::delayMicroseconds(10);
+  delayMicroseconds(10);
 #endif
   startXStep();
   startYStep();
   startZStep();
-  HAL::delayMicroseconds(STEPPER_HIGH_DELAY + 2);
+  delayMicroseconds(STEPPER_HIGH_DELAY + 2);
   Printer::endXYZSteps();
-  HAL::delayMicroseconds(10);
+  delayMicroseconds(10);
   Printer::setXDirection(xDir);
   Printer::setYDirection(yDir);
   Printer::setZDirection(zDir);
 #if defined(DIRECTION_DELAY) && DIRECTION_DELAY > 0
-  HAL::delayMicroseconds(DIRECTION_DELAY);
+  delayMicroseconds(DIRECTION_DELAY);
 #endif
-  //HAL::delayMicroseconds(STEPPER_HIGH_DELAY + 1);
+  //delayMicroseconds(STEPPER_HIGH_DELAY + 1);
 #endif
-}
-
-
-void Printer::handleInterruptEvent() {
-  if(interruptEvent == 0) return;
-  int event = interruptEvent;
-  interruptEvent = 0;
-  switch(event) {
-  }
 }
 
 
@@ -1018,3 +865,86 @@ void Printer::stopPrint() {
   //  uid.refreshPage();
   //    }
 }
+
+
+
+
+
+
+/** \brief Select extruder ext_num.
+
+    This function changes and initializes a new extruder. This is also called, after the eeprom values are changed.
+*/
+void Printer::selectExtruderById(uint8_t extruderId) {
+  return;
+
+#if 0
+
+  //  Formerly in Extruder, but doesn't belong there.
+
+  float cx, cy, cz;
+  Printer::realPosition(cx, cy, cz);
+
+  Commands::waitUntilEndOfAllMoves();
+
+  if (extruderId > 0)
+    extruderId = 0;
+
+  Extruder *current = extruder->current;
+  Extruder *next = &extruder[extruderId];
+
+  float oldfeedrate = Printer::feedrate;
+
+  current->extrudePosition = Printer::currentPositionSteps[E_AXIS];
+
+  if(Printer::isHomedAll() && next->zOffset < current->zOffset) { // prevent extruder from hitting bed - move bed down a bit
+    Printer::offsetZ = -next->zOffset * Printer::invAxisStepsPerMM[Z_AXIS];
+    Printer::setNoDestinationCheck(true);
+    Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, IGNORE_COORDINATE, IGNORE_COORDINATE, Printer::homingFeedrate[Z_AXIS]);
+    Printer::setNoDestinationCheck(false);
+    Commands::waitUntilEndOfAllMoves();
+    Printer::updateCurrentPosition(true);
+  }
+
+
+  Extruder::current = next;
+
+  // --------------------- Now new extruder is active --------------------
+
+#ifdef SEPERATE_EXTRUDER_POSITIONS
+  // Use separate extruder positions only if being told. Slic3r e.g. creates a continuous extruder position increment
+  Printer::currentPositionSteps[E_AXIS] = extruder.extrudePosition;
+#endif
+
+  Printer::destinationSteps[E_AXIS] = Printer::currentPositionSteps[E_AXIS];
+  Printer::axisStepsPerMM[E_AXIS] = extruder.stepsPerMM;
+  Printer::invAxisStepsPerMM[E_AXIS] = 1.0f / Printer::axisStepsPerMM[E_AXIS];
+  Printer::maxFeedrate[E_AXIS] = extruder.maxFeedrate;
+  //   max_start_speed_units_per_second[E_AXIS] = extruder.maxStartFeedrate;
+  Printer::maxAccelerationMMPerSquareSecond[E_AXIS] = Printer::maxTravelAccelerationMMPerSquareSecond[E_AXIS] = next->maxAcceleration;
+  Printer::maxTravelAccelerationStepsPerSquareSecond[E_AXIS] =
+    Printer::maxPrintAccelerationStepsPerSquareSecond[E_AXIS] = Printer::maxAccelerationMMPerSquareSecond[E_AXIS] * Printer::axisStepsPerMM[E_AXIS];
+  Printer::maxExtruderSpeed = (uint8_t)floor(hal.maxExtruderTimerFrequency() / (extruder.maxFeedrate * next->stepsPerMM));
+  if(Printer::maxExtruderSpeed > 15) Printer::maxExtruderSpeed = 15;
+  float fmax = ((float)hal.maxExtruderTimerFrequency() / ((float)Printer::maxExtruderSpeed * Printer::axisStepsPerMM[E_AXIS])); // Limit feedrate to interrupt speed
+  if(fmax < Printer::maxFeedrate[E_AXIS]) Printer::maxFeedrate[E_AXIS] = fmax;
+
+  extruderTemp.updateTempControlVars();
+
+  Printer::offsetX = -next->xOffset * Printer::invAxisStepsPerMM[X_AXIS];
+  Printer::offsetY = -next->yOffset * Printer::invAxisStepsPerMM[Y_AXIS];
+  Printer::offsetZ = -next->zOffset * Printer::invAxisStepsPerMM[Z_AXIS];
+  Commands::changeFlowrateMultiply(Printer::extrudeMultiply); // needed to adjust extrusionFactor to possibly different diameter
+
+  resetExtruderDirection();
+
+	if(Printer::isHomedAll()) {
+		Printer::moveToReal(cx, cy, cz, IGNORE_COORDINATE, EXTRUDER_SWITCH_XY_SPEED);
+	}
+
+	Printer::feedrate = oldfeedrate;
+	Printer::updateCurrentPosition(true);
+#endif  //  DISABLED
+}
+
+

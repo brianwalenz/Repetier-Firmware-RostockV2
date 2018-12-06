@@ -34,45 +34,49 @@
 
 
 
-#define ACT_NOTHING          (uint16_t)0
-#define ACT_OK               (uint16_t)1  //  Encoder button pushed.
-#define ACT_KILL             (uint16_t)2  //  Kill button pushed.
+#define ACT_NOTHING              (uint16_t)0
+#define ACT_OK                   (uint16_t)1  //  Encoder button pushed.
+#define ACT_KILL                 (uint16_t)2  //  Kill button pushed.
 
-#define ACT_MENU_CHANGE      (uint16_t)3
-#define ACT_SPEED_CHANGE     (uint16_t)4
-#define ACT_FLOW_CHANGE      (uint16_t)5
-#define ACT_FAN_CHANGE       (uint16_t)6
-#define ACT_ABORT_PRINT      (uint16_t)7
-#define ACT_EXT_T_TARGET     (uint16_t)8
-#define ACT_unused_1         (uint16_t)9
-#define ACT_BED_T_TARGET     (uint16_t)10
-#define ACT_unused_2         (uint16_t)11
-#define ACT_HOME             (uint16_t)12
-#define ACT_POS_E            (uint16_t)13
-#define ACT_POS_X            (uint16_t)14
-#define ACT_POS_Y            (uint16_t)15
-#define ACT_POS_Z            (uint16_t)16
-#define ACT_POS_Z_OPEN       (uint16_t)17
-#define ACT_POS_Z_SET        (uint16_t)18
-#define ACT_REL_MOTORS       (uint16_t)19
+#define ACT_MENU_CHANGE          (uint16_t)3
+#define ACT_SPEED_CHANGE         (uint16_t)4
+#define ACT_FLOW_CHANGE          (uint16_t)5
+#define ACT_EXTRUDER_FAN_CHANGE  (uint16_t)6
+#define ACT_LAYER_FAN_CHANGE     (uint16_t)7
+#define ACT_ABORT_PRINT          (uint16_t)8
+#define ACT_EXT_T_TARGET         (uint16_t)9
+#define ACT_unused_1             (uint16_t)10
+#define ACT_BED_T_TARGET         (uint16_t)11
+#define ACT_unused_2             (uint16_t)12
+#define ACT_HOME                 (uint16_t)13
+#define ACT_POS_E                (uint16_t)14
+#define ACT_POS_X                (uint16_t)15
+#define ACT_POS_Y                (uint16_t)16
+#define ACT_POS_Z                (uint16_t)17
+#define ACT_POS_Z_OPEN           (uint16_t)18
+#define ACT_POS_Z_SET            (uint16_t)19
+#define ACT_REL_MOTORS           (uint16_t)20
 
+#define ACT_PID_P                (uint16_t)30
+#define ACT_PID_I                (uint16_t)31
+#define ACT_PID_D                (uint16_t)32
 
-#define MODE_PRINTING        (uint16_t)1
-#define MODE_PAUSED          (uint16_t)2
-#define MODE_CARD_PRESENT    (uint16_t)4
-#define MODE_FULL_PID        (uint16_t)8
-#define MODE_DEADTIME        (uint16_t)16
-#define MODE_BED_HEAT        (uint16_t)32
-#define MODE_EXT_HEAT        (uint16_t)64
+#define MODE_PRINTING            (uint16_t)1
+#define MODE_PAUSED              (uint16_t)2
+#define MODE_CARD_PRESENT        (uint16_t)4
+#define MODE_FULL_PID            (uint16_t)8
+#define MODE_DEADTIME            (uint16_t)16
+#define MODE_BED_HEAT            (uint16_t)32
+#define MODE_EXT_HEAT            (uint16_t)64
 
-#define entryType_page       (uint8_t)30      //  Scroll left/right through menu pages.
-#define entryType_file       (uint8_t)31      //  Placeholder to populate file list from SD card.
-#define entryType_displ      (uint8_t)32      //  A display-only item.  No action possible.
-#define entryType_toggle     (uint8_t)33      //  An on/off entry.
-#define entryType_action     (uint8_t)34      //  A value entry.
+#define entryType_page           (uint8_t)30      //  Scroll left/right through menu pages.
+#define entryType_file           (uint8_t)31      //  Placeholder to populate file list from SD card.
+#define entryType_displ          (uint8_t)32      //  A display-only item.  No action possible.
+#define entryType_toggle         (uint8_t)33      //  An on/off entry.
+#define entryType_action         (uint8_t)34      //  A value entry.
 
-#define menuType_normal      (uint8_t)21
-#define menuType_select      (uint8_t)22
+#define menuType_normal          (uint8_t)21
+#define menuType_select          (uint8_t)22
 
 #if 1
 //  OLD ACTIONS
@@ -186,7 +190,6 @@ public:
   uint16_t    executeAction(uint16_t action, bool allowMoves);
 
   void        slowAction(bool allowMoves);
-  void        mediumAction();
   void        fastAction();
 
 

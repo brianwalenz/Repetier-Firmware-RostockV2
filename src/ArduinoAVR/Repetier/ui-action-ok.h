@@ -122,7 +122,7 @@ UIDisplay::okAction_start(bool allowMoves) {
       break;
     case UI_ACTION_LOAD_EEPROM:
       EEPROM::readDataFromEEPROM(true);
-      Extruder::selectExtruderById(Extruder::current->id);
+      Printer::selectExtruderById(0);
       //pushMenu(&ui_menu_eeprom_loaded, false);
       uiAlert();
       break;
@@ -192,22 +192,3 @@ UIDisplay::okAction(bool allowMoves) {
 
   refreshPage();
 }
-
-
-
-#if 0
-  if (entType == UI_MENU_TYPE_SUBMENU) {
-    pushMenu((UIMenu*)action, false);
-
-    currHeaterForSetup = &(Extruder::current->tempControl);
-
-    Printer::setMenuMode(MODE_FULL_PID, currHeaterForSetup->heatManager == 1);
-    Printer::setMenuMode(MODE_DEADTIME, currHeaterForSetup->heatManager == 3);
-
-    return(0);
-  }
-
-  if (entType == UI_MENU_TYPE_MODIFICATION_MENU) {
-    return executeAction(action, allowMoves);
-  }
-#endif

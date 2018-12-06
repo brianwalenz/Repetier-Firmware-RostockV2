@@ -22,17 +22,10 @@
 #include <ctype.h>
 
 #include "Repetier.h"
+#include "temperatures.h"
 #include "Eeprom.h"
 
 extern UIDisplay uid;
-
-
-//  extruder[exid].tempControl.targetTemperatureC
-//  extruder[exid].tempControl.currentTemperatureC
-
-//  heatedBedController.targetTemperatureC
-//  heatedBedController.currentTemperatureC
-
 
 
 void
@@ -95,30 +88,39 @@ UIDisplay::parse(const char *txt, bool ram) {
     //    eb - build plate
     //
     else if ((c1 == 'e') && (c2 == 'c')) {
-      //alue = extruder[c2 - '0'].tempControl.currentTemperatureC;
-      addFloat(Extruder::current->tempControl.currentTemperatureC, 3, 1);
+      addFloat(extruderTemp.getCurrentTemperature(), 3, 1);
     }
 
     else if ((c1 == 'e') && (c2 == 'b')) {
-      addFloat(Extruder::getHeatedBedTemperature(), 3, 1);
+      addFloat(bedTemp.getCurrentTemperature(), 3, 1);
     }
 
     //  Target temperatures
     //    Ec - extruder target
     //    Eb - build plate target
     //
-    else if ((c1 == 'E') && (c2 == 'c')) {
-      //alue = extruder[c2 - '0'].tempControl.targetTemperatureC;
-      addFloat(Extruder::current->tempControl.targetTemperatureC, 3, 0);
-    }
+    else if ((c1 == 'E') && ((c2 == 'c') ||
+                             (c2 == 'b'))) {
+      tempControl  *tc = NULL;
 
-    else if ((c1 == 'E') && (c2 == 'b')) {
-      addFloat(heatedBedController.targetTemperatureC, 3, 0);
+      if (c2 == 'c')  tc = &extruderTemp;
+      if (c2 == 'b')  tc = &bedTemp;
+
+      addFloat(tc->getTargetTemperature(), 3, 0);
     }
 
     //  Heater PWM fraction.
-    else if ((c1 == 'h') && (c2 == 'c')) {
-      uint8_t  pwm = pwm_pos[Extruder::current->id];
+    //    hc
+    //    hb
+    //
+    else if ((c1 == 'h') && ((c2 == 'c') ||
+                             (c2 == 'b'))) {
+      tempControl  *tc = NULL;
+
+      if (c2 == 'c')  tc = &extruderTemp;
+      if (c2 == 'b')  tc = &bedTemp;
+
+      uint8_t  pwm = tc->getHeaterDensity();
 
       if        (pwm == 0) {
         addChar('o');
@@ -136,44 +138,26 @@ UIDisplay::parse(const char *txt, bool ram) {
       }
     }
 
-    else if ((c1 == 'h') && (c2 == 'b')) {
-      uint8_t  pwm = pwm_pos[heatedBedController.pwmIndex];    //  Max might be 200, not 255
 
-      if        (pwm == 0) {
-        addChar('o');
-        addChar('f');
-        addChar('f');
-
-      } else if (pwm == 255) {
-        addChar('m');
-        addChar('a');
-        addChar('x');
-
-      } else {
-        addFloat(100.0 * pwm / 255.0, 2, 0);
-        addChar('%');
-      }
+    else if ((c1 == 'K') && (c2 == 'p')) {
+      addFloat(bedTemp._pidPGain, 6, 3);
     }
-
-
+    else if ((c1 == 'K') && (c2 == 'i')) {
+      addFloat(bedTemp._pidIGain, 6, 3);
+    }
+    else if ((c1 == 'K') && (c2 == 'd')) {
+      addFloat(bedTemp._pidDGain, 6, 3);
+    }
 
 
     //  Fan speeds
-    else if ((c1 == 'F') && (c2 == 's')) {
-      addNumber(floor(Printer::getFanSpeed() * 100 / 255 + 0.5f), 3);
+    else if ((c1 == 'F') && (c2 == 'e')) {
+      addNumber(floor(extruderTemp.getFanSpeed() * 100.0 / 255.0 + 0.5f), 3);
     }
 
-    else if ((c1 == 'F') && (c2 == 'S')) {
-      addNumber(floor(Printer::getFan2Speed() * 100 / 255 + 0.5f), 3);
+    else if ((c1 == 'F') && (c2 == 'l')) {
+      addNumber(floor(layerFan.getFanSpeed() * 100.0 / 255.0 + 0.5f), 3);
     }
-
-    else if ((c1 == 'F') && (c2 == 'i')) {
-      if (Printer::flag2 & PRINTER_FLAG2_IGNORE_M106_COMMAND)
-        addChar(bSEL);
-      else
-        addChar(bUNSEL);
-    }
-
 
     //  Feedrates
 
@@ -227,12 +211,6 @@ UIDisplay::parse(const char *txt, bool ram) {
       parse(statusMsg, true);
     }
 
-#if 0
-    else if ((c1 == 'o') && (c2 == 'c')) {
-      addNumber(baudrate, 6);
-    }
-#endif
-
     else if ((c1 == 'o') && (c2 == 'e')) {
       if(errorMsg != 0) addStringP((char PROGMEM *)errorMsg);
     }
@@ -250,7 +228,7 @@ UIDisplay::parse(const char *txt, bool ram) {
     }
 
     else if ((c1 == 'o') && (c2 == 'n')) {
-      addNumber(Extruder::current->id + 1, 1);
+      addNumber(activeExtruder->id + 1, 1);
     }
 
     else if ((c1 == 'o') && (c2 == 'Y')) {
@@ -262,38 +240,11 @@ UIDisplay::parse(const char *txt, bool ram) {
 
 
 
-    //  Usage
-    //
-    //  Previous version would try to add in the time of the current
-    //  print job, but it looked bogus.
-    //
-    //  Would be nice if there was a report of the time of the current print,
-    //  not just historical times.
-    //
-    //    void Commands::reportPrinterUsage() {
-    //      float dist = Printer::filamentPrinted * 0.001 + HAL::eprGetFloat(EPR_PRINTING_DISTANCE);
-    //      Com::printF(PSTR("Printed filament:"), dist, 2);
-    //      Com::printF(PSTR("m "));
-    //      bool alloff = true;
-    //      for(uint8_t i = 0; i < NUM_EXTRUDER; i++)
-    //        if(tempController[i]->targetTemperatureC > 15) alloff = false;
-    //      int32_t seconds = (alloff ? 0 : (HAL::timeInMilliseconds() - Printer::msecondsPrinting) / 1000) + HAL::eprGetInt32(EPR_PRINTING_TIME);
-    //      int32_t tmp = seconds / 86400;
-    //      seconds -= tmp * 86400;
-    //      Com::printF(PSTR("Printing time:"), tmp);
-    //      tmp = seconds / 3600;
-    //      Com::printF(PSTR(" days "), tmp);
-    //      seconds -= tmp * 3600;
-    //      tmp = seconds / 60;
-    //      Com::printF(PSTR(" hours "), tmp);
-    //      Com::printF(PSTR(" min"));
-    //      Com::printF(PSTR("\n"));
-    //    }
-
     //  Total time printing:
     //    x days xx:xx
+    //
     else if ((c1 == 'U') && (c2 == 't')) {
-      uint32_t seconds = HAL::eprGetInt32(EPR_PRINTING_TIME);
+      uint32_t seconds = eprGetInt32(EPR_PRINTING_TIME);
 
       addTimeInDaysHoursMinutes(seconds);
     }
@@ -303,7 +254,7 @@ UIDisplay::parse(const char *txt, bool ram) {
     //    x,xxx.xx m
     //
     else if ((c1 == 'U') && (c2 == 'f')) {   //  Filament usage
-      float dist  = HAL::eprGetFloat(EPR_PRINTING_DISTANCE);  //  In meters?
+      float dist  = eprGetFloat(EPR_PRINTING_DISTANCE);  //  In meters?
 
       addFloat(dist);
       addStringP(PSTR(" m filament"));

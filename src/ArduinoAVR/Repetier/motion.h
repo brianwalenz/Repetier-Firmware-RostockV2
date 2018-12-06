@@ -102,7 +102,6 @@ public:
   static uint8_t linesWritePos; // Position where we write the next cached line move
   uint8_t joinFlags;
   volatile uint8_t flags;
-  uint8_t secondSpeed; // for laser intensity or fan control
 private:
   int8_t primaryAxis;
   uint8_t dir;                       ///< Direction of movement. 1 = X+, 2 = Y+, 4= Z+, values can be combined.
@@ -133,15 +132,13 @@ private:
   uint16_t vMax;              ///< Maximum reached speed in steps/s.
   uint16_t vStart;            ///< Starting speed in steps/s.
   uint16_t vEnd;              ///< End speed in steps/s
-#if USE_ADVANCE
-#if ENABLE_QUADRATIC_ADVANCE
+
   int32_t advanceRate;               ///< Advance steps at full speed
   int32_t advanceFull;               ///< Maximum advance at fullInterval [steps*65536]
   int32_t advanceStart;
   int32_t advanceEnd;
-#endif
   uint16_t advanceL;         ///< Recomputed L value
-#endif
+
 #ifdef DEBUG_STEPCOUNT
   int32_t totalStepsRemaining;
 #endif
@@ -202,9 +199,9 @@ public:
 
   // Only called from bresenham -> inside interrupt handle
   inline void updateAdvanceSteps(uint16_t v, uint8_t max_loops, bool accelerate) {
-#if USE_ADVANCE
     if(!Printer::isAdvanceActivated()) return;
-#if ENABLE_QUADRATIC_ADVANCE
+
+#if 1 //  QUADRATIC_ADVANCE
     long advanceTarget = Printer::advanceExecuted;
     if(accelerate) {
       for(uint8_t loop = 0; loop < max_loops; loop++) advanceTarget += advanceRate;
@@ -215,28 +212,29 @@ public:
       if(advanceTarget < advanceEnd)
         advanceTarget = advanceEnd;
     }
-    long h = HAL::mulu16xu16to32(v, advanceL);
+    long h = mulu16xu16to32(v, advanceL);
     int tred = ((advanceTarget + h) >> 16);
-    HAL::forbidInterrupts();
+    forbidInterrupts();
     Printer::extruderStepsNeeded += tred - Printer::advanceStepsSet;
     if(tred > 0 && Printer::advanceStepsSet <= 0)
-      Printer::extruderStepsNeeded += Extruder::current->advanceBacklash;
+      Printer::extruderStepsNeeded += extruder.advanceBacklash;
     else if(tred < 0 && Printer::advanceStepsSet >= 0)
-      Printer::extruderStepsNeeded -= Extruder::current->advanceBacklash;
+      Printer::extruderStepsNeeded -= extruder.advanceBacklash;
     Printer::advanceStepsSet = tred;
-    HAL::allowInterrupts();
+    allowInterrupts();
     Printer::advanceExecuted = advanceTarget;
-#else
-    int tred = HAL::mulu6xu16shift16(v, advanceL);
-    HAL::forbidInterrupts();
+#endif
+
+#if 0 //  NORMAL ADVANCE
+    int tred = mulu6xu16shift16(v, advanceL);
+    forbidInterrupts();
     Printer::extruderStepsNeeded += tred - Printer::advanceStepsSet;
     if(tred > 0 && Printer::advanceStepsSet <= 0)
-      Printer::extruderStepsNeeded += (Extruder::current->advanceBacklash << 1);
+      Printer::extruderStepsNeeded += (extruder.advanceBacklash << 1);
     else if(tred < 0 && Printer::advanceStepsSet >= 0)
-      Printer::extruderStepsNeeded -= (Extruder::current->advanceBacklash << 1);
+      Printer::extruderStepsNeeded -= (extruder.advanceBacklash << 1);
     Printer::advanceStepsSet = tred;
-    HAL::allowInterrupts();
-#endif
+    allowInterrupts();
 #endif
   }
 
@@ -302,7 +300,7 @@ public:
   static INLINE void removeCurrentLineForbidInterrupt() {
     nextPlannerIndex(linesPos);
     cur = NULL;
-    HAL::forbidInterrupts();
+    forbidInterrupts();
     --linesCount;
     if(!linesCount)
       Printer::setMenuMode(MODE_PRINTING, Printer::isPrinting());

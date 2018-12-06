@@ -48,29 +48,53 @@ const char page02_03[] PROGMEM = " %Pe   %Pr";            //  timeUsed  timeLeft
 const char page02_04[] PROGMEM = "               %Pp%";   //            percPrinted
 const char page02_05[] PROGMEM = " Speed:   %om%%     ";  //   %om 10 - 999   set to zero to pause
 const char page02_06[] PROGMEM = " Flow:    %of%%     ";  //   %of 10 - 999
-const char page02_07[] PROGMEM = " Fan:     %Fs%% %Fi ";  //   %Fs  0 - 100 (fan speed)  %Fi (fan forced)
-const char page02_08[] PROGMEM = " -- ABORT  PRINT -- ";
+const char page02_07[] PROGMEM = " Ext Fan: %Fe%%   ";    //   %Fe  0 - 100 (fan speed)
+const char page02_08[] PROGMEM = " Lay Fan: %Fl%%   ";    //   %Fl  0 - 100 (fan speed)
+const char page02_09[] PROGMEM = " -- ABORT  PRINT -- ";
 
-//                               text       type              action            hide-if-any-missing   hide-if-any-present
-menuEntry entry02_01 PROGMEM = { page02_01, entryType_page,   ACT_MENU_CHANGE,  MODE_PRINTING,        0 };
-menuEntry entry02_02 PROGMEM = { page02_02, entryType_displ,  0,                MODE_PRINTING,        0 };
-menuEntry entry02_03 PROGMEM = { page02_03, entryType_displ,  0,                MODE_PRINTING,        0 };
-menuEntry entry02_04 PROGMEM = { page02_04, entryType_displ,  0,                MODE_PRINTING,        0 };
-menuEntry entry02_05 PROGMEM = { page02_05, entryType_action, ACT_SPEED_CHANGE, MODE_PRINTING,        0 };
-menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,  MODE_PRINTING,        0 };
-menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_FAN_CHANGE,   MODE_PRINTING,        0 };
-menuEntry entry02_08 PROGMEM = { page02_08, entryType_toggle, ACT_ABORT_PRINT,  MODE_PRINTING,        0 };
+//                               text       type              action                   hide-if-any-missing   hide-if-any-present
+#if 0
+menuEntry entry02_01 PROGMEM = { page02_01, entryType_page,   ACT_MENU_CHANGE,         MODE_PRINTING,        0 };
+menuEntry entry02_02 PROGMEM = { page02_02, entryType_displ,  0,                       MODE_PRINTING,        0 };
+menuEntry entry02_03 PROGMEM = { page02_03, entryType_displ,  0,                       MODE_PRINTING,        0 };
+menuEntry entry02_04 PROGMEM = { page02_04, entryType_displ,  0,                       MODE_PRINTING,        0 };
+menuEntry entry02_05 PROGMEM = { page02_05, entryType_action, ACT_SPEED_CHANGE,        MODE_PRINTING,        0 };
+menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,         MODE_PRINTING,        0 };
+menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_EXTRUDER_FAN_CHANGE, MODE_PRINTING,        0 };
+menuEntry entry02_08 PROGMEM = { page02_08, entryType_action, ACT_LAYER_FAN_CHANGE,    MODE_PRINTING,        0 };
+menuEntry entry02_09 PROGMEM = { page02_09, entryType_toggle, ACT_ABORT_PRINT,         MODE_PRINTING,        0 };
+#else
+menuEntry entry02_01 PROGMEM = { page02_01, entryType_page,   ACT_MENU_CHANGE,         0,        0 };
+menuEntry entry02_02 PROGMEM = { page02_02, entryType_displ,  0,                       0,        0 };
+menuEntry entry02_03 PROGMEM = { page02_03, entryType_displ,  0,                       0,        0 };
+menuEntry entry02_04 PROGMEM = { page02_04, entryType_displ,  0,                       0,        0 };
+menuEntry entry02_05 PROGMEM = { page02_05, entryType_action, ACT_SPEED_CHANGE,        0,        0 };
+menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,         0,        0 };
+menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_EXTRUDER_FAN_CHANGE, 0,        0 };
+menuEntry entry02_08 PROGMEM = { page02_08, entryType_action, ACT_LAYER_FAN_CHANGE,    0,        0 };
+menuEntry entry02_09 PROGMEM = { page02_09, entryType_toggle, ACT_ABORT_PRINT,         0,        0 };
+#endif
 
 //  SECOND PAGE - TEMPERATURES
 //  the preset temp is what?  the default preset temp or the current target temp?
 const char page03_01[] PROGMEM = "    TEMPERATURES    ";   // 
 const char page03_02[] PROGMEM = " EXT %ec/%Ec %hc";   //   %ec %Ec %hc    %hc - "off" or "##%" PWM percentage
 const char page03_03[] PROGMEM = " BED %eb/%Eb %hb";   //   %eb %Eb %hb
+const char page03_04[] PROGMEM = " P %Kp";
+const char page03_05[] PROGMEM = " I %Ki";
+const char page03_06[] PROGMEM = " D %Kd";
+const char page03_07[] PROGMEM = " Ext Fan: %Fe%%   ";    //   %Fe  0 - 100 (fan speed)
+const char page03_08[] PROGMEM = " Lay Fan: %Fl%%   ";    //   %Fl  0 - 100 (fan speed)
 
-//                               text       type              action            hide-if-any-missing   hide-if-any-present
-menuEntry entry03_01 PROGMEM = { page03_01, entryType_page,   ACT_MENU_CHANGE,  0,                    0 };
-menuEntry entry03_02 PROGMEM = { page03_02, entryType_action, ACT_EXT_T_TARGET, 0,                    0 };
-menuEntry entry03_03 PROGMEM = { page03_03, entryType_action, ACT_BED_T_TARGET, 0,                    0 };
+//                               text       type              action                   hide-if-any-missing   hide-if-any-present
+menuEntry entry03_01 PROGMEM = { page03_01, entryType_page,   ACT_MENU_CHANGE,         0,                    0 };
+menuEntry entry03_02 PROGMEM = { page03_02, entryType_action, ACT_EXT_T_TARGET,        0,                    0 };
+menuEntry entry03_03 PROGMEM = { page03_03, entryType_action, ACT_BED_T_TARGET,        0,                    0 };
+menuEntry entry03_04 PROGMEM = { page03_04, entryType_action, ACT_PID_P,               0,                    0 };
+menuEntry entry03_05 PROGMEM = { page03_05, entryType_action, ACT_PID_I,               0,                    0 };
+menuEntry entry03_06 PROGMEM = { page03_06, entryType_action, ACT_PID_D,               0,                    0 };
+menuEntry entry03_07 PROGMEM = { page03_07, entryType_action, ACT_EXTRUDER_FAN_CHANGE, 0,                    0 };
+menuEntry entry03_08 PROGMEM = { page03_08, entryType_action, ACT_LAYER_FAN_CHANGE,    0,                    0 };
 
 //  THIRD PAGE - IF NOT PRINTING
 const char page04_01[] PROGMEM = "      POSITION      ";
@@ -185,8 +209,8 @@ menuEntry entry10_04 PROGMEM = { page10_04, entryType_displ,  0,                
 
 
 menuEnArr entry01[2]  PROGMEM = { &entry01_01, &entry01_02 };
-menuEnArr entry02[8]  PROGMEM = { &entry02_01, &entry02_02, &entry02_03, &entry02_04, &entry02_05, &entry02_06, &entry02_07, &entry02_08 };
-menuEnArr entry03[3]  PROGMEM = { &entry03_01, &entry03_02, &entry03_03 };
+menuEnArr entry02[9]  PROGMEM = { &entry02_01, &entry02_02, &entry02_03, &entry02_04, &entry02_05, &entry02_06, &entry02_07, &entry02_08, &entry02_09 };
+menuEnArr entry03[8]  PROGMEM = { &entry03_01, &entry03_02, &entry03_03, &entry03_04, &entry03_05, &entry03_06, &entry03_07, &entry03_08 };
 menuEnArr entry04[9]  PROGMEM = { &entry04_01, &entry04_02, &entry04_03, &entry04_04, &entry04_05, &entry04_06, &entry04_07, &entry04_08, &entry04_09 };
 menuEnArr entry05[4]  PROGMEM = { &entry05_01, &entry05_02, &entry05_03, &entry05_04 };
 menuEnArr entry06[4]  PROGMEM = { &entry06_01, &entry06_02, &entry06_03, &entry06_04 };
@@ -196,8 +220,8 @@ menuEnArr entry09[5]  PROGMEM = { &entry09_01, &entry09_02, &entry09_03, &entry0
 menuEnArr entry10[4]  PROGMEM = { &entry10_01, &entry10_02, &entry10_03, &entry10_04 };
 
 menuPage  page01      PROGMEM = { menuType_select, 2, entry01 };
-menuPage  page02      PROGMEM = { menuType_normal, 8, entry02 };
-menuPage  page03      PROGMEM = { menuType_normal, 3, entry03 };
+menuPage  page02      PROGMEM = { menuType_normal, 9, entry02 };
+menuPage  page03      PROGMEM = { menuType_normal, 8, entry03 };
 menuPage  page04      PROGMEM = { menuType_normal, 9, entry04 };
 menuPage  page05      PROGMEM = { menuType_normal, 4, entry05 };
 menuPage  page06      PROGMEM = { menuType_normal, 4, entry06 };
