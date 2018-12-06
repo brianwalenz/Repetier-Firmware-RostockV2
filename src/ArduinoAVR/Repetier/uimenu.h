@@ -40,7 +40,7 @@ const char page01_02[] PROGMEM = "   <insert  card>   ";
 menuEntry entry01_01 PROGMEM = { page01_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
 menuEntry entry01_02 PROGMEM = { page01_02, entryType_displ,  0,                0,                    MODE_PRINTING | MODE_CARD_PRESENT };
 
-//  FIRST PAGE - IF PRINTING
+//  SECOND PAGE - IF PRINTING
 //  This is the default page to show just after selecting something to print.
 const char page02_01[] PROGMEM = "      PRINTING      ";
 const char page02_02[] PROGMEM = " %Pn";                  //  filename
@@ -48,55 +48,33 @@ const char page02_03[] PROGMEM = " %Pe   %Pr";            //  timeUsed  timeLeft
 const char page02_04[] PROGMEM = "               %Pp%";   //            percPrinted
 const char page02_05[] PROGMEM = " Speed:   %om%%     ";  //   %om 10 - 999   set to zero to pause
 const char page02_06[] PROGMEM = " Flow:    %of%%     ";  //   %of 10 - 999
-const char page02_07[] PROGMEM = " Ext Fan: %Fe%%   ";    //   %Fe  0 - 100 (fan speed)
-const char page02_08[] PROGMEM = " Lay Fan: %Fl%%   ";    //   %Fl  0 - 100 (fan speed)
-const char page02_09[] PROGMEM = " -- ABORT  PRINT -- ";
+const char page02_07[] PROGMEM = " Lay Fan: %Fl%%   ";    //   %Fl  0 - 100 (fan speed)
+const char page02_08[] PROGMEM = " -- ABORT  PRINT -- ";
 
 //                               text       type              action                   hide-if-any-missing   hide-if-any-present
-#if 0
 menuEntry entry02_01 PROGMEM = { page02_01, entryType_page,   ACT_MENU_CHANGE,         MODE_PRINTING,        0 };
 menuEntry entry02_02 PROGMEM = { page02_02, entryType_displ,  0,                       MODE_PRINTING,        0 };
 menuEntry entry02_03 PROGMEM = { page02_03, entryType_displ,  0,                       MODE_PRINTING,        0 };
 menuEntry entry02_04 PROGMEM = { page02_04, entryType_displ,  0,                       MODE_PRINTING,        0 };
 menuEntry entry02_05 PROGMEM = { page02_05, entryType_action, ACT_SPEED_CHANGE,        MODE_PRINTING,        0 };
 menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,         MODE_PRINTING,        0 };
-menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_EXTRUDER_FAN_CHANGE, MODE_PRINTING,        0 };
-menuEntry entry02_08 PROGMEM = { page02_08, entryType_action, ACT_LAYER_FAN_CHANGE,    MODE_PRINTING,        0 };
-menuEntry entry02_09 PROGMEM = { page02_09, entryType_toggle, ACT_ABORT_PRINT,         MODE_PRINTING,        0 };
-#else
-menuEntry entry02_01 PROGMEM = { page02_01, entryType_page,   ACT_MENU_CHANGE,         0,        0 };
-menuEntry entry02_02 PROGMEM = { page02_02, entryType_displ,  0,                       0,        0 };
-menuEntry entry02_03 PROGMEM = { page02_03, entryType_displ,  0,                       0,        0 };
-menuEntry entry02_04 PROGMEM = { page02_04, entryType_displ,  0,                       0,        0 };
-menuEntry entry02_05 PROGMEM = { page02_05, entryType_action, ACT_SPEED_CHANGE,        0,        0 };
-menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,         0,        0 };
-menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_EXTRUDER_FAN_CHANGE, 0,        0 };
-menuEntry entry02_08 PROGMEM = { page02_08, entryType_action, ACT_LAYER_FAN_CHANGE,    0,        0 };
-menuEntry entry02_09 PROGMEM = { page02_09, entryType_toggle, ACT_ABORT_PRINT,         0,        0 };
-#endif
+menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_LAY_FAN_CHANGE,      MODE_PRINTING,        0 };
+menuEntry entry02_08 PROGMEM = { page02_08, entryType_toggle, ACT_ABORT_PRINT,         MODE_PRINTING,        0 };
 
-//  SECOND PAGE - TEMPERATURES
+//  THIRD PAGE - TEMPERATURES
 //  the preset temp is what?  the default preset temp or the current target temp?
 const char page03_01[] PROGMEM = "    TEMPERATURES    ";   // 
 const char page03_02[] PROGMEM = " EXT %ec/%Ec %hc";   //   %ec %Ec %hc    %hc - "off" or "##%" PWM percentage
 const char page03_03[] PROGMEM = " BED %eb/%Eb %hb";   //   %eb %Eb %hb
-const char page03_04[] PROGMEM = " P %Kp";
-const char page03_05[] PROGMEM = " I %Ki";
-const char page03_06[] PROGMEM = " D %Kd";
-const char page03_07[] PROGMEM = " Ext Fan: %Fe%%   ";    //   %Fe  0 - 100 (fan speed)
-const char page03_08[] PROGMEM = " Lay Fan: %Fl%%   ";    //   %Fl  0 - 100 (fan speed)
 
 //                               text       type              action                   hide-if-any-missing   hide-if-any-present
 menuEntry entry03_01 PROGMEM = { page03_01, entryType_page,   ACT_MENU_CHANGE,         0,                    0 };
 menuEntry entry03_02 PROGMEM = { page03_02, entryType_action, ACT_EXT_T_TARGET,        0,                    0 };
 menuEntry entry03_03 PROGMEM = { page03_03, entryType_action, ACT_BED_T_TARGET,        0,                    0 };
-menuEntry entry03_04 PROGMEM = { page03_04, entryType_action, ACT_PID_P,               0,                    0 };
-menuEntry entry03_05 PROGMEM = { page03_05, entryType_action, ACT_PID_I,               0,                    0 };
-menuEntry entry03_06 PROGMEM = { page03_06, entryType_action, ACT_PID_D,               0,                    0 };
-menuEntry entry03_07 PROGMEM = { page03_07, entryType_action, ACT_EXTRUDER_FAN_CHANGE, 0,                    0 };
-menuEntry entry03_08 PROGMEM = { page03_08, entryType_action, ACT_LAYER_FAN_CHANGE,    0,                    0 };
 
-//  THIRD PAGE - IF NOT PRINTING
+
+
+//  FOURTH PAGE - IF NOT PRINTING
 const char page04_01[] PROGMEM = "      POSITION      ";
 const char page04_02[] PROGMEM = " Move to home       ";
 const char page04_03[] PROGMEM = " E %x3 mm       ";  //  %x3
@@ -118,7 +96,7 @@ menuEntry entry04_07 PROGMEM = { page04_07, entryType_action, ACT_POS_Z_OPEN,   
 menuEntry entry04_08 PROGMEM = { page04_08, entryType_toggle, ACT_POS_Z_SET,    0,                    MODE_PRINTING };
 menuEntry entry04_09 PROGMEM = { page04_09, entryType_toggle, ACT_REL_MOTORS,   0,                    MODE_PRINTING };
 
-//  THIRD PAGE - IF PRINTING
+//  FIFTH PAGE - IF PRINTING
 const char page05_01[] PROGMEM = "      POSITION      ";
 const char page05_02[] PROGMEM = " X %x0   E %x3";  //  %x0  %x3;
 const char page05_03[] PROGMEM = " Y %x1           ";  //  %x1;
@@ -131,7 +109,7 @@ menuEntry entry05_03 PROGMEM = { page05_03, entryType_displ,  0,                
 menuEntry entry05_04 PROGMEM = { page05_04, entryType_displ,  0,                MODE_PRINTING,        0 };
 
 
-//  FOURTH PAGE
+//  SIXTH PAGE
 const char page06_01[] PROGMEM = "      SETTINGS      ";
 const char page06_02[] PROGMEM = "      1             ";
 const char page06_03[] PROGMEM = "       2            ";
@@ -143,7 +121,7 @@ menuEntry entry06_02 PROGMEM = { page06_02, entryType_displ,  0,                
 menuEntry entry06_03 PROGMEM = { page06_03, entryType_displ,  0,                0,                    MODE_PRINTING };
 menuEntry entry06_04 PROGMEM = { page06_04, entryType_displ,  0,                0,                    MODE_PRINTING };
 
-//  FIFTH PAGE
+//  SEVENTH PAGE
 //  Printer::measureDistortion() was the entry point from okAction
 const char page07_01[] PROGMEM = "       PROBING      ";
 const char page07_02[] PROGMEM = "       1            ";
@@ -156,20 +134,29 @@ menuEntry entry07_02 PROGMEM = { page07_02, entryType_displ,  0,                
 menuEntry entry07_03 PROGMEM = { page07_03, entryType_displ,  0,                0,                    MODE_PRINTING };
 menuEntry entry07_04 PROGMEM = { page07_04, entryType_displ,  0,                0,                    MODE_PRINTING };
 
-//  SIXTH PAGE
-//  runBedLeveling(2) was the entry point from okAction
-const char page08_01[] PROGMEM = "      LEVELLING     ";
-const char page08_02[] PROGMEM = "      1             ";
-const char page08_03[] PROGMEM = "       2            ";
-const char page08_04[] PROGMEM = "        3           ";
+//  EIGHTH PAGE - PID TUNING
+const char page08_01[] PROGMEM = "     HEATER PID     ";   // 
+const char page08_02[] PROGMEM = " EXT %ec/%Ec %hc";   //   %ec %Ec %hc    %hc - "off" or "##%" PWM percentage
+const char page08_03[] PROGMEM = " EXT P %Kp";
+const char page08_04[] PROGMEM = " EXT I %Ki";
+const char page08_05[] PROGMEM = " EXT D %Kd";
+const char page08_06[] PROGMEM = " BED %eb/%Eb %hb";   //   %eb %Eb %hb
+const char page08_07[] PROGMEM = " BED P %KP";
+const char page08_08[] PROGMEM = " BED I %KI";
+const char page08_09[] PROGMEM = " BED D %KD";
 
-//                               text       type              action            hide-if-any-missing   hide-if-any-present
-menuEntry entry08_01 PROGMEM = { page08_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
-menuEntry entry08_02 PROGMEM = { page08_02, entryType_displ,  0,                0,                    MODE_PRINTING };
-menuEntry entry08_03 PROGMEM = { page08_03, entryType_displ,  0,                0,                    MODE_PRINTING };
-menuEntry entry08_04 PROGMEM = { page08_04, entryType_displ,  0,                0,                    MODE_PRINTING };
+//                               text       type              action                   hide-if-any-missing   hide-if-any-present
+menuEntry entry08_01 PROGMEM = { page08_01, entryType_page,   ACT_MENU_CHANGE,         0,                    0 };
+menuEntry entry08_02 PROGMEM = { page08_02, entryType_action, ACT_EXT_T_TARGET,        0,                    0 };
+menuEntry entry08_03 PROGMEM = { page08_03, entryType_action, ACT_EXT_PID_P,           0,                    0 };
+menuEntry entry08_04 PROGMEM = { page08_04, entryType_action, ACT_EXT_PID_I,           0,                    0 };
+menuEntry entry08_05 PROGMEM = { page08_05, entryType_action, ACT_EXT_PID_D,           0,                    0 };
+menuEntry entry08_06 PROGMEM = { page08_06, entryType_action, ACT_BED_T_TARGET,        0,                    0 };
+menuEntry entry08_07 PROGMEM = { page08_07, entryType_action, ACT_BED_PID_P,           0,                    0 };
+menuEntry entry08_08 PROGMEM = { page08_08, entryType_action, ACT_BED_PID_I,           0,                    0 };
+menuEntry entry08_09 PROGMEM = { page08_09, entryType_action, ACT_BED_PID_D,           0,                    0 };
 
-//  ACCELERATION SETTINGS
+//  NINTH PAGE - ACCELERATION SETTINGS
 const char page09_01[] PROGMEM = "    ACCELERATION    ";
 const char page09_02[] PROGMEM = " Print  %az         ";  // ACT_ACTION_PRINT_ACCEL_Z);
 const char page09_03[] PROGMEM = " Move   %aZ         ";  // ACT_ACTION_MOVE_ACCEL_Z);
@@ -185,9 +172,7 @@ menuEntry entry09_05 PROGMEM = { page09_05, entryType_displ,  0,                
 
 
 
-//  EXTRUDER SETTINGS
-
-//  STATISTICS
+//  TENTH PAGE - STATISTICS
 //  --------------------
 //  xxx.x days xx:xx:xx
 //  xxxx:xx:xx hours
@@ -209,24 +194,24 @@ menuEntry entry10_04 PROGMEM = { page10_04, entryType_displ,  0,                
 
 
 menuEnArr entry01[2]  PROGMEM = { &entry01_01, &entry01_02 };
-menuEnArr entry02[9]  PROGMEM = { &entry02_01, &entry02_02, &entry02_03, &entry02_04, &entry02_05, &entry02_06, &entry02_07, &entry02_08, &entry02_09 };
-menuEnArr entry03[8]  PROGMEM = { &entry03_01, &entry03_02, &entry03_03, &entry03_04, &entry03_05, &entry03_06, &entry03_07, &entry03_08 };
+menuEnArr entry02[8]  PROGMEM = { &entry02_01, &entry02_02, &entry02_03, &entry02_04, &entry02_05, &entry02_06, &entry02_07, &entry02_08 };
+menuEnArr entry03[3]  PROGMEM = { &entry03_01, &entry03_02, &entry03_03 };
 menuEnArr entry04[9]  PROGMEM = { &entry04_01, &entry04_02, &entry04_03, &entry04_04, &entry04_05, &entry04_06, &entry04_07, &entry04_08, &entry04_09 };
 menuEnArr entry05[4]  PROGMEM = { &entry05_01, &entry05_02, &entry05_03, &entry05_04 };
 menuEnArr entry06[4]  PROGMEM = { &entry06_01, &entry06_02, &entry06_03, &entry06_04 };
 menuEnArr entry07[4]  PROGMEM = { &entry07_01, &entry07_02, &entry07_03, &entry07_04 };
-menuEnArr entry08[4]  PROGMEM = { &entry08_01, &entry08_02, &entry08_03, &entry08_04 };
+menuEnArr entry08[9]  PROGMEM = { &entry08_01, &entry08_02, &entry08_03, &entry08_04, &entry08_05, &entry08_06, &entry08_07, &entry08_08, &entry08_09 };
 menuEnArr entry09[5]  PROGMEM = { &entry09_01, &entry09_02, &entry09_03, &entry09_04, &entry09_05 };
 menuEnArr entry10[4]  PROGMEM = { &entry10_01, &entry10_02, &entry10_03, &entry10_04 };
 
 menuPage  page01      PROGMEM = { menuType_select, 2, entry01 };
-menuPage  page02      PROGMEM = { menuType_normal, 9, entry02 };
+menuPage  page02      PROGMEM = { menuType_normal, 8, entry02 };
 menuPage  page03      PROGMEM = { menuType_normal, 8, entry03 };
 menuPage  page04      PROGMEM = { menuType_normal, 9, entry04 };
 menuPage  page05      PROGMEM = { menuType_normal, 4, entry05 };
 menuPage  page06      PROGMEM = { menuType_normal, 4, entry06 };
 menuPage  page07      PROGMEM = { menuType_normal, 4, entry07 };
-menuPage  page08      PROGMEM = { menuType_normal, 4, entry08 };
+menuPage  page08      PROGMEM = { menuType_normal, 9, entry08 };
 menuPage  page09      PROGMEM = { menuType_normal, 5, entry09 };
 menuPage  page10      PROGMEM = { menuType_normal, 4, entry10 };
 

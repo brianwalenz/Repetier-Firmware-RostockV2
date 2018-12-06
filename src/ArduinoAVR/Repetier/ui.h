@@ -41,8 +41,8 @@
 #define ACT_MENU_CHANGE          (uint16_t)3
 #define ACT_SPEED_CHANGE         (uint16_t)4
 #define ACT_FLOW_CHANGE          (uint16_t)5
-#define ACT_EXTRUDER_FAN_CHANGE  (uint16_t)6
-#define ACT_LAYER_FAN_CHANGE     (uint16_t)7
+#define ACT_EXT_FAN_CHANGE       (uint16_t)6
+#define ACT_LAY_FAN_CHANGE       (uint16_t)7
 #define ACT_ABORT_PRINT          (uint16_t)8
 #define ACT_EXT_T_TARGET         (uint16_t)9
 #define ACT_unused_1             (uint16_t)10
@@ -57,9 +57,13 @@
 #define ACT_POS_Z_SET            (uint16_t)19
 #define ACT_REL_MOTORS           (uint16_t)20
 
-#define ACT_PID_P                (uint16_t)30
-#define ACT_PID_I                (uint16_t)31
-#define ACT_PID_D                (uint16_t)32
+#define ACT_EXT_PID_P            (uint16_t)30
+#define ACT_EXT_PID_I            (uint16_t)31
+#define ACT_EXT_PID_D            (uint16_t)32
+
+#define ACT_BED_PID_P            (uint16_t)33
+#define ACT_BED_PID_I            (uint16_t)34
+#define ACT_BED_PID_D            (uint16_t)35
 
 #define MODE_PRINTING            (uint16_t)1
 #define MODE_PAUSED              (uint16_t)2

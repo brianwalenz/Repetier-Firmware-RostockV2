@@ -335,12 +335,12 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
   }
 
 
-  else if ((entryAction == ACT_EXTRUDER_FAN_CHANGE) ||
-           (entryAction == ACT_LAYER_FAN_CHANGE)) {
+  else if ((entryAction == ACT_EXT_FAN_CHANGE) ||
+           (entryAction == ACT_LAY_FAN_CHANGE)) {
     tempControl *tc = NULL;
 
-    if (entryAction == ACT_EXTRUDER_FAN_CHANGE)   tc = &extruderTemp;
-    if (entryAction == ACT_LAYER_FAN_CHANGE)      tc = &layerFan;
+    if (entryAction == ACT_EXT_FAN_CHANGE)   tc = &extruderTemp;
+    if (entryAction == ACT_LAY_FAN_CHANGE)   tc = &layerFan;
 
     uint8_t speed = tc->getFanSpeed();
 
@@ -354,26 +354,21 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
       tc->setFanSpeed(speed + encoderChange);
   }
     
-  else if (entryAction == ACT_PID_P) {
-    bedTemp._pidPGain += encoderChange * 0.1;
-  }
-  else if (entryAction == ACT_PID_I) {
-    bedTemp._pidIGain += encoderChange * 0.1;
-  }
-  else if (entryAction == ACT_PID_D) {
-    bedTemp._pidDGain += encoderChange * 0.1;
-  }
+  else if (entryAction == ACT_EXT_PID_P)   { extruderTemp._pidPGain += encoderChange * 0.1; }
+  else if (entryAction == ACT_EXT_PID_I)   { extruderTemp._pidIGain += encoderChange * 0.1; }
+  else if (entryAction == ACT_EXT_PID_D)   { extruderTemp._pidDGain += encoderChange * 0.1; }
+
+  else if (entryAction == ACT_BED_PID_P)   { bedTemp._pidPGain += encoderChange * 0.1; }
+  else if (entryAction == ACT_BED_PID_I)   { bedTemp._pidIGain += encoderChange * 0.1; }
+  else if (entryAction == ACT_BED_PID_D)   { bedTemp._pidDGain += encoderChange * 0.1; }
 
   else if (entryAction == ACT_SPEED_CHANGE) {
     Commands::changeFeedrateMultiply(Printer::feedrateMultiply + encoderChange);
   }
 
-
   else if (entryAction == ACT_FLOW_CHANGE) {
     Commands::changeFlowrateMultiply(Printer::extrudeMultiply + encoderChange);
   }
-
-
 
   return(true);
 }

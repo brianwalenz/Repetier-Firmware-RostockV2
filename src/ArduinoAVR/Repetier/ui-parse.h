@@ -139,15 +139,13 @@ UIDisplay::parse(const char *txt, bool ram) {
     }
 
 
-    else if ((c1 == 'K') && (c2 == 'p')) {
-      addFloat(bedTemp._pidPGain, 6, 3);
-    }
-    else if ((c1 == 'K') && (c2 == 'i')) {
-      addFloat(bedTemp._pidIGain, 6, 3);
-    }
-    else if ((c1 == 'K') && (c2 == 'd')) {
-      addFloat(bedTemp._pidDGain, 6, 3);
-    }
+    else if ((c1 == 'K') && (c2 == 'p'))   { addFloat(extruderTemp._pidPGain, 6, 3); }
+    else if ((c1 == 'K') && (c2 == 'i'))   { addFloat(extruderTemp._pidIGain, 6, 3); }
+    else if ((c1 == 'K') && (c2 == 'd'))   { addFloat(extruderTemp._pidDGain, 6, 3); }
+
+    else if ((c1 == 'K') && (c2 == 'P'))   { addFloat(bedTemp._pidPGain, 6, 3); }
+    else if ((c1 == 'K') && (c2 == 'I'))   { addFloat(bedTemp._pidIGain, 6, 3); }
+    else if ((c1 == 'K') && (c2 == 'D'))   { addFloat(bedTemp._pidDGain, 6, 3); }
 
 
     //  Fan speeds
