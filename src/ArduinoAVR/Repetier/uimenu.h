@@ -206,7 +206,7 @@ menuEnArr entry10[4]  PROGMEM = { &entry10_01, &entry10_02, &entry10_03, &entry1
 
 menuPage  page01      PROGMEM = { menuType_select, 2, entry01 };
 menuPage  page02      PROGMEM = { menuType_normal, 8, entry02 };
-menuPage  page03      PROGMEM = { menuType_normal, 8, entry03 };
+menuPage  page03      PROGMEM = { menuType_normal, 3, entry03 };
 menuPage  page04      PROGMEM = { menuType_normal, 9, entry04 };
 menuPage  page05      PROGMEM = { menuType_normal, 4, entry05 };
 menuPage  page06      PROGMEM = { menuType_normal, 4, entry06 };
