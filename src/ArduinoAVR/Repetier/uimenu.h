@@ -42,10 +42,15 @@ menuEntry entry01_02 PROGMEM = { page01_02, entryType_displ,  0,                
 
 //  SECOND PAGE - IF PRINTING
 //  This is the default page to show just after selecting something to print.
+//    FORMAT - "nnnnnnnnnnnnnnnnnnnn"
+//    TIME   - " xx:xx:xx   xx:xx:xx"
+//    FILA   - " xxxxxx mm xxxxxx mm"
+//           - " Speed:             "
+//
 const char page02_01[] PROGMEM = "      PRINTING      ";
 const char page02_02[] PROGMEM = " %Pn";                  //  filename
-const char page02_03[] PROGMEM = " %Pe   %Pr";            //  timeUsed  timeLeft
-const char page02_04[] PROGMEM = "               %Pp%";   //            percPrinted
+const char page02_03[] PROGMEM = " %Te   %Tr";            //  timeUsed  timeRemain
+const char page02_04[] PROGMEM = " %Fu mm %Fr mm";      //  filaUsed  filaRemain
 const char page02_05[] PROGMEM = " Speed:   %om%%     ";  //   %om 10 - 999   set to zero to pause
 const char page02_06[] PROGMEM = " Flow:    %of%%     ";  //   %of 10 - 999
 const char page02_07[] PROGMEM = " Lay Fan: %Fl%%   ";    //   %Fl  0 - 100 (fan speed)

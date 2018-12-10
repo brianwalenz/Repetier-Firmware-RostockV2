@@ -33,132 +33,12 @@ extern UIDisplay uid;
 
 
 
-void
-UIDisplay::scanSDcard(uint16_t filePos, char *filename) {
-  char     cardname[MAX_FILENAME_LEN + 1];
-  dir_t   *p    = NULL;
-  FatFile *root = sd.getvwd();
-  FatFile  file;
-
-  root->rewind();
-
-  sd._nFilesOnCard = 0;
-
-#ifdef SHOW_SCANSDCARD
-  Com::print("\n");
-  Com::print("scanSDcard\n");
-#endif
-
-  while (file.openNext(root, O_READ)) {
-    hal.pingWatchdog();
-
-    bool isDir = file.isDir();
-
-    file.getName(cardname, MAX_FILENAME_LEN);
-    file.close();
-
-#ifdef SHOW_SCANSDCARD
-    Com::print("scanSDcard -- '");
-    Com::print(cardname);
-    Com::print("'\n");
-#endif
-
-    //  Skip dot files.
-
-    if ((cardname[0] == '.') && (cardname[1] != '.'))
-      continue;
-
-    //  If this is the file we want to get the name for, copy the name.
-
-    if ((filename != NULL) && (sd._nFilesOnCard == filePos)) {
-      uint16_t  pos = 0;
-
-      for (pos=0; cardname[pos] != 0; pos++)
-        filename[pos] = cardname[pos];
-
-      if (isDir)
-        filename[pos++] = '/';
-
-      filename[pos] = 0;
-    }
-
-    sd._nFilesOnCard++;
-  }
-
-#ifdef SHOW_SCANSDCARD
-  Com::print("scanSDcard ");
-  Com::print(sd._nFilesOnCard);
-  Com::print("\n");
-#endif
-}
-
-
-
-
-
-bool UIDisplay::isDirname(char *name) {
-
-  while (*name)
-    name++;
-
-  name--;
-
-  return(*name == '/');
-}
-
-
-
-void UIDisplay::goDir(char *name) {
-  char *p = sd._cwd;
-
-  //  Skip to the end of the string.
-
-  while (*p)
-    p++;
-
-  //  If no name supplied, move up one level.
-
-  if (name == NULL) {
-    if ((sd._cwd[0] == '/') && (sd._cwd[1] == 0))
-      return;
-
-    p--;  //  Move back off the NUL, now on a /
-    p--;  //  Move back off the /.   now on the last letter in the directory name
-
-    while (*p != '/')  //  Search back for the next /
-      p--;
-
-    *++p = 0;    //  and make it the end of the string.
-  }
-
-  //  Otherwise, go into the directory.
-
-  else {
-    while (*name)
-      *p++ = *name++;
-
-    *p = 0;
-  }
-
-  //  Now set the directory.
-
-  sd.chdir(sd._cwd);
-
-  scanSDcard();
-}
-
-
-
-
 /** write file names at current position to lcd */
 uint8_t
 UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   char       cardname[MAX_FILENAME_LEN + 1];
   FatFile   *root;
   FatFile    file;
-
-  //if (sd._nFilesOnCard == 0)
-  //  scanSDcard();  //  necessary?  should be done when inserted.
 
   //  The menu shows:
   //    <  FILE TO PRINT >
@@ -179,8 +59,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   Com::print(_menuPos);
   Com::print("\n");
 #endif
-
-  sd.chdir(sd._cwd);   //  We should be here already!
 
   root = sd.getvwd();
   root->rewind();
@@ -317,4 +195,3 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
   return(rowi);
 }
-

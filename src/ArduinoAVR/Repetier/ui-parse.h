@@ -173,33 +173,46 @@ UIDisplay::parse(const char *txt, bool ram) {
 
 
     //  Print state
-
+    //    Pn - print name
+    //    Te - time elapsed       Tr - time remain
+    //    Fu - filament used      Ft - filament remain
+    //    Lp - lines printed      Lt - lines total
+    //    Zh - current height     Zt - total height
+    //
     else if ((c1 == 'P') && (c2 == 'n')) {   //  Name of the file being printed
-      addString(Printer::printName);
+      addString(sd.printName());
     }
 
-    else if ((c1 == 'P') && (c2 == 'e')) {   //  Time elapsed
-      addTimeInHoursMinutesSeconds(0);
+    else if ((c1 == 'T') && (c2 == 'e')) {   //  Time elapsed
+      addTimeInHoursMinutesSeconds(commandQueue.elapsedTime());
     }
 
-    else if ((c1 == 'P') && (c2 == 'r')) {   //  Time remaining
-      addTimeInHoursMinutesSeconds(0);
+    else if ((c1 == 'T') && (c2 == 'r')) {   //  Time remaining
+      addTimeInHoursMinutesSeconds(sd.estBuildTime() - commandQueue.elapsedTime());
     }
 
-    else if ((c1 == 'P') && (c2 == 'f')) {   //  Filament used
-      //Printer::filamentPrinted * 0.001
+    else if ((c1 == 'F') && (c2 == 'u')) {   //  Filament used
+      addFloat(Printer::filamentPrinted * 0.001, 6, 0);
     }
 
-    else if ((c1 == 'P') && (c2 == 'l')) {   //  Current layer number
-      addNumber(Printer::currentLayer, 0);
+    else if ((c1 == 'F') && (c2 == 'r')) {   //  Filament remaining
+      addFloat(sd.estFilament() - Printer::filamentPrinted * 0.001, 6, 0);
     }
 
-    else if ((c1 == 'P') && (c2 == 'L')) {   //  Maximum layer number
-      addNumber(Printer::maxLayer, 0);
+    else if ((c1 == 'L') && (c2 == 'p')) {   //  Current line printing
+      addNumber(commandQueue.lineNumber(), 0);
     }
 
-    else if ((c1 == 'P') && (c2 == 'p')) {   //  Print Progress
-      addFloat(Printer::progress, 3, 1);
+    else if ((c1 == 'L') && (c2 == 't')) {   //  Total lines
+      addNumber(sd.nLines(), 0);
+    }
+
+    else if ((c1 == 'Z') && (c2 == 'h')) {   //  Z height printing
+      addFloat(commandQueue.currentHeight(), 3, 3);
+    }
+
+    else if ((c1 == 'Z') && (c2 == 't')) {   //  Z height total
+      addFloat(sd.maxHeight(), 3, 3);
     }
 
 
@@ -261,8 +274,6 @@ UIDisplay::parse(const char *txt, bool ram) {
 
     //  POSITIONS
     //
-    //  Would print ?.?? if Printer::isAnimation() && ! Printer::ixXHomed()
-    //
     else if ((c1 == 'x') && (c2 == '0')) {   //  X position
       addFloat(Printer::realXPosition(), 4, 2);
     }
@@ -277,10 +288,6 @@ UIDisplay::parse(const char *txt, bool ram) {
 
     else if ((c1 == 'x') && (c2 == '3')) {   //  E position
       addFloat(Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS], 4, 2);
-    }
-
-    else if ((c1 == 'x') && (c2 == '4')) {   //  Filament printed?
-      addFloat(Printer::filamentPrinted * 0.001, 3, 2);
     }
 
     //  Workpiece Coordinates ??

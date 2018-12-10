@@ -200,8 +200,10 @@ class gcodeQueue {
 public:
   gcodeQueue() {
     _sdCardActive   = false;    //  Set to true when SD card file is selected.
-    _lastLineNumber = 0;
-    _lastLineTime   = 0;
+
+    _startTime      = 0;
+    _lineNumber     = 0;
+    _currentHeight  = 0.0;
 
     _cmdsLen        = 0;
     _cmdsOut        = 0;
@@ -258,7 +260,7 @@ private:
 
 
 private:
-  uint8_t   readByte(void) {
+  int8_t      readByte(void) {
 
     //  If no SD card file active, read from the serial port.
 
@@ -267,11 +269,11 @@ private:
 
     //  Otherwise, try to read a byte from the card.
 
-    int8_t n = sd.file.read();
+    int8_t n = sd.readByte();
 
     if (n == -1) {
-      //close();   sd.file.close()??
       _sdCardActive = false;
+      return(0);
     }
 
     return(n);
@@ -285,12 +287,16 @@ public:
 
   void      fatalError(FSTRINGPARAM(message));
 
-  void      startFile(void)   { _sdCardActive = true;  };
-  void      stopFile(void)    { _sdCardActive = false;  };
+  void      startFile(void)   { _sdCardActive = true;   _startTime = millis();  };
+  void      stopFile(void)    { _sdCardActive = false;                          };
 
-  void      pauseFile(void)   { _sdCardActive = false; };
-  void      resumeFile(void)  { _sdCardActive = true;  };
+  void      pauseFile(void)   { _sdCardActive = false;                          };
+  void      resumeFile(void)  { _sdCardActive = true;                           };
 
+
+  uint32_t  elapsedTime(void)    { return(millis() - _startTime); };
+  uint32_t  lineNumber(void)     { return(_lineNumber);           };
+  float     currentHeight(void)  { return(_currentHeight);        };
 
   //  The original sent text over the serial port to tell the client we're
   //  not dead.
@@ -322,8 +328,11 @@ public:
 private:
   //  For sources.
   bool          _sdCardActive;
-  uint32_t      _lastLineNumber;
-  uint32_t      _lastLineTime;
+
+private:
+  uint32_t      _startTime;
+  uint32_t      _lineNumber;
+  float         _currentHeight;
 
 private:
   gcodeCommand  _cmds[GCODE_BUFFER_SIZE];   //  Buffer of received commands.

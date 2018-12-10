@@ -22,55 +22,82 @@ public:
   SDCard();
 
 public:
-  void automount();
+  void automount(void);
 private:
-  void mount();
-  void unmount();
+  void mount(void);
+  void unmount(void);
 
 public:
-  void chdir(const char *path) {
-    _fat.chdir(path);
-  };
-
   FatFile *getvwd(void) {
     return(_fat.vwd());
   };
 
-  bool   selectFile(const char *filename,bool silent=false);
+  void    goDir(const char *path);
 
-  void   startPrint(void);
-  void   pausePrint(bool intern = false);
-  void   continuePrint(bool intern = false);
-  void   stopPrint(void);
+  uint8_t scanCard(uint8_t filePos = 255, char *filename = NULL);
+
+private:
+  bool    openFile(const char *filename);
+  void    savePrintName(const char *filename);
+  void    countLines(void);
+  void    findStatistics(void);
+
+public:
+  bool    printFile(const char *filename);
+
+  void    startPrint(void);
+  void    pausePrint(bool intern = false);
+  void    continuePrint(bool intern = false);
+  void    stopPrint(void);
 
   //  To delete a file:    _fat.remove(filename)
   //  To delete a dir:     _fat.rmdir(filename)
   //  To create a dir:     _fat.mkdir(filename)
 
   //  Used in SDCardGCodeSouce::isOpen()
-  bool   isOpen(void)       {  return((_sdMode != SDMODE_IDLE) &&
-                                      (_sdMode != SDMODE_FAILED));  };
-  bool   isPrinting(void)   {  return(_sdMode == SDMODE_PRINTING);  };
-  bool   isFinished(void)   {  return(sdpos == filesize);    };
+  bool    isOpen(void)       {  return((_sdMode != SDMODE_IDLE) &&
+                                       (_sdMode != SDMODE_FAILED));  };
+  bool    isPrinting(void)   {  return(_sdMode == SDMODE_PRINTING);  };
+  bool    isFinished(void)   {  return(_filePos == _fileSize);    };
 
-  int8_t readByte(void);
+  int8_t  readByte(void) {
+    return(_file.read());
+  }
+
+  //int8_t  readLine(char *line, uint8_t maxLen);
+
+  //  For the file being printed.
+public:
+  char       *printName(void)      { return(_printName);    };
+  uint32_t    nLines(void)         { return(_nLines);       };
+  uint32_t    estBuildTime(void)   { return(_estBuildTime); };
+  float       estFilament(void)    { return(_estFilament);  };
+  float       estWeight(void)      { return(_estWeight);    };
+  float       maxHeight(void)      { return(_maxHeight);    };
+
+private:
+  char        _printName[41];
+  uint32_t    _nLines;
+  uint32_t    _estBuildTime;
+  float       _estFilament;
+  float       _estWeight;
+  float       _maxHeight;
 
 private:
   SdFat       _fat;
   uint8_t     _sdActive;
   uint8_t     _sdMode;  // 1 if we are printing from sd card, 2 = stop accepting new commands
 
-public:
+private:
   char        _cwd[MAX_CWD_LEN + 1];
 
-  uint16_t    _nFilesOnCard;
-
 public:
-  SdFile      file;
+  uint8_t     _nFilesOnCard;
 
 private:
-  uint32_t    filesize;   //  size of current file?
-  uint32_t    sdpos;      //  position we're printing at in the current file
+  SdFile      _file;
+  uint32_t    _fileSize;   //  size of current file?
+  uint32_t    _filePos;    //  position we're printing at in the current file
 };
 
 extern SDCard sd;

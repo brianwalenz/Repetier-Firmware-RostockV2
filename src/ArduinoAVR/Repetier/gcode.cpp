@@ -47,7 +47,7 @@ gcodeQueue::executeNext(void) {
 
   if (dataAvailable() == false)                          //  If no data available, nothing
     return;                                              //  for us to do.
-  
+
   //  CNC gcode uses () to encode comments.  Those are not supported.
 
   while (dataAvailable() == true) {                      //  Read a line of input.
@@ -56,14 +56,10 @@ gcodeQueue::executeNext(void) {
       return;
     }
 
-    char ch = readByte();                                //    Read a byte.
+    int8_t ch = readByte();                              //    Read a byte.
 
 #if 0
-    Com::print("Read '");
-    Com::print(ch);
-    Com::print("'  bufPos=");
-    Com::print(bufPos);
-    Com::print("\n");
+    Com::printf(PSTR("Read '%c' bufPos=%u\n"), ch, bufPos);
 #endif
 
     if ((ch == '\n') ||                                  //    If end-of-line, set it to
@@ -87,10 +83,11 @@ gcodeQueue::executeNext(void) {
   }
 
 #if 0
-  Com::print("COMMAND '");
-  Com::print(buf);
-  Com::print("'\n");
+  if (buf[0] != 0)
+    Com::printf(PSTR("COMMAND '%s'\n"), buf);
 #endif
+
+  _lineNumber++;
 
   gcodeCommand *cmd = _cmds + _cmdsIn;                   //  Grab the next available command
 
@@ -99,6 +96,11 @@ gcodeQueue::executeNext(void) {
 
   if ((cmd->hasM() == true) && (cmd->getM() == 112))     //  Handle emergency stops
     Commands::emergencyStop();                           //  IMMEDIATELY, regardless of queue.
+
+  if ((cmd->hasZ() == true) &&
+      (cmd->hasG() == true) &&
+      (cmd->G      == 1))
+    _currentHeight = cmd->Z;
 
   _cmdsIn++;                                             //  Add the command to the queue.
   _cmdsLen++;                                            //

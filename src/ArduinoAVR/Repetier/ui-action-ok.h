@@ -1,33 +1,38 @@
 
 
+
+
 void
 UIDisplay::okAction_selectFile(uint8_t filePos) {
   char    filename[MAX_FILENAME_LEN + 1 + 1];   //  Needs one extra byte for an appended '/', and nul terminator.
 
   //  Grab the name of the file at postion filePos.
 
-  scanSDcard(filePos, filename);
+  uint8_t  isDir = sd.scanCard(filePos, filename);
 
   //  If a directory was selected, go into it.
 
-  if (isDirname(filename)) {
-    goDir(filename);
+  if (isDir) {
+    sd.goDir(filename);
 
     _menuPos = 2;      //  Leave on the first file; UIDisplay::sdrefresh()
     _menuSel = 255;    //  will reset if the directory is empty.
     _menuTop = 0;
 
     refreshPage();
- }
 
-  //  Otherwise, a file.  If we can select it, start printing
-  //  and reset the display.
+    return;
+  }
 
-  else if (sd.selectFile(filename, false) == true) {
-    sd.startPrint();
+  //  Otherwise, a file.  Print it.
 
+  if (sd.printFile(filename) == false) {
     uiAlert();
+  }
 
+  //  And then reset the display if it successfully starts.
+
+  else {
     _menuPage = 1;
     _menuPos  = 0;
     _menuSel  = 255;
@@ -35,10 +40,6 @@ UIDisplay::okAction_selectFile(uint8_t filePos) {
 
     refreshPage();
   }
-
-  //  the original seems to do these here - they seem extraneous
-  //sd.file.close();
-  //sd.chdir(cwd);
 }
 
 
@@ -72,7 +73,7 @@ UIDisplay::okAction_start(bool allowMoves) {
   //  In a file selection menu, but selected the first item, which is always
   //  'up directory', even if there is no up directory.
   else if ((menuType == menuType_select) && (_menuPos == 1)) {
-    goDir(NULL);
+    sd.goDir(NULL);
 
     _menuPos = 1;     //  Leave on the up-directory entry.
     _menuSel = 255;

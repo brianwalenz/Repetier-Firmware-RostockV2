@@ -205,12 +205,7 @@ public:
 
   //  SD CARD
 
-  void     scanSDcard(uint16_t filePos = 65535, char *filename = NULL);
-
-  void     goDir(char *name);
-  bool     isDirname(char *name);
   uint8_t  sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]);
-
 
 
   //  1 - fast key action

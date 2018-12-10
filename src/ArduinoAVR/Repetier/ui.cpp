@@ -429,7 +429,7 @@ UIDisplay::initialize() {
   printRowP(0, PSTR("Rostock Max v2"));
   printRowP(1, PSTR("Repetier 1.0.2[bri]"));
   printRowP(2, PSTR(""));
-  printRowP(3, PSTR(""));
+  printRowP(3, PSTR("1"));
 
   //  Show the start screen for 2 seconds.
 #if 1
@@ -626,7 +626,8 @@ UIDisplay::addFloat(float number, char wholeDigits, uint8_t fractDigits) {
 
 //  Print a time in seconds as "x days xx:xx".
 void
-UIDisplay::addTimeInDaysHoursMinutes(uint32_t seconds) {
+UIDisplay::addTimeInDaysHoursMinutes(uint32_t milliseconds) {
+  uint32_t seconds = milliseconds / 1000;
   uint32_t days    = seconds / 86400;  seconds -= days  * 86400;
   uint32_t hours   = seconds / 3600;   seconds -= hours * 3600;
   uint32_t minutes = seconds / 60;
@@ -642,7 +643,8 @@ UIDisplay::addTimeInDaysHoursMinutes(uint32_t seconds) {
 
 //  Print a time in seconds as "xx:xx:xx".
 void
-UIDisplay::addTimeInHoursMinutesSeconds(uint32_t seconds) {
+UIDisplay::addTimeInHoursMinutesSeconds(uint32_t milliseconds) {
+  uint32_t seconds = milliseconds / 1000;
   uint32_t hours   = seconds / 3600;   seconds -= hours * 3600;
   uint32_t minutes = seconds / 60;     seconds -= minutes  * 60;
 
