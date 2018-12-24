@@ -70,7 +70,6 @@ Endstops::update(void) {
 
   //  If the debounced state diffes from the current state, reset.
   if (_lastRead != _currState) {
-    //if (Printer::debugEndStop()) {
     Com::printF(PSTR("endstops changed:\n"));
     Com::printF(PSTR("  x_min:"));   Com::printF(xMin(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(xMin(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
     Com::printF(PSTR("  x_max:"));   Com::printF(xMax(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(xMax(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
@@ -78,7 +77,6 @@ Endstops::update(void) {
     Com::printF(PSTR("  y_max:"));   Com::printF(yMax(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(yMax(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
     Com::printF(PSTR("  z_min:"));   Com::printF(zMin(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(zMin(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
     Com::printF(PSTR("  z_max:"));   Com::printF(zMax(_currState) ? PSTR(" On  -> ") : PSTR("Off -> "));   Com::printF(zMax(_lastRead) ? PSTR("On\n") : PSTR("Off\n"));
-    //}
 
     _currState    = _lastRead;
     _accumulated |= _lastRead;

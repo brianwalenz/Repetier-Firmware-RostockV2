@@ -73,7 +73,7 @@ uint8_t PrintLine::linesPos = 0;                 ///< Position for executing lin
    \param pathOptimize If false start and end speeds get fixed to minimum values.
 */
 void PrintLine::moveRelativeDistanceInSteps(int32_t x, int32_t y, int32_t z, int32_t e, float feedrate, bool waitEnd, bool checkEndstop, bool pathOptimize) {
-  if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && extruderTemp.getCurrentTemperature() < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()))
+  if((MIN_EXTRUDER_TEMP > 30 && extruderTemp.getCurrentTemperature() < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()))
     e = 0; // should not be allowed for current temperature
 
   float savedFeedrate = Printer::feedrate;
@@ -112,7 +112,7 @@ void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z,
     return; // ignore move
   }
 
-  if(Printer::debugDryrun() || (MIN_EXTRUDER_TEMP > 30 && extruderTemp.getCurrentTemperature() < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()))
+  if((MIN_EXTRUDER_TEMP > 30 && extruderTemp.getCurrentTemperature() < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()))
     e = 0; // should not be allowed for current temperature
 
   Printer::moveToReal(Printer::lastCmdPos[X_AXIS], Printer::lastCmdPos[Y_AXIS], Printer::lastCmdPos[Z_AXIS],
@@ -253,13 +253,11 @@ void PrintLine::calculateMove(float axisDistanceMM[], uint8_t pathOptimize, int8
 
 
 #ifdef DEBUG_QUEUE_MOVE
-  if(Printer::debugEcho()) {
-    logLine();
-    Com::printF(PSTR("LimitInterval:"), limitInterval);
-    Com::printF(PSTR("Move distance on the XYZ space:"), distance);
-    Com::printF(PSTR("Commanded feedrate:"), Printer::feedrate);
-    Com::printF(PSTR("Constant full speed move time:"), timeForMove);
-  }
+  logLine();
+  Com::printF(PSTR("LimitInterval:"), limitInterval);
+  Com::printF(PSTR("Move distance on the XYZ space:"), distance);
+  Com::printF(PSTR("Commanded feedrate:"), Printer::feedrate);
+  Com::printF(PSTR("Constant full speed move time:"), timeForMove);
 #endif
   // Make result permanent
   if (pathOptimize) waitRelax = 70;
@@ -343,29 +341,25 @@ void PrintLine::updateTrapezoids() {
   forwardPlanner(first);
 
 #ifdef DEBUG_PLANNER
-  if(Printer::debugEcho()) {
-    Com::printF(PSTR("Planner: "), (int)linesCount);
-    previousPlannerIndex(first);
-    Com::printF(PSTR(" F "), lines[first].startSpeed, 1);
-    Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
-    Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
-    Com::printF(PSTR(","), (int)lines[first].joinFlags);
-    nextPlannerIndex(first);
-  }
+  Com::printF(PSTR("Planner: "), (int)linesCount);
+  previousPlannerIndex(first);
+  Com::printF(PSTR(" F "), lines[first].startSpeed, 1);
+  Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
+  Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
+  Com::printF(PSTR(","), (int)lines[first].joinFlags);
+  nextPlannerIndex(first);
 #endif
   // Update precomputed data
   do {
     lines[first].updateStepsParameter();
 #ifdef DEBUG_PLANNER
-    if(Printer::debugEcho()) {
-      Com::printF(PSTR(" / "), lines[first].startSpeed, 1);
-      Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
-      Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
-      Com::printF(PSTR(","), (int)lines[first].joinFlags);
+    Com::printF(PSTR(" / "), lines[first].startSpeed, 1);
+    Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
+    Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
+    Com::printF(PSTR(","), (int)lines[first].joinFlags);
 #ifdef DEBUG_QUEUE_MOVE
-      Com::print(PSTR("\n"));
+    Com::print(PSTR("\n"));
 #endif
-    }
 #endif
     //noInts.protect();
     lines[first].unblock();  // start with first block to release next used segment as early as possible
@@ -376,13 +370,11 @@ void PrintLine::updateTrapezoids() {
   act->updateStepsParameter();
   act->unblock();
 #ifdef DEBUG_PLANNER
-  if(Printer::debugEcho()) {
-    Com::printF(PSTR(" / "), lines[first].startSpeed, 1);
-    Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
-    Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
-    Com::printF(PSTR(","), (int)lines[first].joinFlags);
-    Com::printF(PSTR("\n"));
-  }
+  Com::printF(PSTR(" / "), lines[first].startSpeed, 1);
+  Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
+  Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
+  Com::printF(PSTR(","), (int)lines[first].joinFlags);
+  Com::printF(PSTR("\n"));
 #endif
 }
 
@@ -460,11 +452,9 @@ inline void PrintLine::computeMaxJunctionSpeed(PrintLine *previous, PrintLine *c
 
   previous->maxJunctionSpeed = maxJoinSpeed * factor; // set speed limit
 #ifdef DEBUG_QUEUE_MOVE
-  if(Printer::debugEcho()) {
-    Com::printF(PSTR("ID:"), (int)previous);
-    Com::printF(PSTR(" MJ:"), previous->maxJunctionSpeed);
-    Com::printF(PSTR("\n"));
-  }
+  Com::printF(PSTR("ID:"), (int)previous);
+  Com::printF(PSTR(" MJ:"), previous->maxJunctionSpeed);
+  Com::printF(PSTR("\n"));
 #endif // DEBUG_QUEUE_MOVE
 }
 
@@ -493,24 +483,22 @@ void PrintLine::updateStepsParameter() {
   }
   setParameterUpToDate();
 #ifdef DEBUG_QUEUE_MOVE
-  if(Printer::debugEcho()) {
-    Com::printF(PSTR("ID:"), (int)this);
-    Com::printF(PSTR("\n"));
-    Com::printF(PSTR("vStart/End:"), (long)vStart);
-    Com::printF(PSTR("/"), (long)vEnd);
-    Com::printF(PSTR("\n"));
-    Com::printF(PSTR("accel/decel steps:"), (long)accelSteps);
-    Com::printF(PSTR("/"), (long)decelSteps);
-    Com::printF(PSTR("/"), (long)stepsRemaining);
-    Com::printF(PSTR("\n"));
-    Com::printF(PSTR("st./end speed:"), startSpeed, 1);
-    Com::printF(PSTR("/"), endSpeed, 1);
-    Com::printF(PSTR("\n"));
-    Com::printF(PSTR("Flags:"), (uint32_t)flags);
-    Com::printF(PSTR("\n"));
-    Com::printF(PSTR("joinFlags:"), (uint32_t)joinFlags);
-    Com::printF(PSTR("\n"));
-  }
+  Com::printF(PSTR("ID:"), (int)this);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("vStart/End:"), (long)vStart);
+  Com::printF(PSTR("/"), (long)vEnd);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("accel/decel steps:"), (long)accelSteps);
+  Com::printF(PSTR("/"), (long)decelSteps);
+  Com::printF(PSTR("/"), (long)stepsRemaining);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("st./end speed:"), startSpeed, 1);
+  Com::printF(PSTR("/"), endSpeed, 1);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("Flags:"), (uint32_t)flags);
+  Com::printF(PSTR("\n"));
+  Com::printF(PSTR("joinFlags:"), (uint32_t)joinFlags);
+  Com::printF(PSTR("\n"));
 #endif
 }
 
@@ -1380,21 +1368,6 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
       }
       allowInterrupts();
       lastblk = -1;
-
-#if 1
-      // Allows M111 so set bit 6 (32) which disables moves, at the first tried
-      // step. In combination with a dry run, you can test the speed of path
-      // computations, which are still performed.
-
-      if(Printer::debugNoMoves()) { // simulate a move, but do nothing in reality
-        removeCurrentLineForbidInterrupt();
-        if(linesCount == 0) {
-          uid.setStatusP(PSTR("Idle"));
-          uid.refreshPage();
-        }
-        return 1000;
-      }
-#endif
 
       if(cur->isWarmUp()) {
         // This is a warm up move to initialize the path planner correctly. Just waste

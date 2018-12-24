@@ -675,7 +675,7 @@ Commands::processGCode(gcodeCommand *com) {
     printCurrentPosition();
   }
 
-  else if (Printer::debugErrors()) {
+  else {
     Com::printF(PSTR("Unknown command:"));
     com->printCommand();
   }
@@ -776,8 +776,6 @@ Commands::processMCode(gcodeCommand *com) {
   //  M116 P<tool> H<heater> C<chamber>  - wait for temps to stabilize
 
   else if (com->M == 104) {
-    if (Printer::debugDryrun())    goto endMcode;
-
     previousMillisCmd = millis();
 
     if ((com->hasS() && com->S == 0))
@@ -790,8 +788,6 @@ Commands::processMCode(gcodeCommand *com) {
   }
 
   else if (com->M == 140) {
-    if (Printer::debugDryrun())    goto endMcode;
-
     previousMillisCmd = millis();
 
     if (com->hasS())
@@ -805,8 +801,6 @@ Commands::processMCode(gcodeCommand *com) {
   }
 
   else if (com->M == 109) {
-    if (Printer::debugDryrun())    goto endMcode;
-
     previousMillisCmd = millis();
 
     Commands::waitUntilEndOfAllMoves();
@@ -820,8 +814,6 @@ Commands::processMCode(gcodeCommand *com) {
   }
 
   else if (com->M == 190) {
-    if (Printer::debugDryrun())   goto endMcode;
-
     Commands::waitUntilEndOfAllMoves();
 
     if (com->hasS())
@@ -870,22 +862,6 @@ Commands::processMCode(gcodeCommand *com) {
   //  M110 set current line number
   //  M110 N<line_number>
   else if (com->M == 110) {
-  }
-
-  //  M111 set debug level
-  //
-  else if (com->M == 111) {
-#if 0
-    if(com->hasS()) Printer::setDebugLevel(static_cast<uint8_t>(com->S));
-    if(com->hasP()) {
-      if (com->P > 0) Printer::debugSet(static_cast<uint8_t>(com->P));
-      else Printer::debugReset(static_cast<uint8_t>(-com->P));
-    }
-    if(Printer::debugDryrun()) { // simulate movements without printing
-      extruderTemp.setTargetTemperature(0);
-      bedTemp.setTargetTemperature(0);
-    }
-#endif
   }
 
   //  M112 emergency stop.
@@ -946,10 +922,8 @@ Commands::processMCode(gcodeCommand *com) {
 
 
   else {
-    if(Printer::debugErrors()) {
-      Com::printF(PSTR("Unknown command:"));
-      com->printCommand();
-    }
+    Com::printF(PSTR("Unknown command:"));
+    com->printCommand();
   }
 
  endMcode:
@@ -979,7 +953,7 @@ Commands::executeGCode(gcodeCommand *com) {
     Printer::selectExtruderById(com->T);
   }
 
-  else if (Printer::debugErrors()) {
+  else {
     Com::printF(PSTR("Unknown command:"));
     com->printCommand();
   }

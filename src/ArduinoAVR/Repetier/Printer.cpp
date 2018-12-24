@@ -72,7 +72,6 @@ uint8_t Printer::flag0 = 0;
 uint8_t Printer::flag1 = 0;
 uint8_t Printer::flag2 = 0;
 uint8_t Printer::flag3 = 0;
-uint8_t Printer::debugLevel = 6; ///< Bitfield defining debug output. 1 = echo, 2 = info, 4 = error, 8 = dry run., 16 = Only communication, 32 = No moves
 int8_t Printer::stepsPerTimerCall = 1;
 uint16_t Printer::menuMode = 0;
 uint8_t Printer::mode = DEFAULT_PRINTER_MODE;
@@ -158,16 +157,6 @@ float Printer::maxRealSegmentLength = 0;
 #ifdef DEBUG_REAL_JERK
 float Printer::maxRealJerk = 0;
 #endif
-
-void Printer::setDebugLevel(uint8_t newLevel) {
-  if(newLevel != debugLevel) {
-    debugLevel = newLevel;
-    if(debugDryrun()) {
-      extruderTemp.disable();
-      bedTemp.disable();
-    }
-  }
-}
 
 bool Printer::isPositionAllowed(float x, float y, float z) {
   if(isNoDestinationCheck()) return true;
@@ -369,7 +358,7 @@ uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pa
   destinationSteps[X_AXIS] = static_cast<int32_t>(floor(x * axisStepsPerMM[X_AXIS] + 0.5f));
   destinationSteps[Y_AXIS] = static_cast<int32_t>(floor(y * axisStepsPerMM[Y_AXIS] + 0.5f));
   destinationSteps[Z_AXIS] = static_cast<int32_t>(floor(z * axisStepsPerMM[Z_AXIS] + 0.5f));
-  if(e != IGNORE_COORDINATE && !Printer::debugDryrun()
+  if(e != IGNORE_COORDINATE
 #if MIN_EXTRUDER_TEMP > 30
      && (extruderTemp.getCurrentTemperature() > MIN_EXTRUDER_TEMP || Printer::isColdExtrusionAllowed())
 #endif
@@ -461,7 +450,7 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
 #if DISTORTION_CORRECTION == 0
   }
 #endif
-  if(com->hasE() && !Printer::debugDryrun()) {
+  if(com->hasE()) {
     p = convertToMM(com->E * axisStepsPerMM[E_AXIS]);
     if(relativeCoordinateMode || relativeExtruderCoordinateMode) {
       if(

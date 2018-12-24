@@ -151,7 +151,6 @@ tempControl::manageTemperature(void) {
       //Printer::stopPrint();
       //Printer::kill(false);
 
-      //Printer::debugSet(8); // Go into dry mode
       //commandQueue.fatalError(PSTR("Heater/sensor error"));
     }
 

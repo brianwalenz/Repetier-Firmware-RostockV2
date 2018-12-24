@@ -189,7 +189,6 @@ extern bool runBedLeveling(int save); // save = S parameter in gcode
 */
 
 class Printer {
-  static uint8_t debugLevel;
 public:
 
   static volatile int extruderStepsNeeded; ///< This many extruder steps are still needed, <0 = reverse steps needed.
@@ -317,51 +316,6 @@ public:
   static INLINE bool isMenuMode(uint8_t mode) {
     return (menuMode & mode) == mode;
   }
-  static void setDebugLevel(uint8_t newLevel);
-
-  static INLINE uint8_t getDebugLevel() {
-    return debugLevel;
-  }
-  static INLINE bool debugEcho() {
-    return ((debugLevel & 1) != 0);
-  }
-
-  static INLINE bool debugInfo() {
-    return ((debugLevel & 2) != 0);
-  }
-
-  static INLINE bool debugErrors() {
-    return ((debugLevel & 4) != 0);
-  }
-
-  static INLINE bool debugDryrun() {
-    return ((debugLevel & 8) != 0);
-  }
-
-  static INLINE bool debugCommunication() {
-    return ((debugLevel & 16) != 0);
-  }
-
-  static INLINE bool debugNoMoves() {
-    return ((debugLevel & 32) != 0);
-  }
-
-  static INLINE bool debugEndStop() {
-    return ((debugLevel & 64) != 0);
-  }
-
-  static INLINE bool debugFlag(uint8_t flags) {
-    return (debugLevel & flags);
-  }
-
-  static INLINE void debugSet(uint8_t flags) {
-    setDebugLevel(debugLevel | flags);
-  }
-
-  static INLINE void debugReset(uint8_t flags) {
-    setDebugLevel(debugLevel & ~flags);
-  }
-
 
   /** \brief Disable stepper motor for x direction. */
   static INLINE void disableXStepper() {
@@ -605,7 +559,6 @@ public:
   }
   static INLINE void setAnyTempsensorDefect() {
     flag0 |= PRINTER_FLAG0_TEMPSENSOR_DEFECT;
-    debugSet(8);
   }
   static INLINE void unsetAnyTempsensorDefect() {
     flag0 &= ~PRINTER_FLAG0_TEMPSENSOR_DEFECT;

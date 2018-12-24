@@ -227,7 +227,6 @@ public:
 
   void waitForTargetTemperature(void) {
     //if (_target < 30)              return;
-    //if (Printer::debugDryrun())    return;
 
     //  RETRACT_DURING_HEATUP
     //if (actExtruder->waitRetractUnits > 0 && !retracted && dirRising && actExtruder->tempControl.current > actExtruder->waitRetractTemperature) {
