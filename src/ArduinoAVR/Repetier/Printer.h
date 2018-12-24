@@ -56,7 +56,6 @@ union floatLong {
 #define PRINTER_FLAG0_TEMPSENSOR_DEFECT     4
 #define PRINTER_FLAG0_FORCE_CHECKSUM        8
 #define PRINTER_FLAG0_MANUAL_MOVE_MODE      16
-#define PRINTER_FLAG0_AUTOLEVEL_ACTIVE      32
 #define PRINTER_FLAG0_ZPROBEING             64
 #define PRINTER_FLAG0_LARGE_MACHINE         128
 #define PRINTER_FLAG1_HOMED_ALL             1
@@ -98,8 +97,6 @@ public:
     return a * x + y * b + c;
   }
 };
-
-#include "Distortion.h"
 
 #include "Endstops.h"
 
@@ -249,14 +246,6 @@ public:
   static int32_t stepsRemainingAtZHit;
   static int32_t stepsRemainingAtXHit;
   static int32_t stepsRemainingAtYHit;
-#if FEATURE_SOFTWARE_LEVELING
-  static int32_t levelingP1[3];
-  static int32_t levelingP2[3];
-  static int32_t levelingP3[3];
-#endif
-#if FEATURE_AUTOLEVEL
-  static float autolevelTransformation[9]; ///< Transformation matrix
-#endif
 #if FEATURE_BABYSTEPPING
   static int16_t zBabystepsMissing;
   static int16_t zBabysteps;
@@ -569,10 +558,6 @@ public:
   static INLINE void setManualMoveMode(bool on) {
     flag0 = (on ? flag0 | PRINTER_FLAG0_MANUAL_MOVE_MODE : flag0 & ~PRINTER_FLAG0_MANUAL_MOVE_MODE);
   }
-  static INLINE bool isAutolevelActive() {
-    return (flag0 & PRINTER_FLAG0_AUTOLEVEL_ACTIVE) != 0;
-  }
-  static void setAutolevelActive(bool on);
 
   static INLINE void setZProbingActive(bool on) {
     flag0 = (on ? flag0 | PRINTER_FLAG0_ZPROBEING : flag0 & ~PRINTER_FLAG0_ZPROBEING);
@@ -705,19 +690,17 @@ public:
   }
   static void deltaMoveToTopEndstops(float feedrate);
 
-  static void transformToPrinter(float x, float y, float z, float &transX, float &transY, float &transZ);
-  static void transformFromPrinter(float x, float y, float z, float &transX, float &transY, float &transZ);
+  static void transformToPrinter(float x, float y, float z, float &transX, float &transY, float &transZ) {
+    transX = x;
+    transY = y;
+    transZ = z;
+  };
+  static void transformFromPrinter(float x, float y, float z, float &transX, float &transY, float &transZ) {
+    transX = x;
+    transY = y;
+    transZ = z;
+  };
 
-#if FEATURE_AUTOLEVEL
-  static void resetTransformationMatrix(bool silent);
-  //static void buildTransformationMatrix(float h1,float h2,float h3);
-  static void buildTransformationMatrix(Plane &plane);
-#endif
-
-#if DISTORTION_CORRECTION
-  static void measureDistortion(void);
-  static Distortion distortion;
-#endif
   static void MemoryPosition();
   static void GoToMemoryPosition(bool x, bool y, bool z, bool e, float feed);
   static void zBabystep();

@@ -68,8 +68,6 @@
 #define EPR_Y_LENGTH              149
 #define EPR_Z_LENGTH              153
 
-#define EPR_AUTOLEVEL_MATRIX      844
-#define EPR_AUTOLEVEL_ACTIVE      880
 #define EPR_DELTA_DIAGONAL_ROD_LENGTH 881
 #define EPR_DELTA_HORIZONTAL_RADIUS 885
 #define EPR_DELTA_SEGMENTS_PER_SECOND_PRINT 889
@@ -95,7 +93,6 @@
 #define EPR_TOUCHSCREEN           946 // - 975 = 30 byte for touchscreen calibration data
 
 
-#define EPR_DISTORTION_CORRECTION_ENABLED      988
 #define EPR_RETRACTION_LENGTH                  992
 #define EPR_RETRACTION_LONG_LENGTH             996
 #define EPR_RETRACTION_SPEED                  1000
@@ -342,18 +339,6 @@ public:
 
   static void initalizeUncached();
 
-  static void setZCorrection(int32_t c,int index);
-  static inline int32_t getZCorrection(int index) {
-    return eprGetInt32(2048 + (index << 2));
-  }
-  static inline void setZCorrectionEnabled(int8_t on) {
-    if(isZCorrectionEnabled() == on) return;
-    eprSetInt16(EPR_DISTORTION_CORRECTION_ENABLED, on);
-    EEPROM::updateChecksum();
-  }
-  static inline int8_t isZCorrectionEnabled() {
-    return eprGetByte(EPR_DISTORTION_CORRECTION_ENABLED);
-  }
   static inline float parkX() {
     return eprGetFloat(EPR_PARK_X);
   }

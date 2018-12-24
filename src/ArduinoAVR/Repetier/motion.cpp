@@ -697,19 +697,6 @@ absLong(long a) {
 uint8_t transformCartesianStepsToDeltaSteps(int32_t cartesianPosSteps[], int32_t deltaPosSteps[]) {
   int32_t zSteps = cartesianPosSteps[Z_AXIS];
 
-#if DISTORTION_CORRECTION
-  static int cnt = 0;
-  static int32_t lastZSteps = 9999999;
-  static int32_t lastZCorrection = 0;
-  cnt++;
-  if(cnt >= DISTORTION_UPDATE_FREQUENCY || lastZSteps != zSteps) {
-    cnt = 0;
-    lastZSteps = zSteps;
-    lastZCorrection = Printer::distortion.correct(cartesianPosSteps[X_AXIS], cartesianPosSteps[Y_AXIS], cartesianPosSteps[Z_AXIS]);
-  }
-  zSteps += lastZCorrection;
-#endif
-
   if(Printer::isLargeMachine()) {
     float temp = Printer::deltaAPosYSteps - cartesianPosSteps[Y_AXIS];
     float opt = Printer::deltaDiagonalStepsSquaredA.f - temp * temp;
@@ -1105,19 +1092,6 @@ uint8_t PrintLine::calculateDistance(float axisDistanceMM[], uint8_t dir, float 
     return 0;
   }
 }
-
-#if FEATURE_SOFTWARE_LEVELING
-void PrintLine::calculatePlane(int32_t factors[], int32_t p1[], int32_t p2[], int32_t p3[]) {
-  factors[0] = p1[1] * (p2[2] - p3[2]) + p2[1] * (p3[2] - p1[2]) + p3[1] * (p1[2] - p2[2]);
-  factors[1] = p1[2] * (p2[0] - p3[0]) + p2[2] * (p3[0] - p1[0]) + p3[2] * (p1[0] - p2[0]);
-  factors[2] = p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1]);
-  factors[3] = p1[0] * ((p2[1] * p3[2]) - (p3[1] * p2[2])) + p2[0] * ((p3[1] * p1[2]) - (p1[1] * p3[2])) + p3[0] * ((p1[1] * p2[2]) - (p2[1] * p1[2]));
-}
-
-float PrintLine::calcZOffset(int32_t factors[], int32_t pointX, int32_t pointY) {
-  return (factors[3] - factors[X_AXIS] * pointX - factors[Y_AXIS] * pointY) / (float) factors[2];
-}
-#endif
 
 inline void PrintLine::queueEMove(int32_t extrudeDiff, uint8_t check_endstops, uint8_t pathOptimize) {
   Printer::unsetAllSteppersDisabled();

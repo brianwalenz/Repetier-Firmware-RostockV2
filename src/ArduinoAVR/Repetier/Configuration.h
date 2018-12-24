@@ -479,33 +479,6 @@
 
 
 
-/* Autoleveling allows it to z-probe 3 points to compute the inclination and compensates the error for the print.
-   This feature requires a working z-probe and you should have z-endstop at the top not at the bottom.
-   The same 3 points are used for the G29 command.
-*/
-#define FEATURE_AUTOLEVEL 0
-
-
-/* DISTORTION_CORRECTION compensates the distortion caused by mechanical imprecisions of nonlinear (i.e. DELTA) printers
- * assumes that the floor is plain (i.e. glass plate)
- *     and that it is perpendicular to the towers
- *     and that the (0,0) is in center
- * requires z-probe
- * G33 measures the Z offset in matrix NxN points (due to nature of the delta printer, the corners are extrapolated instead of measured)
- * and compensate the distortion
- * more points means better compensation, but consumes more memory and takes more time
- * DISTORTION_CORRECTION_R is the distance of last row or column from center
- */
-#define DISTORTION_CORRECTION         0
-
-
-/** \brief Experimental calibration utility for delta printers
- * Change 1 to 0 to disable
- */
-#define FEATURE_SOFTWARE_LEVELING 0
-
-
-
 /* Babystepping allows to change z height during print without changing official z height */
 #define FEATURE_BABYSTEPPING 1
 

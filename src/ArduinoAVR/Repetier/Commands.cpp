@@ -452,8 +452,6 @@ void
 Commands::processG132(gcodeCommand *com) {
 #if 0 // DISABLE
   // G132 Calibrate endstop offsets
-  // This has the probably unintended side effect of turning off leveling.
-  Printer::setAutolevelActive(false); // don't let transformations change result!
   Printer::coordinateOffset[X_AXIS] = 0;
   Printer::coordinateOffset[Y_AXIS] = 0;
   Printer::coordinateOffset[Z_AXIS] = 0;
@@ -490,8 +488,6 @@ void
 Commands::processG133(gcodeCommand *com) {
 #if 0 // DISABLE
   // G133 Measure steps to top
-  bool oldAuto = Printer::isAutolevelActive();
-  Printer::setAutolevelActive(false); // don't let transformations change result!
   Printer::currentPositionSteps[X_AXIS] = 0;
   Printer::currentPositionSteps[Y_AXIS] = 0;
   Printer::currentPositionSteps[Z_AXIS] = 0;
@@ -515,7 +511,6 @@ Commands::processG133(gcodeCommand *com) {
   Com::printF(PSTR("Tower 3:"), offz);
   Com::printF(PSTR("\n"));
 
-  Printer::setAutolevelActive(oldAuto);
   PrintLine::moveRelativeDistanceInSteps(0, 0, Printer::axisStepsPerMM[Z_AXIS] * -10, 0, Printer::homingFeedrate[Z_AXIS] / 4, true, false);
   Printer::homeAxis(true, true, true);
 #endif // DISABLE
@@ -572,34 +567,6 @@ Commands::processGCode(gcodeCommand *com) {
   else if (com->G == 28) {
     Printer::homeAxis(true, true, true);
   }
-
-  // G32 Auto-Bed leveling
-#if FEATURE_AUTOLEVEL
-  else if (com->G == 32) {
-    if(!runBedLeveling(com->hasS() ? com->S : -1)) {
-      commandQueue.fatalError(PSTR("G32 leveling failed!"));
-    }
-  }
-#endif
-
-  // G33 distortion matrix stuff
-#if DISTORTION_CORRECTION
-  else if (com->G == 33) {
-    if(com->hasL()) { // G33 L0 - List distortion matrix
-      Printer::distortion.showMatrix();
-    } else if(com->hasR()) { // G33 R0 - Reset distortion matrix
-      Printer::distortion.resetCorrection();
-    } else if(com->hasX() || com->hasY() || com->hasZ()) { // G33 X<xpos> Y<ypos> Z<zCorrection> - Set correction for nearest point
-      if(com->hasX() && com->hasY() && com->hasZ()) {
-        Printer::distortion.set(com->X, com->Y, com->Z);
-      } else {
-        Com::printF(PSTR("ERROR You need to define X, Y and Z to set a point!\n"));
-      }
-    } else { // G33
-      Printer::measureDistortion();
-    }
-  }
-#endif
 
   // G90 absolute positioning mode
   else if (com->G == 90) {

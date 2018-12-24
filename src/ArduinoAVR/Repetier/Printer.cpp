@@ -85,10 +85,6 @@ char Printer::printName[21] = ""; // max. 20 chars + 0
 float Printer::progress = 0;
 uint32_t Printer::lastTempReport = 0;
 
-#if FEATURE_AUTOLEVEL
-float Printer::autolevelTransformation[9]; ///< Transformation matrix
-#endif
-
 uint32_t Printer::interval = 30000;           ///< Last step duration in ticks.
 uint32_t Printer::timer;              ///< used for acceleration/deceleration timing
 uint32_t Printer::stepNumber;         ///< Step number in current move.
@@ -115,11 +111,6 @@ int16_t Printer::printMovesPerSecond;
 int32_t Printer::stepsRemainingAtZHit;
 int32_t Printer::stepsRemainingAtXHit;
 int32_t Printer::stepsRemainingAtYHit;
-#if FEATURE_SOFTWARE_LEVELING
-int32_t Printer::levelingP1[3];
-int32_t Printer::levelingP2[3];
-int32_t Printer::levelingP3[3];
-#endif
 //float Printer::minimumSpeed;               ///< lowest allowed speed to keep integration error small
 //float Printer::minimumZSpeed;
 int32_t Printer::xMaxSteps;                   ///< For software endstops, limit of move in positive direction.
@@ -264,9 +255,7 @@ void Printer::updateDerivedParameter() {
     Com::printF(PSTR("\n"));
   }
   accel = RMath::max(maxAccelerationMMPerSquareSecond[Z_AXIS], maxTravelAccelerationMMPerSquareSecond[Z_AXIS]);
-#if DISTORTION_CORRECTION
-  distortion.updateDerived();
-#endif // DISTORTION_CORRECTION
+
   Printer::updateAdvanceFlags();
 }
 
@@ -429,9 +418,7 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
   register int32_t p;
   float x, y, z;
   bool posAllowed = true;
-#if DISTORTION_CORRECTION == 0
   if(!com->hasNoXYZ()) {
-#endif
     if(!relativeCoordinateMode) {
       if(com->hasX()) lastCmdPos[X_AXIS] = currentPosition[X_AXIS] = convertToMM(com->X) - coordinateOffset[X_AXIS];
       if(com->hasY()) lastCmdPos[Y_AXIS] = currentPosition[Y_AXIS] = convertToMM(com->Y) - coordinateOffset[Y_AXIS];
@@ -447,9 +434,8 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
     destinationSteps[Y_AXIS] = static_cast<int32_t>(floor(y * axisStepsPerMM[Y_AXIS] + 0.5f));
     destinationSteps[Z_AXIS] = static_cast<int32_t>(floor(z * axisStepsPerMM[Z_AXIS] + 0.5f));
     posAllowed = com->hasNoXYZ() || Printer::isPositionAllowed(lastCmdPos[X_AXIS], lastCmdPos[Y_AXIS], lastCmdPos[Z_AXIS]);
-#if DISTORTION_CORRECTION == 0
   }
-#endif
+
   if(com->hasE()) {
     p = convertToMM(com->E * axisStepsPerMM[E_AXIS]);
     if(relativeCoordinateMode || relativeExtruderCoordinateMode) {
@@ -522,10 +508,6 @@ Printer::setup() {
 
   microstepInit();
 
-#if FEATURE_AUTOLEVEL
-  resetTransformationMatrix(true);
-#endif // FEATURE_AUTOLEVEL
-
   feedrate = 50; ///< Current feedrate in mm/s.
   feedrateMultiply = 100;
   extrudeMultiply = 100;
@@ -557,11 +539,6 @@ Printer::setup() {
   currentPosition[X_AXIS] = 0.0;
   currentPosition[Y_AXIS] = 0.0;
   currentPosition[Z_AXIS] = 0.0;
-
-
-#if DISTORTION_CORRECTION
-  distortion.init();
-#endif // DISTORTION_CORRECTION
 
   updateDerivedParameter();
 
@@ -745,8 +722,6 @@ Printer::homeZAxis(void) {
 void Printer::homeAxis(bool xaxis, bool yaxis, bool zaxis) { // Delta homing code
   bool nocheck = isNoDestinationCheck();
   setNoDestinationCheck(true);
-  bool autoLevel = isAutolevelActive();
-  setAutolevelActive(false);
 
   // The delta has to have home capability to zero and set position,
   // so the redundant check is only an opportunity to
@@ -766,7 +741,6 @@ void Printer::homeAxis(bool xaxis, bool yaxis, bool zaxis) { // Delta homing cod
   uid.clearStatus();
 
   Commands::printCurrentPosition();
-  setAutolevelActive(autoLevel);
   Printer::updateCurrentPosition();
   setNoDestinationCheck(nocheck);
 }

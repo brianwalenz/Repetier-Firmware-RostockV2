@@ -101,12 +101,6 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
   eprSetFloat(EPR_Z_LENGTH,Printer::zLength);
   eprSetFloat(EPR_DELTA_HORIZONTAL_RADIUS, Printer::radius0);
 
-#if FEATURE_AUTOLEVEL
-  eprSetByte(EPR_AUTOLEVEL_ACTIVE,Printer::isAutolevelActive());
-  for(uint8_t i = 0; i < 9; i++)
-    eprSetFloat(EPR_AUTOLEVEL_MATRIX + (((int)i) << 2),Printer::autolevelTransformation[i]);
-#endif
-
   hal.pingWatchdog();
 
   // now the extruder
@@ -174,7 +168,6 @@ void EEPROM::initalizeUncached()
   eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_A,DELTA_DIAGONAL_CORRECTION_A);
   eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_B,DELTA_DIAGONAL_CORRECTION_B);
   eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_C,DELTA_DIAGONAL_CORRECTION_C);
-  eprSetByte(EPR_DISTORTION_CORRECTION_ENABLED,0);
 
   eprSetFloat(EPR_RETRACTION_LENGTH,RETRACTION_LENGTH);
   eprSetFloat(EPR_RETRACTION_LONG_LENGTH,RETRACTION_LONG_LENGTH);
@@ -241,30 +234,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
   Printer::zLength = eprGetFloat(EPR_Z_LENGTH);
   Printer::radius0 = eprGetFloat(EPR_DELTA_HORIZONTAL_RADIUS);
 
-#if FEATURE_AUTOLEVEL
-  if(version > 2)
-    {
-      float sum = 0;
-      for(uint8_t i = 0; i < 9; i++)
-        Printer::autolevelTransformation[i] = eprGetFloat(EPR_AUTOLEVEL_MATRIX + (((int)i) << 2));
-      if(isnan(Printer::autolevelTransformation[0]))   // a bug caused storage of matrix at the wrong place. Read from old position instead.
-        {
-          for(uint8_t i = 0; i < 9; i++)
-            Printer::autolevelTransformation[i] = eprGetFloat((EPR_AUTOLEVEL_MATRIX + (int)i) << 2);
-        }
-      for(uint8_t i = 0; i < 9; i++)
-        {
-          if(isnan(Printer::autolevelTransformation[i]))
-            sum += 10;
-          else
-            sum += RMath::sqr(Printer::autolevelTransformation[i]);
-        }
-      if(sum < 2.7 || sum > 3.3)
-        Printer::resetTransformationMatrix(false);
-      Printer::setAutolevelActive(eprGetByte(EPR_AUTOLEVEL_ACTIVE));
-      Com::printArrayF(PSTR("Transformation matrix:"),Printer::autolevelTransformation, 9, 6);
-    }
-#endif
   if(includeExtruder)
     {
       // now the extruder
@@ -344,10 +313,6 @@ void EEPROM::readDataFromEEPROM(bool includeExtruder)
           eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_A,DELTA_DIAGONAL_CORRECTION_A);
           eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_B,DELTA_DIAGONAL_CORRECTION_B);
           eprSetFloat(EPR_DELTA_DIAGONAL_CORRECTION_C,DELTA_DIAGONAL_CORRECTION_C);
-        }
-      if(version < 11)
-        {
-          eprSetByte(EPR_DISTORTION_CORRECTION_ENABLED, 0);
         }
       if(version < 12)
         {
@@ -478,10 +443,6 @@ void EEPROM::writeSettings()
   writeFloat(EPR_DELTA_DIAGONAL_CORRECTION_A, PSTR("Corr. diagonal A [mm]"));
   writeFloat(EPR_DELTA_DIAGONAL_CORRECTION_B, PSTR("Corr. diagonal B [mm]"));
   writeFloat(EPR_DELTA_DIAGONAL_CORRECTION_C, PSTR("Corr. diagonal C [mm]"));
-#endif
-
-#if FEATURE_AUTOLEVEL
-  writeByte(EPR_AUTOLEVEL_ACTIVE, PSTR("Autolevel active (1/0)"));
 #endif
 
   writeByte(EPR_BED_HEAT_MANAGER, PSTR("Bed Heat Manager [0-3]"));
@@ -615,11 +576,6 @@ void EEPROM::writeByte(uint16_t pos,PGM_P text)
   Com::printF(text);
   Com::printF(PSTR("\n"));
 	delay(4); // reduces somehow transmission errors
-}
-
-void EEPROM::setZCorrection(int32_t c,int index)
-{
-  eprSetInt32(2048 + (index << 2), c);
 }
 
 

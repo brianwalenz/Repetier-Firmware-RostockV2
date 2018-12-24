@@ -176,11 +176,6 @@ extern void finishNextSegment();
 
 extern uint8_t transformCartesianStepsToDeltaSteps(long cartesianPosSteps[], long deltaPosSteps[]);
 
-#if FEATURE_SOFTWARE_LEVELING
-extern void calculatePlane(long factors[], long p1[], long p2[], long p3[]);
-extern float calcZOffset(long factors[], long pointX, long pointY);
-#endif
-
 extern void linear_move(long steps_remaining[]);
 
 
