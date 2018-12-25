@@ -24,7 +24,6 @@
 #include "Communication.h"
 #include "gcode.h"
 #include "Commands.h"
-#include "Eeprom.h"
 #include "motion.h"
 #include "Printer.h"
 
@@ -144,27 +143,27 @@ void Commands::waitUntilEndOfAllBuffers() {
 
 
 
-void Commands::printCurrentPosition() {
-  float x, y, z;
+void
+Commands::printCurrentPosition() {
+  float x, y, z, e;
+
   Printer::realPosition(x, y, z);
+
   x += Printer::coordinateOffset[X_AXIS];
   y += Printer::coordinateOffset[Y_AXIS];
   z += Printer::coordinateOffset[Z_AXIS];
-  Com::printF(PSTR("X:"), x * (Printer::unitIsInches ? 0.03937 : 1), 2);
-  Com::printF(PSTR(" Y:"), y * (Printer::unitIsInches ? 0.03937 : 1), 2);
-  Com::printF(PSTR(" Z:"), z * (Printer::unitIsInches ? 0.03937 : 1), 3);
-  Com::printF(PSTR(" E:"), Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS] * (Printer::unitIsInches ? 0.03937 : 1), 4);
-  Com::printF(PSTR("\n"));
-#ifdef DEBUG_POS
-  Com::printF(PSTR("OffX:"), Printer::offsetX); // to debug offset handling
-  Com::printF(PSTR(" OffY:"), Printer::offsetY);
-  Com::printF(PSTR(" OffZ:"), Printer::offsetZ);
-  Com::printF(PSTR(" OffZ2:"), Printer::offsetZ2);
-  Com::printF(PSTR(" XS:"), Printer::currentPositionSteps[X_AXIS]);
-  Com::printF(PSTR(" YS:"), Printer::currentPositionSteps[Y_AXIS]);
-  Com::printF(PSTR(" ZS:"), Printer::currentPositionSteps[Z_AXIS]);
-  Com::printF(PSTR("\n"));
-#endif
+  e  = Printer::currentPositionSteps[E_AXIS] * Printer::invAxisStepsPerMM[E_AXIS];
+
+  Com::printf(PSTR("POSITION: X:%7.3f Y:%7.3f Z:%7.3f E:%7.3f\n"), x, y, z, e);
+  Com::printf(PSTR("OFFSET:   X:%7.3f Y:%7.3f Z:%7.3f 2:%7.3f\n"), 
+              Printer::offsetX,
+              Printer::offsetY,
+              Printer::offsetZ,
+              Printer::offsetZ2);
+  Com::printf(PSTR("STEPS:    X:%7.3f Y:%7.3f Z:%7.3f\n"),
+              Printer::currentPositionSteps[X_AXIS],
+              Printer::currentPositionSteps[Y_AXIS],
+              Printer::currentPositionSteps[Z_AXIS]);
 }
 
 
@@ -375,33 +374,18 @@ Commands::processG100(gcodeCommand *com) {
       // Z offset will be corrected for.
       if (Printer::currentPosition[X_AXIS] == 0
           && Printer::currentPosition[Y_AXIS] == 0) {
-        if(Printer::isLargeMachine()) {
-          // calculate radius assuming we are at surface
-          // If Z is greater than 0 it will get calculated out for correct radius
-          // Use either A or B tower as they anchor x Cartesian axis and always have
-          // Radius distance to center in simplest set up.
-          float h = Printer::deltaDiagonalStepsSquaredB.f;
-          unsigned long bSteps = Printer::currentNonlinearPositionSteps[B_TOWER];
-          // The correct Rod Radius would put us here at z==0 and B height is
-          // square root (rod length squared minus rod radius squared)
-          // Reverse that to get calculated Rod Radius given B height
-          h -= RMath::sqr((float)bSteps);
-          h = sqrt(h);
-          EEPROM::setRodRadius(h * Printer::invAxisStepsPerMM[Z_AXIS]);
-        } else {
-          // calculate radius assuming we are at surface
-          // If Z is greater than 0 it will get calculated out for correct radius
-          // Use either A or B tower as they anchor x Cartesian axis and always have
-          // Radius distance to center in simplest set up.
-          unsigned long h = Printer::deltaDiagonalStepsSquaredB.l;
-          unsigned long bSteps = Printer::currentNonlinearPositionSteps[B_TOWER];
-          // The correct Rod Radius would put us here at z==0 and B height is
-          // square root (rod length squared minus rod radius squared)
-          // Reverse that to get calculated Rod Radius given B height
-          h -= RMath::sqr(bSteps);
-          h = integerSqrt(h);
-          EEPROM::setRodRadius(h * Printer::invAxisStepsPerMM[Z_AXIS]);
-        }
+        // calculate radius assuming we are at surface
+        // If Z is greater than 0 it will get calculated out for correct radius
+        // Use either A or B tower as they anchor x Cartesian axis and always have
+        // Radius distance to center in simplest set up.
+        unsigned long h = Printer::deltaDiagonalStepsSquaredB.l;
+        unsigned long bSteps = Printer::currentNonlinearPositionSteps[B_TOWER];
+        // The correct Rod Radius would put us here at z==0 and B height is
+        // square root (rod length squared minus rod radius squared)
+        // Reverse that to get calculated Rod Radius given B height
+        h -= RMath::sqr(bSteps);
+        h = integerSqrt(h);
+        EEPROM::setRodRadius(h * Printer::invAxisStepsPerMM[Z_AXIS]);
       } else
         Com::printF(PSTR("ERROR: First move to touch at x,y=0,0 to auto-set radius.\n"));
     }
