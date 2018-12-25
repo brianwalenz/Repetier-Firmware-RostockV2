@@ -1,6 +1,5 @@
 #include "Repetier.h"
 #include "HAL.h"
-#include "Eeprom.h"
 #include "Printer.h"
 //#include "Commands.h"
 
@@ -18,9 +17,6 @@ setup(void) {
   Com::printf(PSTR("\n"));
   Com::printf(PSTR("Booting.\n"));
   Com::printf(PSTR("\n"));
-
-  // sets auto leveling in eeprom init
-  EEPROM::init(); // Read settings from eeprom if wanted
 
   Com::printf("Free RAM: %d bytes.\n", hal.getFreeRAM());
 

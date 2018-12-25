@@ -331,7 +331,7 @@ SDCard::pausePrint(bool intern) {
                         Printer::memoryE - RETRACT_ON_PAUSE,
                         Printer::maxFeedrate[E_AXIS] / 2);
 
-    Printer::moveToParkPosition();
+    //Printer::moveToParkPosition();
 
     Printer::lastCmdPos[X_AXIS] = Printer::currentPosition[X_AXIS];
     Printer::lastCmdPos[Y_AXIS] = Printer::currentPosition[Y_AXIS];

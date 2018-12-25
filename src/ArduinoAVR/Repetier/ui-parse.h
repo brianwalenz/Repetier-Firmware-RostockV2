@@ -23,7 +23,6 @@
 
 #include "Repetier.h"
 #include "temperatures.h"
-#include "Eeprom.h"
 
 extern UIDisplay uid;
 
@@ -250,12 +249,14 @@ UIDisplay::parse(const char *txt, bool ram) {
     }
 
 
+#define EPR_PRINTING_TIME         125  // Time in seconds printing
+#define EPR_PRINTING_DISTANCE     129  // Filament length printed
 
     //  Total time printing:
     //    x days xx:xx
     //
     else if ((c1 == 'U') && (c2 == 't')) {
-      uint32_t seconds = eprGetInt32(EPR_PRINTING_TIME);
+      uint32_t seconds = eeprom_read_dword((uint32_t *)EPR_PRINTING_TIME);
 
       addTimeInDaysHoursMinutes(seconds);
     }
@@ -265,7 +266,7 @@ UIDisplay::parse(const char *txt, bool ram) {
     //    x,xxx.xx m
     //
     else if ((c1 == 'U') && (c2 == 'f')) {   //  Filament usage
-      float dist  = eprGetFloat(EPR_PRINTING_DISTANCE);  //  In meters?
+      float dist  = eeprom_read_float((float *)EPR_PRINTING_DISTANCE);  //  In meters?
 
       addFloat(dist);
       addStringP(PSTR(" m filament"));

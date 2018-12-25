@@ -20,7 +20,6 @@
 #include "HAL.h"
 #include "gcode.h"
 #include "Commands.h"
-#include "Eeprom.h"
 #include "motion.h"
 #include "Printer.h"
 #include "Extruder.h"
@@ -35,9 +34,15 @@ volatile int Printer::extruderStepsNeeded; ///< This many extruder steps are sti
 //uint8_t Printer::extruderAccelerateDelay;     ///< delay between 2 speec increases
 
 uint8_t Printer::unitIsInches = 0; ///< 0 = Units are mm, 1 = units are inches.
+
 //Stepper Movement Variables
-float Printer::axisStepsPerMM[E_AXIS_ARRAY] = {XAXIS_STEPS_PER_MM, YAXIS_STEPS_PER_MM, ZAXIS_STEPS_PER_MM, 1}; ///< Number of steps per mm needed.
+float Printer::axisStepsPerMM[E_AXIS_ARRAY] = { MICRO_STEPS * STEPS_PER_ROTATION / PULLEY_CIRCUMFERENCE,
+                                                MICRO_STEPS * STEPS_PER_ROTATION / PULLEY_CIRCUMFERENCE,
+                                                MICRO_STEPS * STEPS_PER_ROTATION / PULLEY_CIRCUMFERENCE,
+                                                1}; ///< Number of steps per mm needed.
+
 float Printer::invAxisStepsPerMM[E_AXIS_ARRAY]; ///< Inverse of axisStepsPerMM for faster conversion
+
 
 float Printer::maxFeedrate[E_AXIS_ARRAY]    = { 300, 300, 300 };
 float Printer::homingFeedrate[Z_AXIS_ARRAY] = { 120, 120, 120 };
@@ -93,11 +98,10 @@ int32_t Printer::advanceExecuted;             ///< Executed advance steps
 int Printer::advanceStepsSet;
 
 int32_t Printer::maxDeltaPositionSteps;
-floatLong Printer::deltaDiagonalStepsSquaredA;
-floatLong Printer::deltaDiagonalStepsSquaredB;
-floatLong Printer::deltaDiagonalStepsSquaredC;
+int32_t Printer::deltaDiagonalStepsSquaredA;
+int32_t Printer::deltaDiagonalStepsSquaredB;
+int32_t Printer::deltaDiagonalStepsSquaredC;
 float Printer::deltaMaxRadiusSquared;
-float Printer::radius0;
 int32_t Printer::deltaFloorSafetyMarginSteps = 0;
 int32_t Printer::deltaAPosXSteps;
 int32_t Printer::deltaAPosYSteps;
@@ -166,76 +170,99 @@ bool Printer::isPositionAllowed(float x, float y, float z) {
 
 
 void Printer::updateDerivedParameter() {
-  travelMovesPerSecond = EEPROM::deltaSegmentsPerSecondMove();
-  printMovesPerSecond = EEPROM::deltaSegmentsPerSecondPrint();
-  if(travelMovesPerSecond < 15) travelMovesPerSecond = 15; // lower values make no sense and can cause serious problems
-  if(printMovesPerSecond < 15) printMovesPerSecond = 15;
+
+  travelMovesPerSecond = DELTA_SEGMENTS_PER_SECOND_MOVE;   //EEPROM::deltaSegmentsPerSecondMove();
+  printMovesPerSecond  = DELTA_SEGMENTS_PER_SECOND_PRINT;  //EEPROM::deltaSegmentsPerSecondPrint();
+
+  if (travelMovesPerSecond < 15)
+    travelMovesPerSecond = 15;
+
+  if (printMovesPerSecond < 15)
+    printMovesPerSecond = 15;
+
   axisStepsPerMM[X_AXIS] = axisStepsPerMM[Y_AXIS] = axisStepsPerMM[Z_AXIS];
+
   maxAccelerationMMPerSquareSecond[X_AXIS] = maxAccelerationMMPerSquareSecond[Y_AXIS] = maxAccelerationMMPerSquareSecond[Z_AXIS];
+
   homingFeedrate[X_AXIS] = homingFeedrate[Y_AXIS] = homingFeedrate[Z_AXIS];
+
   maxFeedrate[X_AXIS] = maxFeedrate[Y_AXIS] = maxFeedrate[Z_AXIS];
+
   maxTravelAccelerationMMPerSquareSecond[X_AXIS] = maxTravelAccelerationMMPerSquareSecond[Y_AXIS] = maxTravelAccelerationMMPerSquareSecond[Z_AXIS];
+
   zMaxSteps = axisStepsPerMM[Z_AXIS] * (zLength);
-  towerAMinSteps = axisStepsPerMM[A_TOWER] * xMin;
-  towerBMinSteps = axisStepsPerMM[B_TOWER] * yMin;
-  towerCMinSteps = axisStepsPerMM[C_TOWER] * zMin;
-  //radius0 = EEPROM::deltaHorizontalRadius();
-  float radiusA = radius0 + EEPROM::deltaRadiusCorrectionA();
-  float radiusB = radius0 + EEPROM::deltaRadiusCorrectionB();
-  float radiusC = radius0 + EEPROM::deltaRadiusCorrectionC();
-  deltaAPosXSteps = floor(radiusA * cos(EEPROM::deltaAlphaA() * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
-  deltaAPosYSteps = floor(radiusA * sin(EEPROM::deltaAlphaA() * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
-  deltaBPosXSteps = floor(radiusB * cos(EEPROM::deltaAlphaB() * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
-  deltaBPosYSteps = floor(radiusB * sin(EEPROM::deltaAlphaB() * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
-  deltaCPosXSteps = floor(radiusC * cos(EEPROM::deltaAlphaC() * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
-  deltaCPosYSteps = floor(radiusC * sin(EEPROM::deltaAlphaC() * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
-  deltaDiagonalStepsSquaredA.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionA() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
-  deltaDiagonalStepsSquaredB.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionB() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
-  deltaDiagonalStepsSquaredC.l = static_cast<uint32_t>((EEPROM::deltaDiagonalCorrectionC() + EEPROM::deltaDiagonalRodLength()) * axisStepsPerMM[Z_AXIS]);
 
-  Com::printF(PSTR("LARGE_MACHINE?\n"));
-  Com::printF(PSTR(" deltaDiagonalStepsSquaredA.l "), deltaDiagonalStepsSquaredA.l);
-  Com::printF(PSTR("\n"));
-  Com::printF(PSTR(" axisStepsPerMM[Z_AXIS]"), axisStepsPerMM[Z_AXIS]);
-  Com::printF(PSTR("\n"));
-  Com::printF(PSTR(" radius0"), radius0);
-  Com::printF(PSTR("\n"));
-  Com::printF(PSTR(" 2 * radius0 * axisStepsPerMM[Z_AXIS]"), 2 * radius0 * axisStepsPerMM[Z_AXIS]);
-  Com::printF(PSTR("\n"));
+  xMinSteps = axisStepsPerMM[A_TOWER] * xMin;
+  yMinSteps = axisStepsPerMM[B_TOWER] * yMin;
+  zMinSteps = axisStepsPerMM[C_TOWER] * zMin;
 
-  if(deltaDiagonalStepsSquaredA.l > 65534 || 2 * radius0 * axisStepsPerMM[Z_AXIS] > 65534) {
-    Com::printF(PSTR("LARGE_MACHINE!\n"));
-    setLargeMachine(true);
-    deltaDiagonalStepsSquaredA.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredA.l));
-    deltaDiagonalStepsSquaredB.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredB.l));
-    deltaDiagonalStepsSquaredC.f = RMath::sqr(static_cast<float>(deltaDiagonalStepsSquaredC.l));
-  } else {
-    Com::printF(PSTR("LARGE_MACHINE - nope, a small machine!\n"));
-    setLargeMachine(false);
-    deltaDiagonalStepsSquaredA.l = RMath::sqr(deltaDiagonalStepsSquaredA.l);
-    deltaDiagonalStepsSquaredB.l = RMath::sqr(deltaDiagonalStepsSquaredB.l);
-    deltaDiagonalStepsSquaredC.l = RMath::sqr(deltaDiagonalStepsSquaredC.l);
-  }
+  //  A large machine, and we overflow uint32_t, if
+  //    deltaDiagonalStepsSquaredA.l            > 65534 OR
+  //    2 * ROD_RADIUS * axisStepsPerMM[Z_AXIS] > 65534
+  //
+  //  People have reported overflow with 300mm rods, 400mm towers, 400 steps/turn with 16 microsteps.
+  //
+  //  My machine has a ROD_RADIUS of 142.68
+  //                   tower height  350
+  //                   steps/turn    200
+  //                   microsteps    16
+  //
+  //  This gives a steps per mm of MICRO_STEPS * STEPS_PER_ROT / PULLEY_CIRCUM = 16 * 200 / 40 = 80
+  //
 
-  deltaMaxRadiusSquared = RMath::sqr(EEPROM::deltaMaxRadius());
-  long cart[Z_AXIS_ARRAY], delta[TOWER_ARRAY];
-  cart[X_AXIS] = cart[Y_AXIS] = 0;
+  //ROD_RADIUS = EEPROM::deltaHorizontalRadius();
+
+  float radiusA = ROD_RADIUS + 0;  //EEPROM::deltaRadiusCorrectionA();
+  float radiusB = ROD_RADIUS + 0;  //EEPROM::deltaRadiusCorrectionB();
+  float radiusC = ROD_RADIUS + 0;  //EEPROM::deltaRadiusCorrectionC();
+
+  deltaAPosXSteps = floor(radiusA * cos(DELTA_ALPHA_A * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
+  deltaAPosYSteps = floor(radiusA * sin(DELTA_ALPHA_A * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
+
+  deltaBPosXSteps = floor(radiusB * cos(DELTA_ALPHA_B * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
+  deltaBPosYSteps = floor(radiusB * sin(DELTA_ALPHA_B * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
+
+  deltaCPosXSteps = floor(radiusC * cos(DELTA_ALPHA_C * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
+  deltaCPosYSteps = floor(radiusC * sin(DELTA_ALPHA_C * M_PI / 180.0f) * axisStepsPerMM[Z_AXIS] + 0.5f);
+
+  float  diagRod = DELTA_DIAGONAL_ROD;  //EEPROM::deltaDiagonalRodLength()
+
+  float  corrA = 0;  //EEPROM::deltaDiagonalCorrectionA()
+  float  corrB = 0;  //EEPROM::deltaDiagonalCorrectionB()
+  float  corrC = 0;  //EEPROM::deltaDiagonalCorrectionC()
+
+  deltaDiagonalStepsSquaredA = (uint32_t)RMath::sqr((diagRod + corrA) * axisStepsPerMM[Z_AXIS]);
+  deltaDiagonalStepsSquaredB = (uint32_t)RMath::sqr((diagRod + corrB) * axisStepsPerMM[Z_AXIS]);
+  deltaDiagonalStepsSquaredC = (uint32_t)RMath::sqr((diagRod + corrC) * axisStepsPerMM[Z_AXIS]);
+
+  deltaMaxRadiusSquared = DELTA_MAX_RADIUS * DELTA_MAX_RADIUS;
+
+
+
+  long cart[Z_AXIS_ARRAY];
+  long delta[TOWER_ARRAY];
+
+  cart[X_AXIS] = 0;
+  cart[Y_AXIS] = 0;
   cart[Z_AXIS] = zMaxSteps;
+
   transformCartesianStepsToDeltaSteps(cart, delta);
+
   maxDeltaPositionSteps = delta[0];
+
   xMaxSteps = yMaxSteps = zMaxSteps;
   xMinSteps = yMinSteps = zMinSteps = 0;
+
   deltaFloorSafetyMarginSteps = DELTA_FLOOR_SAFETY_MARGIN_MM * axisStepsPerMM[Z_AXIS];
 
-  for(uint8_t i = 0; i < E_AXIS_ARRAY; i++) {
+  for (uint8_t i=0; i<4; i++) {
     invAxisStepsPerMM[i] = 1.0f / axisStepsPerMM[i];
-#ifdef RAMP_ACCELERATION
-    /** Acceleration in steps/s^3 in printing mode.*/
-    maxPrintAccelerationStepsPerSquareSecond[i] = maxAccelerationMMPerSquareSecond[i] * axisStepsPerMM[i];
-    /** Acceleration in steps/s^2 in movement mode.*/
+
+    maxPrintAccelerationStepsPerSquareSecond[i]  = maxAccelerationMMPerSquareSecond[i] * axisStepsPerMM[i];
     maxTravelAccelerationStepsPerSquareSecond[i] = maxTravelAccelerationMMPerSquareSecond[i] * axisStepsPerMM[i];
-#endif
   }
+
+
 	// For numeric stability we need to start accelerations at a minimum speed and hence ensure that the
 	// jerk is at least 2 * minimum speed.
 
@@ -298,13 +325,6 @@ void Printer::updateAdvanceFlags() {
     Printer::setAdvanceActivated(true);
 }
 
-void Printer::moveToParkPosition() {
-  if(Printer::isHomedAll()) { // for safety move only when homed!
-    moveToReal(EEPROM::parkX(),EEPROM::parkY(),IGNORE_COORDINATE,IGNORE_COORDINATE, Printer::maxFeedrate[X_AXIS], true);
-    moveToReal(IGNORE_COORDINATE,IGNORE_COORDINATE,RMath::min(zMin + zLength, currentPosition[Z_AXIS] + EEPROM::parkZ()),IGNORE_COORDINATE, Printer::maxFeedrate[Z_AXIS], true);
-  }
-}
-
 // This is for untransformed move to coordinates in printers absolute Cartesian space
 uint8_t Printer::moveTo(float x, float y, float z, float e, float f) {
   if(x != IGNORE_COORDINATE)
@@ -333,29 +353,32 @@ uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pa
     x = currentPosition[X_AXIS];
   else
     currentPosition[X_AXIS] = x;
+
   if(y == IGNORE_COORDINATE)
     y = currentPosition[Y_AXIS];
   else
     currentPosition[Y_AXIS] = y;
+
   if(z == IGNORE_COORDINATE)
     z = currentPosition[Z_AXIS];
   else
     currentPosition[Z_AXIS] = z;
+
   transformToPrinter(x + Printer::offsetX, y + Printer::offsetY, z + Printer::offsetZ, x, y, z);
+
   z += offsetZ2;
+
   // There was conflicting use of IGNOR_COORDINATE
   destinationSteps[X_AXIS] = static_cast<int32_t>(floor(x * axisStepsPerMM[X_AXIS] + 0.5f));
   destinationSteps[Y_AXIS] = static_cast<int32_t>(floor(y * axisStepsPerMM[Y_AXIS] + 0.5f));
   destinationSteps[Z_AXIS] = static_cast<int32_t>(floor(z * axisStepsPerMM[Z_AXIS] + 0.5f));
-  if(e != IGNORE_COORDINATE
-#if MIN_EXTRUDER_TEMP > 30
-     && (extruderTemp.getCurrentTemperature() > MIN_EXTRUDER_TEMP || Printer::isColdExtrusionAllowed())
-#endif
-     ) {
+  destinationSteps[E_AXIS] = currentPositionSteps[E_AXIS];
+
+#ifndef DONT_EXTRUDE
+  if(e != IGNORE_COORDINATE)
     destinationSteps[E_AXIS] = e * axisStepsPerMM[E_AXIS];
-  } else {
-		destinationSteps[E_AXIS] = currentPositionSteps[E_AXIS];
-	}
+#endif
+
   if(f != IGNORE_COORDINATE)
     feedrate = f;
 
@@ -428,32 +451,34 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
       if(com->hasY()) currentPosition[Y_AXIS] = (lastCmdPos[Y_AXIS] += convertToMM(com->Y));
       if(com->hasZ()) currentPosition[Z_AXIS] = (lastCmdPos[Z_AXIS] += convertToMM(com->Z));
     }
+
     transformToPrinter(lastCmdPos[X_AXIS] + Printer::offsetX, lastCmdPos[Y_AXIS] + Printer::offsetY, lastCmdPos[Z_AXIS] +  Printer::offsetZ, x, y, z);
+
     z += offsetZ2;
+
     destinationSteps[X_AXIS] = static_cast<int32_t>(floor(x * axisStepsPerMM[X_AXIS] + 0.5f));
     destinationSteps[Y_AXIS] = static_cast<int32_t>(floor(y * axisStepsPerMM[Y_AXIS] + 0.5f));
     destinationSteps[Z_AXIS] = static_cast<int32_t>(floor(z * axisStepsPerMM[Z_AXIS] + 0.5f));
+
     posAllowed = com->hasNoXYZ() || Printer::isPositionAllowed(lastCmdPos[X_AXIS], lastCmdPos[Y_AXIS], lastCmdPos[Z_AXIS]);
   }
 
   if(com->hasE()) {
     p = convertToMM(com->E * axisStepsPerMM[E_AXIS]);
     if(relativeCoordinateMode || relativeExtruderCoordinateMode) {
-      if(
-#if MIN_EXTRUDER_TEMP > 20
-         (extruderTemp.getCurrentTemperatureC < MIN_EXTRUDER_TEMP && !Printer::isColdExtrusionAllowed()) ||
-#endif
-         fabs(com->E) * extrusionFactor > EXTRUDE_MAXLENGTH)
+      if(fabs(com->E) * extrusionFactor > EXTRUDE_MAXLENGTH)
         p = 0;
+#ifdef DONT_EXTRUDE
+      p = 0;
+#endif
       destinationSteps[E_AXIS] = currentPositionSteps[E_AXIS] + p;
     } else {
-      if(
-#if MIN_EXTRUDER_TEMP > 20
-         (extruderTemp.getCurrentTemperatureC < MIN_EXTRUDER_TEMP  && !Printer::isColdExtrusionAllowed()) ||
-#endif
-         fabs(p - currentPositionSteps[E_AXIS]) * extrusionFactor > EXTRUDE_MAXLENGTH * axisStepsPerMM[E_AXIS])
+      if(fabs(p - currentPositionSteps[E_AXIS]) * extrusionFactor > EXTRUDE_MAXLENGTH * axisStepsPerMM[E_AXIS])
         currentPositionSteps[E_AXIS] = p;
       destinationSteps[E_AXIS] = p;
+#ifdef DONT_EXTRUDE
+      destinationSteps[E_AXIS] = 0;  //  Untested?
+#endif
     }
   } else Printer::destinationSteps[E_AXIS] = Printer::currentPositionSteps[E_AXIS];
   if(com->hasF() && com->F > 0.1) {
@@ -529,7 +554,6 @@ Printer::setup() {
   xMin = X_MIN_POS;
   yMin = Y_MIN_POS;
   zMin = Z_MIN_POS;
-  radius0 = ROD_RADIUS;
 
   extruderStepsNeeded = 0;
 
@@ -600,7 +624,7 @@ Printer::deltaMoveToTopEndstops(float feedrate) {
 
   PrintLine::moveRelativeDistanceInSteps(0,
                                          0,
-                                         (zMaxSteps + EEPROM::deltaDiagonalRodLength() * axisStepsPerMM[Z_AXIS]) * 1.5,
+                                         (zMaxSteps + DELTA_DIAGONAL_ROD * axisStepsPerMM[Z_AXIS]) * 1.5,  //EEPROM::deltaDiagonalRodLength()
                                          0,
                                          feedrate,
                                          true,
@@ -674,9 +698,11 @@ Printer::homeZAxis(void) {
   // These can be adjusted by two methods. You can use offsets stored by determining the center
   // or you can use the xyzMinSteps from G100 calibration. Both have the same effect but only one
   // should be measured as both have the same effect.
-  long dx = -xMinSteps - EEPROM::deltaTowerXOffsetSteps();
-  long dy = -yMinSteps - EEPROM::deltaTowerYOffsetSteps();
-  long dz = -zMinSteps - EEPROM::deltaTowerZOffsetSteps();
+
+  long dx = -xMinSteps - 0;  //EEPROM::deltaTowerXOffsetSteps();
+  long dy = -yMinSteps - 0;  //EEPROM::deltaTowerYOffsetSteps();
+  long dz = -zMinSteps - 0;  //EEPROM::deltaTowerZOffsetSteps();
+
   long dm = RMath::min(dx, dy, dz);
 
   //Com::printF(PSTR("Tower 1:"),dx);

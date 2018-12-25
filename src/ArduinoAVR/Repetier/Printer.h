@@ -46,18 +46,12 @@
 #include "Communication.h"
 #include "gcode.h"
 
-union floatLong {
-  float f;
-  uint32_t l;
-};
-
 #define PRINTER_FLAG0_STEPPER_DISABLED      1
 #define PRINTER_FLAG0_SEPERATE_EXTRUDER_INT 2
 #define PRINTER_FLAG0_TEMPSENSOR_DEFECT     4
 #define PRINTER_FLAG0_FORCE_CHECKSUM        8
 #define PRINTER_FLAG0_MANUAL_MOVE_MODE      16
 #define PRINTER_FLAG0_ZPROBEING             64
-#define PRINTER_FLAG0_LARGE_MACHINE         128
 #define PRINTER_FLAG1_HOMED_ALL             1
 #define PRINTER_FLAG1_ALLKILLED             8
 #define PRINTER_FLAG1_UI_ERROR_MESSAGE      16
@@ -227,9 +221,11 @@ public:
 
   static int32_t maxDeltaPositionSteps;
   static int32_t currentNonlinearPositionSteps[E_TOWER_ARRAY];
-  static floatLong deltaDiagonalStepsSquaredA;
-  static floatLong deltaDiagonalStepsSquaredB;
-  static floatLong deltaDiagonalStepsSquaredC;
+
+  static int32_t deltaDiagonalStepsSquaredA;
+  static int32_t deltaDiagonalStepsSquaredB;
+  static int32_t deltaDiagonalStepsSquaredC;
+
   static float deltaMaxRadiusSquared;
   static int32_t deltaFloorSafetyMarginSteps;
   static int32_t deltaAPosXSteps;
@@ -241,7 +237,6 @@ public:
   static int32_t realDeltaPositionSteps[TOWER_ARRAY];
   static int16_t travelMovesPerSecond;
   static int16_t printMovesPerSecond;
-  static float radius0;
 
   static int32_t stepsRemainingAtZHit;
   static int32_t stepsRemainingAtXHit;
@@ -379,15 +374,6 @@ public:
 
   static INLINE bool getXDirection() {
     return((READ(X_DIR_PIN) != 0) ^ INVERT_X_DIR);
-  }
-
-  /** For large machines, the nonlinear transformation can exceed integer 32bit range, so floating point math is needed. */
-  static INLINE uint8_t isLargeMachine() {
-    return flag0 & PRINTER_FLAG0_LARGE_MACHINE;
-  }
-
-  static INLINE void setLargeMachine(uint8_t b) {
-    flag0 = (b ? flag0 | PRINTER_FLAG0_LARGE_MACHINE : flag0 & ~PRINTER_FLAG0_LARGE_MACHINE);
   }
 
   static INLINE uint8_t isAdvanceActivated() {
@@ -711,8 +697,6 @@ public:
   static void pausePrint();
   static void continuePrint();
   static void stopPrint();
-
-	static void moveToParkPosition();
 
   static void selectExtruderById(uint8_t extruderId);
 };

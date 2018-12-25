@@ -38,7 +38,6 @@
    file has no effect. Parameters overridden by EEPROM settings are calibration values, extruder
    values except thermistor tables and some other parameter likely to change during usage
    like advance steps or ops mode.
-   To override EEPROM settings with config settings, set EEPROM_MODE 0
 
 */
 
@@ -65,11 +64,6 @@
 
 #define MICRO_STEPS 16    /** \brief Micro stepping rate of X, Y and Y tower stepper drivers */
 
-// Calculations
-#define AXIS_STEPS_PER_MM ((float)(MICRO_STEPS * STEPS_PER_ROTATION) / PULLEY_CIRCUMFERENCE)
-#define XAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
-#define YAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
-#define ZAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
 
 
 // ##########################################################################################
@@ -152,20 +146,16 @@
 // maximum positions in mm - only fixed numbers!
 // For delta robot Z_MAX_LENGTH is the maximum travel of the towers and should be set to the distance between the hotend
 // and the platform when the printer is at its home position.
-// If EEPROM is enabled these values will be overridden with the values in the EEPROM
+
 #define X_MAX_LENGTH 350.0
 #define Y_MAX_LENGTH 350.0
 #define Z_MAX_LENGTH 350.0
+
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
 // of the bed. Maximum coordinate is given by adding the above X_MAX_LENGTH values.
 #define X_MIN_POS 0
 #define Y_MIN_POS 0
 #define Z_MIN_POS 0
-
-// Park position used when pausing from firmware side
-#define PARK_POSITION_X (0)
-#define PARK_POSITION_Y (70)
-#define PARK_POSITION_Z_RAISE 10
 
 // ##########################################################################################
 // ##                           Movement settings                                          ##
@@ -214,16 +204,6 @@
 #define DELTA_ALPHA_A 210
 #define DELTA_ALPHA_B 330
 #define DELTA_ALPHA_C 90
-
-/** Correct radius by this value for each column. Perfect builds have 0 everywhere. */
-#define DELTA_RADIUS_CORRECTION_A 0
-#define DELTA_RADIUS_CORRECTION_B 0
-#define DELTA_RADIUS_CORRECTION_C 0
-
-/** Correction of the default diagonal size. Value gets added.*/
-#define DELTA_DIAGONAL_CORRECTION_A 0
-#define DELTA_DIAGONAL_CORRECTION_B 0
-#define DELTA_DIAGONAL_CORRECTION_C 0
 
 /** Max. radius (mm) the printer should be able to reach. */
 #define DELTA_MAX_RADIUS 140
@@ -427,17 +407,7 @@
 // ##                           Extruder control                                           ##
 // ##########################################################################################
 
-
-/* \brief Minimum temperature for extruder operation
-
-   This is a safety value. If your extruder temperature is below this temperature, no
-   extruder steps are executed. This is to prevent your extruder to move unless the filament
-   is at least molten. After having some complains that the extruder does not work, I leave
-   it 0 as default.
-*/
-
-#define MIN_EXTRUDER_TEMP 10
-
+#undef DONT_EXTRUDE
 
 // ##########################################################################################
 // ##                           Communication configuration                                ##
@@ -456,19 +426,6 @@
     and it is elsewise difficult to know, what your reprap is currently doing.
 */
 #define ECHO_ON_EXECUTE 1
-
-/** \brief EEPROM storage mode
-
-    Set the EEPROM_MODE to 0 if you always want to use the settings in this configuration file. If not,
-    set it to a value not stored in the first EEPROM-byte used. If you later want to overwrite your current
-    EEPROM settings with configuration defaults, just select an other value. On the first call to epr_init()
-    it will detect a mismatch of the first byte and copy default values into EEPROM. If the first byte
-    matches, the stored values are used to overwrite the settings.
-
-    IMPORTANT: With mode <>0 some changes in Configuration.h are not set any more, as they are
-    taken from the EEPROM.
-*/
-#define EEPROM_MODE 1
 
 
 
@@ -514,19 +471,5 @@
 /** \brief Lowest repeat time. */
 #define UI_KEY_MIN_REPEAT 50
 
-
-
-
-// ###############################################################################
-// ##                         Values for menu settings                          ##
-// ###############################################################################
-
-// Extreme values
-#define UI_SET_MIN_HEATED_BED_TEMP  25
-#define UI_SET_MAX_HEATED_BED_TEMP 120
-#define UI_SET_MIN_EXTRUDER_TEMP    50
-#define UI_SET_MAX_EXTRUDER_TEMP   270
-#define UI_SET_EXTRUDER_FEEDRATE 2 // mm/sec
-#define UI_SET_EXTRUDER_RETRACT_DISTANCE 3 // mm
 
 #endif  //  CONFIGURATION_H

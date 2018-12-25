@@ -23,7 +23,6 @@
 #include "HAL.h"
 #include "gcode.h"
 #include "Commands.h"
-#include "Eeprom.h"
 #include "motion.h"
 #include "Printer.h"
 
