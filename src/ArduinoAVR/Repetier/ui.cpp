@@ -737,15 +737,6 @@ UIDisplay::adjustMenuPos(void) {
   //  (increasing indices), until we find something visible.  And make that
   //  be the position we're at.
 
-#undef DEBUG_ADJUST_MENU_POS
-
-#ifdef DEBUG_ADJUST_MENU_POS
-  Com::print("adjust menuMode=");
-  Com::print(Printer::menuMode);
-  Com::print(" menuPos=");
-  Com::print(_menuPos);
-#endif
-
   while (_menuPos > 0) {
     if (menu->entry(_menuPos)->visible() == true)
       break;
@@ -753,22 +744,12 @@ UIDisplay::adjustMenuPos(void) {
       _menuPos--;
   }
 
-#ifdef DEBUG_ADJUST_MENU_POS
-  Com::print(" menuPos=");
-  Com::print(_menuPos);
-#endif
-
   while (_menuPos < entriesLen - 1) {
     if (menu->entry(_menuPos)->visible() == true)
       break;
     else
       _menuPos++;
   }
-
-#ifdef DEBUG_ADJUST_MENU_POS
-  Com::print(" menuPos=");
-  Com::print(_menuPos);
-#endif
 
   //  If the active position is before the top, reset the top
   //  to show the active position.
@@ -794,12 +775,6 @@ UIDisplay::adjustMenuPos(void) {
     if (nVisible > UI_ROWS)
       _menuTop++;
   }
-
-#ifdef DEBUG_ADJUST_MENU_POS
-  Com::print(" menuTop=");
-  Com::print(_menuTop);
-  Com::print("\n");
-#endif
 }
 
 
@@ -827,27 +802,6 @@ UIDisplay::refreshPage(void) {
   uint8_t       rowi       = 0;
   uint8_t       enti       = 0;
 
-#undef DEBUG_REFRESH_PAGE
-#undef DEBUG_REFRESH_PAGE_FULL
-
-#ifdef DEBUG_REFRESH_PAGE
-  Com::print("refreshPage _menuPage=");
-  Com::print(_menuPage);
-  Com::print(" menuType=");
-  Com::print(menuType);
-  Com::print(" entriesLen=");
-  Com::print(entriesLen);
-  Com::print(" _menuTop=");
-  Com::print(_menuTop);
-  Com::print(" _menuPos=");
-  Com::print(_menuPos);
-  Com::print(" _menuSel=");
-  Com::print(_menuSel);
-  Com::print(" isPrinting==");
-  Com::print(Printer::isPrinting());
-  Com::print("\n");
-#endif
-
   //  If the current menu page is a file selector, get a file list and show it.
 
   if ((menuType == menuType_select) &&
@@ -868,14 +822,6 @@ UIDisplay::refreshPage(void) {
       menuEntry   *entry     = menu->entry(enti);
       const char  *entryText = entry->text();
       uint8_t      entryType = entry->type();
-
-#ifdef DEBUG_REFRESH_PAGE_FULL
-      Com::print("entryTextRaw=");
-      Com::print((uint16_t)entry->entryText);
-      Com::print(" text='");
-      Com::printF(entryText);
-      Com::print("'\n");
-#endif
 
       if (entry->visible() == false) {
         enti++;
