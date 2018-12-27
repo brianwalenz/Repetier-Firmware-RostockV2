@@ -201,6 +201,7 @@ void Printer::updateDerivedParameter() {
   //    2 * ROD_RADIUS * axisStepsPerMM[Z_AXIS] > 65534
   //
   //  People have reported overflow with 300mm rods, 400mm towers, 400 steps/turn with 16 microsteps.
+  //    https://github.com/repetier/Repetier-Firmware/issues/104
   //
   //  My machine has a ROD_RADIUS of 142.68
   //                   tower height  350
