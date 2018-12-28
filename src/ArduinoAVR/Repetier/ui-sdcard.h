@@ -25,10 +25,6 @@
 #include "SDCard.h"
 
 
-#undef  SHOW_SCANSDCARD
-#undef  SHOW_SDREFRESH
-
-
 extern UIDisplay uid;
 
 
@@ -51,14 +47,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
 
   // _menuTop   Which entry is the first to be displayed?
   // _menuPos   Which entry is highlighted?
-
-#ifdef SHOW_SDREFRESH
-  Com::print("sdrefresh -- menuTop=");
-  Com::print(_menuTop);
-  Com::print(" menuPos=");
-  Com::print(_menuPos);
-  Com::print("\n");
-#endif
 
   root = sd.getvwd();
   root->rewind();
@@ -126,14 +114,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     file.getName(cardname, MAX_FILENAME_LEN);
     file.close();
 
-#ifdef SHOW_SDREFRESH
-    Com::print("sdrefresh -- enti=");
-    Com::print(enti);
-    Com::print(" '");
-    Com::print(cardname);
-    Com::print("'\n");
-#endif
-
     //  Skip junk.
 
     if (cardname[0] == '.')
@@ -170,12 +150,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     while ((length < MAX_COLS - col - isDir) && (cardname[length] != 0))
       length++;
 
-#ifdef SHOW_SDREFRESH
-    Com::print("sdrefresh -- length '");
-    Com::print(length);
-    Com::print("'\n");
-#endif
-
     for (uint8_t pos=0; ((col < MAX_COLS) && (pos < length)); pos++, col++)
       cache[rowi][col] = cardname[pos];
 
@@ -188,10 +162,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
     rowi++;
     enti++;
   }
-
-#ifdef SHOW_SDREFRESH
-  Com::print("sdrefresh return\n");
-#endif
 
   return(rowi);
 }
