@@ -173,7 +173,7 @@ UIDisplay::parse(const char *txt, bool ram) {
 
     //  Print state
     //    Pn - print name
-    //    Te - time elapsed       Tr - time remain
+    //    Te - time elapsed       Tr - time remain        Tt - time used
     //    Fu - filament used      Ft - filament remain
     //    Lp - lines printed      Lt - lines total
     //    Zh - current height     Zt - total height
@@ -187,7 +187,17 @@ UIDisplay::parse(const char *txt, bool ram) {
     }
 
     else if ((c1 == 'T') && (c2 == 'r')) {   //  Time remaining
-      addTimeInHoursMinutesSeconds(sd.estBuildTime() - commandQueue.elapsedTime());
+      uint32_t  est = sd.estBuildTime();
+      uint32_t  ela = commandQueue.elapsedTime();
+
+      if (est > ela)
+        addTimeInHoursMinutesSeconds(est - ela);
+      else
+        addTimeInHoursMinutesSeconds(ela - est);
+    }
+
+    else if ((c1 == 'T') && (c2 == 't')) {   //  Time used
+      addTimeInHoursMinutesSeconds(commandQueue.totalTime());
     }
 
     else if ((c1 == 'F') && (c2 == 'u')) {   //  Filament used

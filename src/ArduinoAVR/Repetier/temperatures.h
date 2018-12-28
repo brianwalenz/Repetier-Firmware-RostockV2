@@ -239,11 +239,8 @@ public:
     if (_target == 0)
       return;
 
-    while (fabs(_target - _current) > 1.0) {
-      commandQueue.keepAlive(GCODE_WAIT_HEATER);
-
+    while (fabs(_target - _current) > 1.0)
       Commands::checkForPeriodicalActions(true);
-    }
 
     //RETRACT_DURING_HEATUP
     //if (retracted && actExtruder) {

@@ -66,12 +66,9 @@
 #define ACT_BED_PID_D            (uint16_t)35
 
 #define MODE_PRINTING            (uint16_t)1
-#define MODE_PAUSED              (uint16_t)2
-#define MODE_CARD_PRESENT        (uint16_t)4
-#define MODE_FULL_PID            (uint16_t)8
-#define MODE_DEADTIME            (uint16_t)16
-#define MODE_BED_HEAT            (uint16_t)32
-#define MODE_EXT_HEAT            (uint16_t)64
+#define MODE_PRINTED             (uint16_t)2
+#define MODE_PAUSED              (uint16_t)4
+#define MODE_CARD_PRESENT        (uint16_t)8
 
 #define entryType_page           (uint8_t)30      //  Scroll left/right through menu pages.
 #define entryType_file           (uint8_t)31      //  Placeholder to populate file list from SD card.
@@ -145,6 +142,27 @@ public:
   void  uiChirp(void);
   void  uiAlert(uint8_t n=4);
 
+  //  Mode of the printer
+
+  void    setMenuMode(uint16_t mode) {
+    _menuMode |=  mode;
+
+    if (mode == MODE_PRINTED) {   //  If MODE_PRINTED is set, switch to that page.
+      _menuPage = 2;    //  See menuPages[] at end of uimenu.h
+      _menuPos  = 0;
+      _menuSel  = 255;
+      _menuTop  = 0;
+    }
+  };
+
+  void    clearMenuMode(uint16_t mode) {
+    _menuMode &= ~mode;
+  };
+
+  uint8_t isMenuMode(uint16_t mode, uint8_t enabled) {
+    return((_menuMode & mode) == mode);
+  };
+
   //  Display
 
   void printRow (uint8_t r, char *txt);
@@ -168,12 +186,6 @@ public:
   void addTimeInDaysHoursMinutes(uint32_t seconds);
   void addTimeInHoursMinutesSeconds(uint32_t seconds);
 
-  void setStatusP(PGM_P txt, bool error = false);
-  void setStatus(const char *txt, bool error = false);
-
-  void clearStatus(void) {;
-    sm[0] = 0;
-  }
 
   void        parse(const char *txt, bool ram);
 
@@ -207,6 +219,8 @@ public:
 
   uint8_t  sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]);
 
+
+  uint16_t    _menuMode;
 
   //  1 - fast key action
   //  2 - slow key action
@@ -242,11 +256,6 @@ public:
   //
   uint8_t       rbp;                //  That's Row Buffer Position.
   char          rb[MAX_COLS + 1];   //
-
-  //  A buffer for holding a printer status message.
-  //
-  uint8_t       smp;                //  That's Status Message Position.
-  char          sm[MAX_COLS + 1];   //
 
   //  Variables for accessing the selector wheel.
   //  The first two are set in ui.cpp uiCheckKeys().

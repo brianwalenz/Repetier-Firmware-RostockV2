@@ -35,11 +35,14 @@ volatile int Printer::extruderStepsNeeded; ///< This many extruder steps are sti
 
 uint8_t Printer::unitIsInches = 0; ///< 0 = Units are mm, 1 = units are inches.
 
-//Stepper Movement Variables
+//  Number of steps per mm.
+//
+//  92.4 is a magic number of the EZStruder.
+//
 float Printer::axisStepsPerMM[E_AXIS_ARRAY] = { MICRO_STEPS * STEPS_PER_ROTATION / PULLEY_CIRCUMFERENCE,
                                                 MICRO_STEPS * STEPS_PER_ROTATION / PULLEY_CIRCUMFERENCE,
                                                 MICRO_STEPS * STEPS_PER_ROTATION / PULLEY_CIRCUMFERENCE,
-                                                1}; ///< Number of steps per mm needed.
+                                                92.4 };
 
 float Printer::invAxisStepsPerMM[E_AXIS_ARRAY]; ///< Inverse of axisStepsPerMM for faster conversion
 
@@ -287,34 +290,7 @@ void Printer::updateDerivedParameter() {
   Printer::updateAdvanceFlags();
 }
 
-/**
-   \brief Stop heater and stepper motors. Disable power,if possible.
-*/
-void Printer::kill(uint8_t onlySteppers) {
-  if(areAllSteppersDisabled() && onlySteppers) return;
-  if(Printer::isAllKilled()) return;
 
-  disableXStepper();
-  disableYStepper();
-  disableZStepper();
-
-  extruder.disable();
-
-  setAllSteppersDiabled();
-  unsetHomedAll();
-  if(!onlySteppers) {
-    extruderTemp.setTargetTemperature(0);
-    bedTemp.setTargetTemperature(0);
-
-#if defined(PS_ON_PIN) && PS_ON_PIN>-1 && !defined(NO_POWER_TIMEOUT)
-    //pinMode(PS_ON_PIN,INPUT);
-    SET_OUTPUT(PS_ON_PIN); //GND
-    WRITE(PS_ON_PIN, HIGH);
-    Printer::setPowerOn(false);
-#endif
-    Printer::setAllKilled(true);
-  }
-}
 
 void Printer::updateAdvanceFlags() {
   Printer::setAdvanceActivated(false);
@@ -327,6 +303,7 @@ void Printer::updateAdvanceFlags() {
 }
 
 // This is for untransformed move to coordinates in printers absolute Cartesian space
+#if 0
 uint8_t Printer::moveTo(float x, float y, float z, float e, float f) {
   if(x != IGNORE_COORDINATE)
     destinationSteps[X_AXIS] = (x + Printer::offsetX) * axisStepsPerMM[X_AXIS];
@@ -348,8 +325,12 @@ uint8_t Printer::moveTo(float x, float y, float z, float e, float f) {
   updateCurrentPosition(false);
   return 1;
 }
+#endif
 
 uint8_t Printer::moveToReal(float x, float y, float z, float e, float f, bool pathOptimize) {
+
+  Com::printf(PSTR("moveToReal()-- %f %f %f extruder %f feedrate %f\n"), x, y, z, e, f);
+
   if(x == IGNORE_COORDINATE)
     x = currentPosition[X_AXIS];
   else
@@ -465,36 +446,52 @@ uint8_t Printer::setDestinationStepsFromGCode(gcodeCommand *com) {
   }
 
   if(com->hasE()) {
+    Com::printf(PSTR("setDestinationStepsFromGCode()-- E %f\n"), com->E);
+
     p = convertToMM(com->E * axisStepsPerMM[E_AXIS]);
+
     if(relativeCoordinateMode || relativeExtruderCoordinateMode) {
+      Com::printf(PSTR("RELATIVE E\n"));
+
       if(fabs(com->E) * extrusionFactor > EXTRUDE_MAXLENGTH)
         p = 0;
 #ifdef DONT_EXTRUDE
       p = 0;
 #endif
       destinationSteps[E_AXIS] = currentPositionSteps[E_AXIS] + p;
+
+      Com::printf(PSTR("setDestinationStepsFromGCode()-- new destination %ld (with offset %ld)\n"), destinationSteps[E_AXIS], p);
     } else {
+      Com::printf(PSTR("ABSOLUTE E\n"));
+
       if(fabs(p - currentPositionSteps[E_AXIS]) * extrusionFactor > EXTRUDE_MAXLENGTH * axisStepsPerMM[E_AXIS])
         currentPositionSteps[E_AXIS] = p;
-      destinationSteps[E_AXIS] = p;
 #ifdef DONT_EXTRUDE
-      destinationSteps[E_AXIS] = 0;  //  Untested?
+      currentPositionSteps[E_AXIS] = p;
 #endif
+      destinationSteps[E_AXIS] = p;
     }
-  } else Printer::destinationSteps[E_AXIS] = Printer::currentPositionSteps[E_AXIS];
+  }
+
+  //  No E specified, just a move.
+  else {
+    destinationSteps[E_AXIS] = currentPositionSteps[E_AXIS];
+  }
+
   if(com->hasF() && com->F > 0.1) {
     if(unitIsInches)
       feedrate = com->F * 0.0042333f * (float)feedrateMultiply;  // Factor is 25.5/60/100
     else
       feedrate = com->F * (float)feedrateMultiply * 0.00016666666f;
   }
+
   if(!posAllowed) {
     currentPositionSteps[E_AXIS] = destinationSteps[E_AXIS];
     return false; // ignore move
   }
+
   return !com->hasNoXYZ() || (com->hasE() && destinationSteps[E_AXIS] != currentPositionSteps[E_AXIS]); // ignore unproductive moves
 }
-
 
 
 
@@ -510,29 +507,68 @@ Printer::setup() {
   SET_INPUT(SDCARDDETECT);
   PULLUP(SDCARDDETECT, HIGH);
 
-  //Initialize Step Pins
-  SET_OUTPUT(X_STEP_PIN);
-  SET_OUTPUT(Y_STEP_PIN);
-  SET_OUTPUT(Z_STEP_PIN);
+  //
+  //  Set motor current.
+  //
+  //  135 / 255 ~= 0.75A
+  //  185 / 255 ~= 1.00A
+  //
 
-  endXYZSteps();
+  SPI.begin();
 
-  //Initialize Dir Pins
-  SET_OUTPUT(X_DIR_PIN);
-  SET_OUTPUT(Y_DIR_PIN);
-  SET_OUTPUT(Z_DIR_PIN);
+  //  Omitting SPI.begin() and using just this results in a lockup here.
+  //SPCR |= _BV(SPE) | _BV(MSTR);     //  Enable SPI and set us as the master.
 
-  //Steppers default to disabled.
-  SET_OUTPUT(X_ENABLE_PIN);
-  WRITE(X_ENABLE_PIN, !X_ENABLE_ON);
+  SET_OUTPUT(MOSI_PIN);         //  Master Out Slave In
+  SET_INPUT (MISO_PIN);         //  Master In Slave Out
+  SET_OUTPUT(SCK);              //  Serial Clock
+  SET_OUTPUT(DIGIPOTSS_PIN);    //  Slave Select
 
-  SET_OUTPUT(Y_ENABLE_PIN);
+  WRITE(DIGIPOTSS_PIN, HIGH);   //  Trun off slave selection until we want to talk.
+
+  SPI.beginTransaction(SD_SCK_HZ(250000));
+
+  WRITE(DIGIPOTSS_PIN, LOW);    //  Select the digipot.
+
+  SPI.transfer(DIGIPOT_X_CH);    SPI.transfer(33);    //  140 / 255 is the standard for XYZ.
+  SPI.transfer(DIGIPOT_Y_CH);    SPI.transfer(33);
+  SPI.transfer(DIGIPOT_Z_CH);    SPI.transfer(33);
+  SPI.transfer(DIGIPOT_E0_CH);   SPI.transfer(33);    //  130 / 255 is the standard for extruders.
+  SPI.transfer(DIGIPOT_E1_CH);   SPI.transfer(0);
+
+  WRITE(DIGIPOTSS_PIN, HIGH);   //  Hangup.
+
+  SPI.endTransaction();
+
+  //SPCR = 0;
+  //SPI.end();
+
+  //
+  //  Set up TOWER stepper motors.
+  //
+
+  SET_OUTPUT(X_STEP_PIN);     SET_OUTPUT(Y_STEP_PIN);     SET_OUTPUT(Z_STEP_PIN);
+  SET_OUTPUT(X_DIR_PIN);      SET_OUTPUT(Y_DIR_PIN);      SET_OUTPUT(Z_DIR_PIN);
+  SET_OUTPUT(X_ENABLE_PIN);   SET_OUTPUT(Y_ENABLE_PIN);   SET_OUTPUT(Z_ENABLE_PIN);
+
+  WRITE(X_ENABLE_PIN, !X_ENABLE_ON);          //  Disable steppers.
   WRITE(Y_ENABLE_PIN, !Y_ENABLE_ON);
-
-  SET_OUTPUT(Z_ENABLE_PIN);
   WRITE(Z_ENABLE_PIN, !Z_ENABLE_ON);
 
+  WRITE(X_DIR_PIN, !INVERT_X_DIR);            //  Set direction to forward.
+  WRITE(Y_DIR_PIN, !INVERT_Y_DIR);
+  WRITE(Z_DIR_PIN, !INVERT_Z_DIR);
+
+  WRITE(X_STEP_PIN, !START_STEP_WITH_HIGH);   //  Reset the stepping.
+  WRITE(Y_STEP_PIN, !START_STEP_WITH_HIGH);
+  WRITE(Z_STEP_PIN, !START_STEP_WITH_HIGH);
+
+
+
+
+
   microstepInit();
+
 
   feedrate = 50; ///< Current feedrate in mm/s.
   feedrateMultiply = 100;
@@ -548,10 +584,11 @@ Printer::setup() {
   stepsPerTimerCall = 1;
   msecondsPrinting = 0;
   filamentPrinted = 0;
-  flag0 = PRINTER_FLAG0_STEPPER_DISABLED;
+
   xLength = X_MAX_LENGTH;
   yLength = Y_MAX_LENGTH;
   zLength = Z_MAX_LENGTH;
+
   xMin = X_MIN_POS;
   yMin = Y_MIN_POS;
   zMin = Z_MIN_POS;
@@ -566,8 +603,6 @@ Printer::setup() {
   currentPosition[Z_AXIS] = 0.0;
 
   updateDerivedParameter();
-
-  sd.automount();
 
   transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentNonlinearPositionSteps);
 
@@ -684,16 +719,12 @@ Printer::homeZAxis(void) {
 
   // Check if homing failed.  If so, request pause!
 
-  if (homingSuccess == false) {
-    setXHomed(false);
-    setYHomed(false);
-    setZHomed(false);
-    Com::printF(PSTR("RequestPause:Homing failed!\n"));
-  } else {
-    setXHomed(true);
-    setYHomed(true);
-    setZHomed(true);
-  }
+  if (homingSuccess == false)
+    Com::printf(PSTR("RequestPause:Homing failed!\n"));
+
+
+  setHomed(homingSuccess);
+
 
   // Correct different end stop heights
   // These can be adjusted by two methods. You can use offsets stored by determining the center
@@ -706,34 +737,36 @@ Printer::homeZAxis(void) {
 
   long dm = RMath::min(dx, dy, dz);
 
-  //Com::printF(PSTR("Tower 1:"),dx);
-  //Com::printF(PSTR("\n"));
-  //Com::printF(PSTR("Tower 2:"),dy);
-  //Com::printF(PSTR("\n"));
-  //Com::printF(PSTR("Tower 3:"),dz);
-  //Com::printF(PSTR("\n"));
-
   dx -= dm; // now all dxyz are positive
   dy -= dm;
   dz -= dm;
+
   currentPositionSteps[X_AXIS] = 0; // here we should be
   currentPositionSteps[Y_AXIS] = 0;
   currentPositionSteps[Z_AXIS] = zMaxSteps;
+
   transformCartesianStepsToDeltaSteps(currentPositionSteps, currentNonlinearPositionSteps);
+
   currentNonlinearPositionSteps[A_TOWER] -= dx;
   currentNonlinearPositionSteps[B_TOWER] -= dy;
   currentNonlinearPositionSteps[C_TOWER] -= dz;
+
   PrintLine::moveRelativeDistanceInSteps(0, 0, dm, 0, homingFeedrate[Z_AXIS], true, false);
+
   currentPositionSteps[X_AXIS] = 0; // now we are really here
   currentPositionSteps[Y_AXIS] = 0;
   currentPositionSteps[Z_AXIS] = zMaxSteps; // Extruder is now exactly in the delta center
+
   coordinateOffset[X_AXIS] = 0;
   coordinateOffset[Y_AXIS] = 0;
   coordinateOffset[Z_AXIS] = 0;
+
   transformCartesianStepsToDeltaSteps(currentPositionSteps, currentNonlinearPositionSteps);
+
   realDeltaPositionSteps[A_TOWER] = currentNonlinearPositionSteps[A_TOWER];
   realDeltaPositionSteps[B_TOWER] = currentNonlinearPositionSteps[B_TOWER];
   realDeltaPositionSteps[C_TOWER] = currentNonlinearPositionSteps[C_TOWER];
+
   //maxDeltaPositionSteps = currentDeltaPositionSteps[X_AXIS];
   maxDeltaPositionSteps += axisStepsPerMM[Z_AXIS] * 5;
 
@@ -745,32 +778,52 @@ Printer::homeZAxis(void) {
 }
 
 
-// This home axis is for delta
-void Printer::homeAxis(bool xaxis, bool yaxis, bool zaxis) { // Delta homing code
+
+void
+Printer::homeTowers(void) {
+
   bool nocheck = isNoDestinationCheck();
   setNoDestinationCheck(true);
 
-  // The delta has to have home capability to zero and set position,
-  // so the redundant check is only an opportunity to
-  // gratuitously fail due to incorrect settings.
-  // The following movements would be meaningless unless it was zeroed for example.
-
-  uid.setStatusP(PSTR("Homing..."));
-  uid.refreshPage();
-
-  // Homing Z axis means that you must home X and Y
   homeZAxis();
 
   moveToReal(0, 0, Printer::zLength, IGNORE_COORDINATE, homingFeedrate[Z_AXIS]); // Move to designed coordinates including translation
   updateCurrentPosition(true);
-  updateHomedAll();
-
-  uid.clearStatus();
 
   Commands::printCurrentPosition();
   Printer::updateCurrentPosition();
+
   setNoDestinationCheck(nocheck);
 }
+
+
+
+void
+Printer::disableSteppers(void) {
+  disableXStepper();
+  disableYStepper();
+  disableZStepper();
+
+  extruder.disable();
+
+  setHomed(false);
+};
+
+
+
+void
+Printer::disableHeaters(void) {
+  extruderTemp.setTargetTemperature(0);
+  bedTemp.setTargetTemperature(0);
+};
+
+
+
+void
+Printer::disablePower(void) {
+  SET_OUTPUT(PS_ON_PIN);
+  WRITE(PS_ON_PIN, HIGH);
+};
 
 
 
@@ -789,7 +842,7 @@ void Printer::zBabystep() {
   Printer::enableXStepper();
   Printer::enableYStepper();
   Printer::enableZStepper();
-  Printer::unsetAllSteppersDisabled();
+
   bool xDir = Printer::getXDirection();
   bool yDir = Printer::getYDirection();
   bool zDir = Printer::getZDirection();
@@ -816,46 +869,6 @@ void Printer::zBabystep() {
   //delayMicroseconds(STEPPER_HIGH_DELAY + 1);
 #endif
 }
-
-
-
-void Printer::pausePrint() {
-  if(Printer::isMenuMode(MODE_PRINTING)) {
-    sd.pausePrint(true);
-  } else
-    if(Printer::isMenuMode(MODE_PRINTING)) {
-      Com::printF(PSTR("RequestPause:\n"));
-      Printer::setMenuMode(MODE_PAUSED, true);
-      Printer::setPrinting(false);
-    }
-}
-
-void Printer::continuePrint() {
-  if(Printer::isMenuMode(MODE_PRINTING | MODE_PAUSED)) {
-    sd.continuePrint(true);
-  } else
-    if(Printer::isMenuMode(MODE_PAUSED)) {
-      Com::printF(PSTR("RequestContinue:\n"));
-    }
-	setMenuMode(MODE_PAUSED, false);
-}
-
-void Printer::stopPrint() {
-  //flashSource.close(); // stop flash printing if busy
-
-  if(Printer::isMenuMode(MODE_PRINTING)) {
-    sd.stopPrint();
-  } else
-    {
-      Com::printF(PSTR("RequestStop:\n"));
-    }
-
-	//if(!isUIErrorMessage()) {
-  //  uid.menuLevel=0;
-  //  uid.refreshPage();
-  //    }
-}
-
 
 
 

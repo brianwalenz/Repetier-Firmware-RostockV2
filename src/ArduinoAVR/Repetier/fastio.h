@@ -1108,6 +1108,6 @@
 #define PL7_DDR			DDRL
 #define PL7_PWM			NULL
 
-#endif
+#endif  //  Mega 1280
 
 #endif /* _ARDUINO_H */

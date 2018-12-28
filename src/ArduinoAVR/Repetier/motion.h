@@ -194,7 +194,6 @@ public:
   inline static void resetPathPlanner() {
     linesCount = 0;
     linesPos = linesWritePos;
-    Printer::setMenuMode(MODE_PRINTING, Printer::isPrinting());
   }
 
   // Only called from bresenham -> inside interrupt handle
@@ -302,13 +301,10 @@ public:
     cur = NULL;
     forbidInterrupts();
     --linesCount;
-    if(!linesCount)
-      Printer::setMenuMode(MODE_PRINTING, Printer::isPrinting());
   }
 
   static INLINE void pushLine() {
     nextPlannerIndex(linesWritePos);
-    //Printer::setMenuMode(MODE_PRINTING, true);
     InterruptProtectedBlock noInts;
     linesCount++;
   }

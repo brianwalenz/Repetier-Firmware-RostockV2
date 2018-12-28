@@ -51,34 +51,10 @@
 
 void Commands::commandLoop() {
 
-  if (Printer::isBlockingReceive() == false) {
-    commandQueue.executeNext();
-    executeGCode(commandQueue.popCommand());
-
-  } else {
-    commandQueue.keepAlive(GCODE_PAUSED);
-  }
+  commandQueue.executeNext();
+  executeGCode(commandQueue.popCommand());
 
   checkForPeriodicalActions(true);
-
-#if 0
-  uint32_t curtime = millis();
-
-  if(PrintLine::hasLines() || Printer::isMenuMode(MODE_PRINTING | MODE_PAUSED))
-    previousMillisCmd = curtime;
-  else {
-    curtime -= previousMillisCmd;
-
-    if(maxInactiveTime != 0 && curtime >  maxInactiveTime )
-      Printer::kill(false);
-    else
-      Printer::setAllKilled(false); // prevent repeated kills
-
-    if(stepperInactiveTime != 0 && curtime >  stepperInactiveTime )
-      Printer::kill(true);
-  }
-#endif
-
 }
 
 
@@ -96,6 +72,10 @@ Commands::checkForPeriodicalActions(bool allowNewMoves) {
     return;
 
   hal.execute100ms = 0;
+
+  //  Where should this go?  How often to call it?
+  endstops.update();
+
 
   //Com::printf(PSTR("checkForPeriodicalAction()\n"), hal.counter100ms);
 
@@ -122,7 +102,6 @@ void Commands::waitUntilEndOfAllMoves() {
 
   while(PrintLine::hasLines()) {
     checkForPeriodicalActions(false);
-    commandQueue.keepAlive(GCODE_PROCESSING);
   }
 }
 
@@ -341,7 +320,6 @@ Commands::processG004(gcodeCommand *com) {
     endTime += com->S * 1000;
 
   while (millis() < endTime) {
-    commandQueue.keepAlive(GCODE_PROCESSING);
     Commands::checkForPeriodicalActions(true);
   }
 }
@@ -464,7 +442,7 @@ Commands::processG132(gcodeCommand *com) {
     EEPROM::setDeltaTowerZOffsetSteps(offz);
   }
   PrintLine::moveRelativeDistanceInSteps(0, 0, -5 * Printer::axisStepsPerMM[Z_AXIS], 0, Printer::homingFeedrate[Z_AXIS], true, true);
-  Printer::homeAxis(true, true, true);
+  Printer::homeTowers();
 #endif // DISABLE
 }
 
@@ -496,7 +474,7 @@ Commands::processG133(gcodeCommand *com) {
   Com::printF(PSTR("\n"));
 
   PrintLine::moveRelativeDistanceInSteps(0, 0, Printer::axisStepsPerMM[Z_AXIS] * -10, 0, Printer::homingFeedrate[Z_AXIS] / 4, true, false);
-  Printer::homeAxis(true, true, true);
+  Printer::homeTowers();
 #endif // DISABLE
 }
 
@@ -549,7 +527,7 @@ Commands::processGCode(gcodeCommand *com) {
   //  G28 X<anything> - ignored for delta, same as 'G28'
   //
   else if (com->G == 28) {
-    Printer::homeAxis(true, true, true);
+    Printer::homeTowers();
   }
 
   // G90 absolute positioning mode
@@ -627,7 +605,7 @@ Commands::processGCode(gcodeCommand *com) {
   }
 
   else {
-    Com::printF(PSTR("Unknown command:"));
+    Com::printf(PSTR("Unknown command:\n"));
     com->printCommand();
   }
 
@@ -688,7 +666,7 @@ Commands::processMCode(gcodeCommand *com) {
       stepperInactiveTime = com->S * 1000;
     } else {
       Commands::waitUntilEndOfAllMoves();
-      Printer::kill(true);
+      Printer::disableSteppers();
     }
   }
 
@@ -792,27 +770,17 @@ Commands::processMCode(gcodeCommand *com) {
     extruderTemp.waitForTargetTemperature();
   }
 
+  //  M106 - set fan speed
+  //  M106 P<fanIndex> S<speed>
+  //
   else if (com->M == 106) {
-    if(com->hasI()) {
-      if(com->I != 0)
-        Printer::flag2 |= PRINTER_FLAG2_IGNORE_M106_COMMAND;
-      else
-        Printer::flag2 &= ~PRINTER_FLAG2_IGNORE_M106_COMMAND;
-    }
-    if(!(Printer::flag2 & PRINTER_FLAG2_IGNORE_M106_COMMAND)) {
-      layerFan.setFanSpeed(com->hasS() ? com->S : 255);
-    }
+    layerFan.setFanSpeed(com->hasS() ? com->S : 255);
   }
 
+  //  M107 - disable fan, deprecated, use M106 S0
+  //
   else if (com->M == 107) {
-    if(!(Printer::flag2 & PRINTER_FLAG2_IGNORE_M106_COMMAND)) {
-      layerFan.setFanSpeed(0);
-    }
-  }
-
-  //  M110 set current line number
-  //  M110 N<line_number>
-  else if (com->M == 110) {
+    layerFan.setFanSpeed(0);
   }
 
   //  M112 emergency stop.
@@ -826,20 +794,15 @@ Commands::processMCode(gcodeCommand *com) {
 
   else if (com->M == 115) {
     Com::printF(PSTR("Repetier_1.0.2(bri)"));
-    Com::printF(PSTR("\n"));
-    Com::printF(PSTR("CAP: AUTOREPORT_TEMP:1\n"));
-    Com::printF(PSTR("CAP: EEPROM:1\n"));
-    Com::printF(PSTR("CAP: PAUSESTOP:1\n"));
-    //reportPrinterUsage();
   }
 
   else if (com->M == 114) {
     printCurrentPosition();
     if(com->hasS() && com->S) {
-      Com::printF(PSTR("XS:"), Printer::currentPositionSteps[X_AXIS]);
-      Com::printF(PSTR(" YS:"), Printer::currentPositionSteps[Y_AXIS]);
-      Com::printF(PSTR(" ZS:"), Printer::currentPositionSteps[Z_AXIS]);
-      Com::printF(PSTR("\n"));
+      Com::printf(PSTR("XS: %ld\n"), Printer::currentPositionSteps[X_AXIS]);
+      Com::printf(PSTR("YS: %ld\n"), Printer::currentPositionSteps[Y_AXIS]);
+      Com::printf(PSTR("ZS: %ld\n"), Printer::currentPositionSteps[Z_AXIS]);
+      Com::printf(PSTR("\n"));
     }
   }
 
@@ -873,12 +836,9 @@ Commands::processMCode(gcodeCommand *com) {
 
 
   else {
-    Com::printF(PSTR("Unknown command:"));
+    Com::printf(PSTR("Unknown command:\n"));
     com->printCommand();
   }
-
- endMcode:
-  ;
 }
 
 
@@ -905,7 +865,7 @@ Commands::executeGCode(gcodeCommand *com) {
   }
 
   else {
-    Com::printF(PSTR("Unknown command:"));
+    Com::printf(PSTR("Unknown command:\n"));
     com->printCommand();
   }
 }
@@ -926,7 +886,9 @@ void Commands::emergencyStop() {
 #if 0
   forbidInterrupts(); // Don't allow interrupts to do their work
 
-  Printer::kill(false);
+  Printer::disableSteppers();
+  Printer::disableHeaters();
+  Printer::disablePower();
 
   extruderTemp.manageTemperature();
   bedTemp.manageTemperature();

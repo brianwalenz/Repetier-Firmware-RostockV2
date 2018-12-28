@@ -61,6 +61,12 @@
 #define DIGIPOTSS_PIN  38
 #define DIGIPOT_CHANNELS {4,5,3,0,1} // X Y Z E0 E1 digipot channels to stepper driver mapping
 
+#define DIGIPOT_X_CH    4
+#define DIGIPOT_Y_CH    5
+#define DIGIPOT_Z_CH    3
+#define DIGIPOT_E0_CH   0
+#define DIGIPOT_E1_CH   1
+
 #define SDCARDDETECT   81
 
 #define SDSS           53

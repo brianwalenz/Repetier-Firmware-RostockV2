@@ -115,7 +115,7 @@ void PrintLine::moveRelativeDistanceInStepsReal(int32_t x, int32_t y, int32_t z,
   }
 
 #ifdef DONT_EXTRUDE
-    e = 0; // should not be allowed for current temperature
+  e = 0; // should not be allowed for current temperature
 #endif
 
   Printer::moveToReal(Printer::lastCmdPos[X_AXIS], Printer::lastCmdPos[Y_AXIS], Printer::lastCmdPos[Z_AXIS],
@@ -360,9 +360,7 @@ void PrintLine::updateTrapezoids() {
     Com::printF(PSTR(" - "), lines[first].endSpeed, 1);
     Com::printF(PSTR("("), lines[first].maxJunctionSpeed, 1);
     Com::printF(PSTR(","), (int)lines[first].joinFlags);
-#ifdef DEBUG_QUEUE_MOVE
     Com::print(PSTR("\n"));
-#endif
 #endif
     //noInts.protect();
     lines[first].unblock();  // start with first block to release next used segment as early as possible
@@ -693,7 +691,7 @@ uint8_t
 transformCartesianStepsToDeltaSteps(int32_t cPosSteps[],
                                     int32_t dPosSteps[]) {
 
-  Com::printf(PSTR("cartToDelta:  XYZ %5ld %5ld %5ld\n"), cPosSteps[0], cPosSteps[1], cPosSteps[2]);
+  //Com::printf(PSTR("cartToDelta:  XYZ %5ld %5ld %5ld\n"), cPosSteps[0], cPosSteps[1], cPosSteps[2]);
 
   int32_t  ax = Printer::deltaAPosXSteps - cPosSteps[X_AXIS];
   int32_t  ay = Printer::deltaAPosYSteps - cPosSteps[Y_AXIS];
@@ -704,7 +702,7 @@ transformCartesianStepsToDeltaSteps(int32_t cPosSteps[],
   int32_t  cx = Printer::deltaCPosXSteps - cPosSteps[X_AXIS];
   int32_t  cy = Printer::deltaCPosYSteps - cPosSteps[Y_AXIS];
 
-  Com::printf(PSTR("cartToDelta:  ax %5ld ay %5ld  bx %5ld by %5ld  cx %5ld cy %5ld\n"), ax, ay, bx, by, cx, cy);
+  //Com::printf(PSTR("cartToDelta:  ax %5ld ay %5ld  bx %5ld by %5ld  cx %5ld cy %5ld\n"), ax, ay, bx, by, cx, cy);
 
   //  Check for overflow conditions.
 
@@ -725,7 +723,7 @@ transformCartesianStepsToDeltaSteps(int32_t cPosSteps[],
       (sc < 0))
     return(0);
 
-  Com::printf(PSTR("cartToDelta:  sa %9ld   sb %9ld   sc %9ld\n"), sa, sb, sc);
+  //Com::printf(PSTR("cartToDelta:  sa %9ld   sb %9ld   sc %9ld\n"), sa, sb, sc);
 
   //  Finally, finally, comptue the position in steps of each tower.
 
@@ -749,7 +747,7 @@ transformCartesianStepsToDeltaSteps(int32_t cPosSteps[],
     return(0);
 #endif
 
-  Com::printf(PSTR("cartToDelta:  ABC %5ld %5ld %5ld\n"), dPosSteps[0], dPosSteps[1], dPosSteps[2]);
+  //Com::printf(PSTR("cartToDelta:  ABC %5ld %5ld %5ld\n"), dPosSteps[0], dPosSteps[1], dPosSteps[2]);
 
   return(1);
 }
@@ -760,19 +758,7 @@ transformCartesianStepsToDeltaSteps(int32_t cPosSteps[],
 
 bool NonlinearSegment::checkEndstops(PrintLine *cur, bool checkall) {
 
-  if (Printer::isZProbingActive()) {
-    endstops.update();
-
-    if(isZPositiveMove() && isXPositiveMove() && isYPositiveMove() && endstops.anyXYZMax()) {
-        cur->setXMoveFinished();
-        cur->setYMoveFinished();
-        cur->setZMoveFinished();
-        //dir = 0;
-        Printer::stepsRemainingAtZHit = cur->stepsRemaining;
-        return true;
-      }
-
-  } else if(checkall) {
+  if (checkall) {
     endstops.update(); // do not test twice
     if(!endstops.anyXYZ()) // very quick check for the normal case
       return false;
@@ -993,7 +979,7 @@ uint8_t PrintLine::calculateDistance(float axisDistanceMM[], uint8_t dir, float 
 }
 
 inline void PrintLine::queueEMove(int32_t extrudeDiff, uint8_t check_endstops, uint8_t pathOptimize) {
-  Printer::unsetAllSteppersDisabled();
+
   waitForXFreeLines(1);
   uint8_t newPath = insertWaitMovesIfNeeded(pathOptimize, 1);
   PrintLine *p = getNextWriteLine();
@@ -1121,7 +1107,7 @@ uint8_t PrintLine::queueNonlinearMove(uint8_t check_endstops, uint8_t pathOptimi
   Com::printF(PSTR("segments_per_line:"), segmentsPerLine);
   Com::printF(PSTR("\n"));
 #endif
-  Printer::unsetAllSteppersDisabled(); // Motor is enabled now
+
   waitForXFreeLines(1);
 
   // Insert dummy moves if necessary
@@ -1319,7 +1305,6 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
         removeCurrentLineForbidInterrupt();
       }
       cur = NULL;
-      Printer::disableAllowedStepper();
       //if(Printer::mode == PRINTER_MODE_FFF) {
       //  Printer::setFanSpeedDirectly(Printer::fanSpeed);
       //}
@@ -1480,16 +1465,7 @@ int32_t PrintLine::bresenhamStep() { // Version for delta printer
     }
 #endif
     removeCurrentLineForbidInterrupt();
-    Printer::disableAllowedStepper();
-    if(linesCount == 0) {
-      if(!Printer::isPrinting()) {
-        uid.setStatusP(PSTR("Idle"));
-        uid.refreshPage();
-      }
-      //if(Printer::mode == PRINTER_MODE_FFF) {
-      //  Printer::setFanSpeedDirectly(Printer::fanSpeed);
-      //}
-    }
+
     Printer::interval >>= 1; // 50% of time to next call to do cur=0
     //hal.printFreeMemory();
   } // Do even

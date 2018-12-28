@@ -92,13 +92,13 @@ menuEntry_t::visible(void) const {
   uint16_t  nf = pgm_read_word(&_noShow);
 
   if ((ft != 0) &&
-      ((ft & Printer::menuMode) == 0))  //  Do not show if all of the 'do-show'
-    return(false);                      //  filter bits are missing in the mode menu.
+      ((ft & uid._menuMode) == 0))  //  Do not show if all of the 'do-show'
+    return(false);                  //  filter bits are missing in the mode menu.
 
-  if ((nf & Printer::menuMode) != 0)    //  Do not show if any of the 'no-show'
-    return(false);                      //  filter bits are set in the menu mode.
+  if ((nf & uid._menuMode) != 0)    //  Do not show if any of the 'no-show'
+    return(false);                  //  filter bits are set in the menu mode.
 
-  return(true);                         //  Default to showing.
+  return(true);                     //  Default to showing.
 }
 
 
@@ -250,6 +250,8 @@ void lcdWriteByte(uint8_t c, uint8_t rs) {
 void
 UIDisplay::initialize() {
 
+  _menuMode = 0;
+
 #ifdef NEW_ACTIONS
   slowKeyAction = 0;
   fastButtonStateChange = 0;
@@ -272,9 +274,6 @@ UIDisplay::initialize() {
 
   rbp = 0;
   rb[0] = 0;
-
-  smp = 0;
-  sm[0] = 0;
 
   encoderLast = 0;
   encoderPos  = 0;
@@ -423,8 +422,6 @@ UIDisplay::initialize() {
   //
   //  And display a nice greeting.
   //
-
-  setStatusP(PSTR("Printer ready."));
 
   printRowP(0, PSTR("Rostock Max v2"));
   printRowP(1, PSTR("Repetier 1.0.2[bri]"));
@@ -657,59 +654,6 @@ UIDisplay::addTimeInHoursMinutesSeconds(uint32_t milliseconds) {
 
 
 
-void
-UIDisplay::setStatusP(const char *text, bool error) {
-
-  if ((error == false) && Printer::isUIErrorMessage())   //  Don't change if we're
-    return;                                              //  in an error state.
-
-  smp = 0;
-
-  while (smp < MAX_COLS) {
-    uint8_t c = pgm_read_byte(text++);
-
-    if (c == 0)
-      return;
-
-    sm[smp++] = c;
-  }
-
-  sm[smp] = 0;
-
-  if (error)
-    Printer::setUIErrorMessage(true);
-}
-
-
-
-void
-UIDisplay::setStatus(const char *text, bool error) {
-
-  if ((error == false) && Printer::isUIErrorMessage())   //  Don't change if we're
-    return;                                              //  in an error state.
-
-  smp = 0;
-
-  while (smp < MAX_COLS) {
-    uint8_t c = *text++;
-
-    if (c == 0)
-      return;
-
-    sm[smp++] = c;
-  }
-
-  sm[smp] = 0;
-
-  if (error)
-    Printer::setUIErrorMessage(true);
-}
-
-
-
-
-
-
 
 
 #include "ui-action-change.h"
@@ -784,10 +728,6 @@ void
 UIDisplay::refreshPage(void) {
   char    cache[UI_ROWS][MAX_COLS + 1] = {0};
 
-  //  Really doesn't belong here.
-#warning no endstops.update in refreshPage.
-  endstops.update();
-
   //  Figure out what to display.
 
   //  If the current menu page isn't visible, move to the next.
@@ -805,7 +745,7 @@ UIDisplay::refreshPage(void) {
   //  If the current menu page is a file selector, get a file list and show it.
 
   if ((menuType == menuType_select) &&
-      (Printer::menuMode & MODE_CARD_PRESENT)) {
+      (_menuMode & MODE_CARD_PRESENT)) {
       rowi = sdrefresh(cache);
   }
 

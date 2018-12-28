@@ -12,17 +12,15 @@
 void
 setup(void) {
 
+  wdt_disable();
+
   Serial.begin(250000);
-
-  Com::printf(PSTR("\n"));
-  Com::printf(PSTR("Booting.\n"));
-  Com::printf(PSTR("\n"));
-
-  Com::printf("Free RAM: %d bytes.\n", hal.getFreeRAM());
 
   hal.setup();
 
-  //hal.startWatchdog();
+  Com::printf(PSTR("\n"));
+  Com::printf(PSTR("Booting.  Free RAM: %d bytes.\n"), hal.getFreeRAM());
+  Com::printf(PSTR("\n"));
 
   uid.initialize();
 

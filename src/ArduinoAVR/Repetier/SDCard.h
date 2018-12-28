@@ -3,11 +3,6 @@
 #ifndef SDCARD_H
 #define SDCARD_H
 
-#define SDMODE_IDLE       0
-#define SDMODE_PRINTING   1
-#define SDMODE_STOPPED    2
-#define SDMODE_FAILED   255
-
 #define MAX_FILENAME_LEN     48  //  could overflow in src/SdFat/FatLib/FatFileLFN.cpp
 #define MAX_CWD_LEN         128
 
@@ -38,33 +33,36 @@ public:
 
 private:
   bool    openFile(const char *filename);
+  void    closeFile(void);
   void    savePrintName(const char *filename);
   void    countLines(void);
   void    findStatistics(void);
 
 public:
-  bool    printFile(const char *filename);
+  bool    analyzeFile(const char *filename);
 
-  void    startPrint(void);
-  void    pausePrint(bool intern = false);
-  void    continuePrint(bool intern = false);
-  void    stopPrint(void);
+  void    startFile(void)   { _filePrinting  = true;                  };
+  void    stopFile(void)    { _filePrinting  = false;   closeFile();  };
+  void    abortFile(void)   { _filePrinting  = false;   closeFile();  };
 
   //  To delete a file:    _fat.remove(filename)
   //  To delete a dir:     _fat.rmdir(filename)
   //  To create a dir:     _fat.mkdir(filename)
 
-  //  Used in SDCardGCodeSouce::isOpen()
-  bool    isOpen(void)       {  return((_sdMode != SDMODE_IDLE) &&
-                                       (_sdMode != SDMODE_FAILED));  };
-  bool    isPrinting(void)   {  return(_sdMode == SDMODE_PRINTING);  };
-  bool    isFinished(void)   {  return(_filePos == _fileSize);    };
+  bool    isAvailable(void)  {  return(_cardPresent  == true);        };
+  bool    isPrinting(void)   {  return(_filePrinting == true);        };
+  bool    isFinished(void)   {  return(_filePos      == _fileSize);   };
 
   int8_t  readByte(void) {
-    return(_file.read());
-  }
+    int8_t  c = _file.read();     //  Read a byte from the file.
 
-  //int8_t  readLine(char *line, uint8_t maxLen);
+    if (c == -1) {                //  If an error, abort the file;
+      abortFile();                //    sets filePos to fileLength, changes
+      c = 0;                      //    mode to idle.
+    }
+
+    return(c);
+  }
 
   //  For the file being printed.
 public:
@@ -85,8 +83,9 @@ private:
 
 private:
   SdFat       _fat;
-  uint8_t     _sdActive;
-  uint8_t     _sdMode;  // 1 if we are printing from sd card, 2 = stop accepting new commands
+  uint8_t     _cardPresent;    //  True if there is a card present.
+  uint8_t     _cardFailed;     //  True if the card failed to mount.
+  uint8_t     _filePrinting;   //  True if we're reading bytes from the card.
 
 private:
   char        _cwd[MAX_CWD_LEN + 1];

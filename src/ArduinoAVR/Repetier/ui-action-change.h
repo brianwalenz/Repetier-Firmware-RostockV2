@@ -128,11 +128,6 @@ UIDisplay::doEncoderChange_page(int16_t encoderChange) {
 bool
 UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
 
-  if (Printer::isUIErrorMessage()) {
-    Printer::setUIErrorMessage(false);
-    // return true;
-  }
-
   //  Find the time delta sine the last encoder change, and remember the time of this change.
   //
   //  I've never seen dtActual drop below 100 (maybe 99):
@@ -223,19 +218,17 @@ UIDisplay::doEncoderChange(int16_t encoderChange, bool allowMoves) {
     if ((encoderChange < 0) && (distance < -distanceMax))
       distance = -distanceMax;
 
-    int32_t steps = distance * Printer::axisStepsPerMM[axis];
+    int32_t steps = distance * extruder.stepsPerMM;
 
     if ((encoderChange > 0) && (steps == 0))   steps =  1;
     if ((encoderChange < 0) && (steps == 0))   steps = -1;
 
     //  Now just move.
 
-    Com::printf(PSTR("E: change:%d accel:%f distance:%f steps:%ld feedrate:%f -- "),
-                encoderChange, encoderAccel, distance, steps, Printer::maxFeedrate[axis]);
+    Com::printf(PSTR("E: change:%d accel:%f distance:%f steps:%ld feedrate:%f stepsPerMM:%f\n"),
+                encoderChange, encoderAccel, distance, steps, extruder.maxFeedrate, extruder.stepsPerMM);
 
-    if (entryAction == ACT_POS_E) {
-      PrintLine::moveRelativeDistanceInStepsReal(0, 0, 0, steps, Printer::maxFeedrate[axis] / 10, false, false);
-    }
+    PrintLine::moveRelativeDistanceInStepsReal(0, 0, 0, steps, extruder.maxFeedrate, false, false);
 
     Commands::printCurrentPosition();
 

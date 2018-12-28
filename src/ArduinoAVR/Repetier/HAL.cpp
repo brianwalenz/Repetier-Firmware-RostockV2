@@ -30,12 +30,6 @@ HAL  hal;
 void
 HAL::setup(void) {
 
-  //
-  //  Turn off the watchdog timer.
-  //
-  
-  wdt_disable();
-
   //  TIMER0 uses a prescale of 64, with a 16MHz F_CPU, we'll call
   //  the EXTRUDER_INTERRUPT 250000 / 256 = 3906.25 times per second.
   //  This interrupt is used for ADVANCE mode.
@@ -54,21 +48,40 @@ HAL::setup(void) {
   //  244.275 times per second.
 
   TCCR1A  = 0;
-  TCCR1C  = 0;
-  TIMSK1  = 0;
-
   TCCR1B  = (_BV(WGM12) | _BV(CS10));   // no prescaler == 0.0625 usec tick | 001 = clk/1
+  TCCR1C  = 0;
   OCR1A   = 65500;                      // start off with a slow frequency.
-  TIMSK1 |= (1 << OCIE1A);              // Enable interrupt
+  TIMSK1  = (1 << OCIE1A);              // Enable interrupt
 }
 
 
 
-
-void(* resetFunc) (void) = 0; //declare reset function @ address 0
+void (*crashMe)(void) = NULL;
 
 void HAL::resetHardware() {
-  resetFunc();
+
+  (*crashMe)();
+
+#if 0
+  //  This is supposedly the _correct_ way to reset, but it
+  //  does funky things for me, like turning on the extruder fan
+  //  and printing junk on the display.
+
+  Com::printf(PSTR("RESET!\n"));
+
+  wdt_disable();
+  wdt_enable(WDTO_15MS);
+
+  //WDTCSR = (1<<WDCE) | (1<<WDE);
+  //WDTCSR = (1<<WDIE) | (1<<WDP3);
+
+  cli();   //  Disable interrupts.
+
+  while (1) {
+    delay(1);
+    Com::printf(PSTR(".\n"));
+  }
+#endif
 }
 
 
@@ -94,23 +107,23 @@ ISR(TIMER0_COMPB_vect) {
 
   //  Every millisecond, do a fastAction for the user interface.
 
-  if ((hal.counter100ms & 3) == 0x03) {
+  if ((hal.counter100ms & 0x03) == 0x03) {
     uid.fastAction();
   }
 
-  //  Every 4 milliseconds, update extruder temperature.
+  //  Every millisecond, update extruder temperature.
 
   if ((hal.counter100ms & 0x03) == 0x03) {
     extruderTemp.heaterPDM();
   }
 
-  //  Every 16 milliseconds, update bed temperature.
+  //  Every 2 milliseconds, update bed temperature.
 
   if ((hal.counter100ms & 0x07) == 0x07) {
     bedTemp.heaterPDM();
   }
 
-  //  Every 32 milliseconds, update fan speeds.
+  //  Every 4 milliseconds, update fan speeds.
   //  This needs to run quite fast, otherwise, the fan will pulse.
 
   if ((hal.counter100ms & 0x0f) == 0x0f) {

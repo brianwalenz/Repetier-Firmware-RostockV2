@@ -66,6 +66,22 @@ menuEntry entry02_06 PROGMEM = { page02_06, entryType_action, ACT_FLOW_CHANGE,  
 menuEntry entry02_07 PROGMEM = { page02_07, entryType_action, ACT_LAY_FAN_CHANGE,      MODE_PRINTING,        0 };
 menuEntry entry02_08 PROGMEM = { page02_08, entryType_toggle, ACT_ABORT_PRINT,         MODE_PRINTING,        0 };
 
+
+
+//  SEVENTH PAGE - IF FINISHED WITH A PRINT
+const char page07_01[] PROGMEM = "       PRINTED      ";
+const char page07_02[] PROGMEM = " %Pn";                  //  filename
+const char page07_03[] PROGMEM = "            %Tt";       //  timeUsed
+const char page07_04[] PROGMEM = "           %Fu mm";     //  filaUsed
+
+//                               text       type              action            hide-if-any-missing   hide-if-any-present
+menuEntry entry07_01 PROGMEM = { page07_01, entryType_page,   ACT_MENU_CHANGE,  MODE_PRINTED, 0 };
+menuEntry entry07_02 PROGMEM = { page07_02, entryType_displ,  0,                MODE_PRINTED, 0 };
+menuEntry entry07_03 PROGMEM = { page07_03, entryType_displ,  0,                MODE_PRINTED, 0 };
+menuEntry entry07_04 PROGMEM = { page07_04, entryType_displ,  0,                MODE_PRINTED, 0 };
+
+
+
 //  THIRD PAGE - TEMPERATURES
 //  the preset temp is what?  the default preset temp or the current target temp?
 const char page03_01[] PROGMEM = "    TEMPERATURES    ";   // 
@@ -125,19 +141,6 @@ menuEntry entry06_01 PROGMEM = { page06_01, entryType_page,   ACT_MENU_CHANGE,  
 menuEntry entry06_02 PROGMEM = { page06_02, entryType_displ,  0,                0,                    MODE_PRINTING };
 menuEntry entry06_03 PROGMEM = { page06_03, entryType_displ,  0,                0,                    MODE_PRINTING };
 menuEntry entry06_04 PROGMEM = { page06_04, entryType_displ,  0,                0,                    MODE_PRINTING };
-
-//  SEVENTH PAGE
-//  Printer::measureDistortion() was the entry point from okAction
-const char page07_01[] PROGMEM = "       PROBING      ";
-const char page07_02[] PROGMEM = "       1            ";
-const char page07_03[] PROGMEM = "        2           ";
-const char page07_04[] PROGMEM = "         3          ";
-
-//                               text       type              action            hide-if-any-missing   hide-if-any-present
-menuEntry entry07_01 PROGMEM = { page07_01, entryType_page,   ACT_MENU_CHANGE,  0,                    MODE_PRINTING };
-menuEntry entry07_02 PROGMEM = { page07_02, entryType_displ,  0,                0,                    MODE_PRINTING };
-menuEntry entry07_03 PROGMEM = { page07_03, entryType_displ,  0,                0,                    MODE_PRINTING };
-menuEntry entry07_04 PROGMEM = { page07_04, entryType_displ,  0,                0,                    MODE_PRINTING };
 
 //  EIGHTH PAGE - PID TUNING
 const char page08_01[] PROGMEM = "     HEATER PID     ";   // 
@@ -223,7 +226,16 @@ menuPage  page10      PROGMEM = { menuType_normal, 4, entry10 };
 
 #define UI_NUM_PAGES   10
 
-menuPage * const menuPages[UI_NUM_PAGES] PROGMEM = { &page01, &page02, &page03, &page04, &page05, &page06, &page07, &page08, &page09, &page10 };
+menuPage * const menuPages[UI_NUM_PAGES] PROGMEM = { &page01,    //   1 - SD card directory list
+                                                     &page02,    //   2 - File is currently printing.
+                                                     &page07,    //   7 - File finished printing.
+                                                     &page03,    //   3 - Temperatures
+                                                     &page04,    //   4 - Position, if idle
+                                                     &page05,    //   5 - Position, if printing
+                                                     &page06,    //   6 - Settings (not done)
+                                                     &page08,    //   8 - PID tuning
+                                                     &page09,    //   9 - nothing
+                                                     &page10 };  //  10 - Statistics
 
 menuPage   *menuPagePtr(uint8_t mm)   {  return((menuPage *) pgm_read_ptr(&menuPages[mm]));      };
 

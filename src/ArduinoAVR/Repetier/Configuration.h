@@ -76,9 +76,6 @@
 // As an additional barrier to your smoke detectors (I hope you have one above your printer) we now
 // do some more checks to detect if something got wrong.
 
-// Set to 1 if you want firmware to kill print on decouple
-#define KILL_IF_SENSOR_DEFECT 0
-
 // Retraction for sd pause over lcd
 #define RETRACT_ON_PAUSE 2
 
@@ -160,13 +157,6 @@
 // ##########################################################################################
 // ##                           Movement settings                                          ##
 // ##########################################################################################
-
-
-// Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
-// Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
-
-//#define MOTOR_CURRENT {140,140,140,130,0} // Values 0-255 (RAMBO 135 = ~0.75A, 185 = ~1A)  use 140 for xyz and 130 for the E if using Kysan motors and 175 xyz and 200 if using wantai motors
-#define MOTOR_CURRENT_PERCENT {55,55,55,50,0}
 
 
 /** \brief Number of segments to generate for delta conversions per second of move
@@ -414,22 +404,6 @@
 // ##########################################################################################
 
 
-
-
-/** \brief Sets time for echo debug
-
-    You can set M111 1 which enables ECHO of commands sent. This define specifies the position,
-    when it will be executed. In the original FiveD software, echo is done after receiving the
-    command. With checksum you know, how it looks from the sending string. With this define
-    uncommented, you will see the last command executed. To be more specific: It is written after
-    execution. This helps tracking errors, because there may be 8 or more commands in the queue
-    and it is elsewise difficult to know, what your reprap is currently doing.
-*/
-#define ECHO_ON_EXECUTE 1
-
-
-
-
 /* A watchdog resets the printer, if a signal is not send within predefined time limits. That way we can be sure that the board
    is always running and is not hung up for some unknown reason. */
 #define FEATURE_WATCHDOG 1
@@ -449,16 +423,6 @@
 /** You can store the current position with M401 and go back to it with M402.
     This works only if feature is set to true. */
 #define FEATURE_MEMORY_POSITION 1
-
-/** Should support for fan control be compiled in. If you enable this make sure
-    the FAN pin is not the same as for your second extruder. RAMPS e.g. has FAN_PIN in 9 which
-    is also used for the heater if you have 2 extruders connected. */
-#define FEATURE_FAN_CONTROL 1
-
-/* You can have a second fan controlled by adding P1 to M106/M107 command. */
-#define FEATURE_FAN2_CONTROL 0
-//#define FAN2_PIN ORIG_FAN2_PIN
-
 
 
 /** \brief bounce time of keys in milliseconds */

@@ -19,26 +19,6 @@
   which based on Tonokip RepRap firmware rewrite based off of Hydra-mmm firmware.
 */
 
-/**
-
-   Coordinate system transformations:
-
-   Level 1: G-code => Coordinates like send via g-codes.
-
-   Level 2: Real coordinates => Coordinates corrected by coordinate shift via G92
-   currentPosition and lastCmdPos are from this level.
-   Level 3: Transformed and shifter => Include extruder offset and bed rotation.
-   These variables are only stored temporary.
-
-   Level 4: Step position => Level 3 converted into steps for motor position
-   currentPositionSteps and destinationPositionSteps are from this level.
-
-   Level 5: Nonlinear motor step position, only for nonlinear drive systems
-   destinationDeltaSteps
-
-
-*/
-
 #ifndef PRINTER_H_INCLUDED
 #define PRINTER_H_INCLUDED
 
@@ -46,7 +26,6 @@
 #include "Communication.h"
 #include "gcode.h"
 
-#define PRINTER_FLAG0_STEPPER_DISABLED      1
 #define PRINTER_FLAG0_SEPERATE_EXTRUDER_INT 2
 #define PRINTER_FLAG0_TEMPSENSOR_DEFECT     4
 #define PRINTER_FLAG0_FORCE_CHECKSUM        8
@@ -59,7 +38,6 @@
 #define PRINTER_FLAG1_POWER_ON              64
 #define PRINTER_FLAG1_ALLOW_COLD_EXTRUSION  128
 
-#define PRINTER_FLAG2_BLOCK_RECEIVING       1
 #define PRINTER_FLAG2_RESET_FILAMENT_USAGE  4
 #define PRINTER_FLAG2_IGNORE_M106_COMMAND   8
 #define PRINTER_FLAG2_HOMING                64
@@ -301,45 +279,13 @@ public:
     return (menuMode & mode) == mode;
   }
 
-  /** \brief Disable stepper motor for x direction. */
-  static INLINE void disableXStepper() {
-#if (X_ENABLE_PIN > -1)
-    WRITE(X_ENABLE_PIN, !X_ENABLE_ON);
-#endif
-  }
+  static INLINE void disableXStepper()  { WRITE(X_ENABLE_PIN, !X_ENABLE_ON); }
+  static INLINE void disableYStepper()  { WRITE(Y_ENABLE_PIN, !Y_ENABLE_ON); }
+  static INLINE void disableZStepper()  { WRITE(Z_ENABLE_PIN, !Z_ENABLE_ON); }
 
-  /** \brief Disable stepper motor for y direction. */
-  static INLINE void disableYStepper() {
-#if (Y_ENABLE_PIN > -1)
-    WRITE(Y_ENABLE_PIN, !Y_ENABLE_ON);
-#endif
-  }
-  /** \brief Disable stepper motor for z direction. */
-  static INLINE void disableZStepper() {
-#if (Z_ENABLE_PIN > -1)
-    WRITE(Z_ENABLE_PIN, !Z_ENABLE_ON);
-#endif
-  }
-
-  /** \brief Enable stepper motor for x direction. */
-  static INLINE void  enableXStepper() {
-#if (X_ENABLE_PIN > -1)
-    WRITE(X_ENABLE_PIN, X_ENABLE_ON);
-#endif
-  }
-
-  /** \brief Enable stepper motor for y direction. */
-  static INLINE void  enableYStepper() {
-#if (Y_ENABLE_PIN > -1)
-    WRITE(Y_ENABLE_PIN, Y_ENABLE_ON);
-#endif
-  }
-  /** \brief Enable stepper motor for z direction. */
-  static INLINE void  enableZStepper() {
-#if (Z_ENABLE_PIN > -1)
-    WRITE(Z_ENABLE_PIN, Z_ENABLE_ON);
-#endif
-  }
+  static INLINE void enableXStepper()   { WRITE(X_ENABLE_PIN,  X_ENABLE_ON); }
+  static INLINE void enableYStepper()   { WRITE(Y_ENABLE_PIN,  Y_ENABLE_ON); }
+  static INLINE void enableZStepper()   { WRITE(Z_ENABLE_PIN,  Z_ENABLE_ON); }
 
   static INLINE void setXDirection(bool positive) {
     if(positive) {
@@ -388,65 +334,13 @@ public:
     return flag1 & PRINTER_FLAG1_HOMED_ALL;
   }
 
-  static INLINE void unsetHomedAll() {
-    flag1 &= ~PRINTER_FLAG1_HOMED_ALL;
-    flag3 &= ~(PRINTER_FLAG3_X_HOMED | PRINTER_FLAG3_Y_HOMED | PRINTER_FLAG3_Z_HOMED);
+  static uint8_t isHomed() {
+    return flag1 & PRINTER_FLAG1_HOMED_ALL;
   }
-
-  static INLINE void updateHomedAll() {
-    bool b = isXHomed() && isYHomed() && isZHomed();
+  static void setHomed(uint8_t b) {
     flag1 = (b ? flag1 | PRINTER_FLAG1_HOMED_ALL : flag1 & ~PRINTER_FLAG1_HOMED_ALL);
   }
 
-  static INLINE uint8_t isXHomed() {
-    return flag3 & PRINTER_FLAG3_X_HOMED;
-  }
-
-  static INLINE void setXHomed(uint8_t b) {
-    flag3 = (b ? flag3 | PRINTER_FLAG3_X_HOMED : flag3 & ~PRINTER_FLAG3_X_HOMED);
-    updateHomedAll();
-  }
-
-  static INLINE uint8_t isYHomed() {
-    return flag3 & PRINTER_FLAG3_Y_HOMED;
-  }
-
-  static INLINE void setYHomed(uint8_t b) {
-    flag3 = (b ? flag3 | PRINTER_FLAG3_Y_HOMED : flag3 & ~PRINTER_FLAG3_Y_HOMED);
-    updateHomedAll();
-  }
-
-  static INLINE uint8_t isZHomed() {
-    return flag3 & PRINTER_FLAG3_Z_HOMED;
-  }
-
-  static INLINE void setZHomed(uint8_t b) {
-    flag3 = (b ? flag3 | PRINTER_FLAG3_Z_HOMED : flag3 & ~PRINTER_FLAG3_Z_HOMED);
-    updateHomedAll();
-  }
-  static INLINE uint8_t isAutoreportTemp() {
-    return flag3 & PRINTER_FLAG3_AUTOREPORT_TEMP;
-  }
-
-  static INLINE void setAutoreportTemp(uint8_t b) {
-    flag3 = (b ? flag3 | PRINTER_FLAG3_AUTOREPORT_TEMP : flag3 & ~PRINTER_FLAG3_AUTOREPORT_TEMP);
-  }
-
-  static INLINE uint8_t isAllKilled() {
-    return flag1 & PRINTER_FLAG1_ALLKILLED;
-  }
-
-  static INLINE void setAllKilled(uint8_t b) {
-    flag1 = (b ? flag1 | PRINTER_FLAG1_ALLKILLED : flag1 & ~PRINTER_FLAG1_ALLKILLED);
-  }
-
-  static INLINE uint8_t isUIErrorMessage() {
-    return flag1 & PRINTER_FLAG1_UI_ERROR_MESSAGE;
-  }
-
-  static INLINE void setUIErrorMessage(uint8_t b) {
-    flag1 = (b ? flag1 | PRINTER_FLAG1_UI_ERROR_MESSAGE : flag1 & ~PRINTER_FLAG1_UI_ERROR_MESSAGE);
-  }
 
   static INLINE uint8_t isNoDestinationCheck() {
     return flag1 & PRINTER_FLAG1_NO_DESTINATION_CHECK;
@@ -476,24 +370,6 @@ public:
       Com::printF(PSTR("Cold extrusion disallowed\n"));
   }
 
-  static INLINE uint8_t isBlockingReceive() {
-    return flag2 & PRINTER_FLAG2_BLOCK_RECEIVING;
-  }
-
-  static INLINE void setBlockingReceive(uint8_t b) {
-    flag2 = (b ? flag2 | PRINTER_FLAG2_BLOCK_RECEIVING : flag2 & ~PRINTER_FLAG2_BLOCK_RECEIVING);
-    Com::printF(b ? PSTR("// action:pause\n") : PSTR("// action:resume\n"));
-  }
-
-  static INLINE uint8_t isPrinting() {
-    return flag3 & PRINTER_FLAG3_PRINTING;
-  }
-
-  static INLINE void setPrinting(uint8_t b) {
-    flag3 = (b ? flag3 | PRINTER_FLAG3_PRINTING : flag3 & ~PRINTER_FLAG3_PRINTING);
-    Printer::setMenuMode(MODE_PRINTING, b);
-  }
-
   static INLINE uint8_t isStartStopSupported() {
     return flag3 & PRINTER_FLAG3_SUPPORTS_STARTSTOP;
   }
@@ -520,24 +396,7 @@ public:
   static INLINE float convertToMM(float x) {
     return (unitIsInches ? x * 25.4 : x);
   }
-  static INLINE bool areAllSteppersDisabled() {
-    return flag0 & PRINTER_FLAG0_STEPPER_DISABLED;
-  }
-  static INLINE void setAllSteppersDiabled() {
-    flag0 |= PRINTER_FLAG0_STEPPER_DISABLED;
-  }
-  static INLINE void unsetAllSteppersDisabled() {
-    flag0 &= ~PRINTER_FLAG0_STEPPER_DISABLED;
-  }
-  static INLINE bool isAnyTempsensorDefect() {
-    return (flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT);
-  }
-  static INLINE void setAnyTempsensorDefect() {
-    flag0 |= PRINTER_FLAG0_TEMPSENSOR_DEFECT;
-  }
-  static INLINE void unsetAnyTempsensorDefect() {
-    flag0 &= ~PRINTER_FLAG0_TEMPSENSOR_DEFECT;
-  }
+
   static INLINE bool isManualMoveMode() {
     return (flag0 & PRINTER_FLAG0_MANUAL_MOVE_MODE);
   }
@@ -616,6 +475,8 @@ public:
       result is also copied to _lastCmdPos_ . */
   static void updateCurrentPosition(bool copyLastCmd = false);
   static void updateCurrentPositionSteps();
+
+
   /** \brief Sets the destination coordinates to values stored in com.
 
       Extracts x,y,z,e,f from g-code considering active units. Converted result is stored in currentPosition and lastCmdPos. Converts
@@ -624,6 +485,9 @@ public:
       \return true if it is a move, false if no move results from coordinates.
   */
   static uint8_t setDestinationStepsFromGCode(gcodeCommand *com);
+
+
+#if 0
   /** \brief Move to position without considering transformations.
 
       Computes the destinationSteps without rotating but including active offsets!
@@ -637,6 +501,9 @@ public:
       \return true if queuing was successful.
   */
   static uint8_t moveTo(float x, float y, float z, float e, float f);
+#endif
+
+
   /** \brief Move to position considering transformations.
 
       Computes the destinationSteps including rotating and active offsets.
@@ -651,11 +518,18 @@ public:
       \return true if queuing was successful.
   */
   static uint8_t moveToReal(float x, float y, float z, float e, float f, bool pathOptimize = true);
-  static void kill(uint8_t only_steppers);
+
+
+
+  static void disableSteppers(void);
+  static void disableHeaters(void);
+  static void disablePower(void);
+
+
   static void updateAdvanceFlags();
   static void setup();
 
-  static void homeAxis(bool xaxis, bool yaxis, bool zaxis); /// Home axis
+  static void homeTowers(void);
   static void setOrigin(float xOff, float yOff, float zOff);
   /** \brief Tests if the target position is allowed.
 

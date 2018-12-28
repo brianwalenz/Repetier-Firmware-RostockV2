@@ -162,16 +162,11 @@ public:
 
   void resetHardware();
 
-  // Watchdog support
-
-  inline void startWatchdog() {
-    WDTCSR = (1<<WDCE) | (1<<WDE);								// wdt FIX for arduino mega boards
-    WDTCSR = (1<<WDIE) | (1<<WDP3);
-  };
 
   inline void pingWatchdog() {
     wdPinged = true;
   }
+
 
   inline float maxExtruderTimerFrequency() {
     return (float)F_CPU/TIMER0_PRESCALE;

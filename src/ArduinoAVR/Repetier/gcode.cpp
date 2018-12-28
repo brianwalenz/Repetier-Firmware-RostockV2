@@ -34,33 +34,34 @@ gcodeQueue  commandQueue;
 //  Read a command from the input (either serial or SD card file)
 //  and add it to the queue of commands to run.
 //
+//  This is called from Commands::commandLoop(), which runs at full speed.
+//
 void
-gcodeQueue::executeNext(void) {
+gcodeQueue::loadNext(void) {
   char     buf[MAX_CMD_SIZE];
   uint8_t  bufPos    = 0;
   uint8_t  inComment = 0;
 
-  if (_cmdsLen >= GCODE_BUFFER_SIZE) {                   //  If the buffer is full, return
-    keepAlive(GCODE_PROCESSING);                         //  without doing anything; wait
-    return;                                              //  for the commands to execute.
+  //  We only call loadNext() if the queue is in 'printing mode'.  If there is no data available,
+  //  we must have just finished the print.
+
+  if (dataAvailable() == false) {
+    stopPrint();
+    return;
   }
 
-  if (dataAvailable() == false)                          //  If no data available, nothing
-    return;                                              //  for us to do.
-
-  //  CNC gcode uses () to encode comments.  Those are not supported.
+  //  Otherwise, read a line and process it.
 
   while (dataAvailable() == true) {                      //  Read a line of input.
-    if (bufPos == MAX_CMD_SIZE) {                        //    Fail if we've exhausted
-      fatalError(PSTR("Command string buffer full."));   //    the command buffer.
+    if (bufPos == MAX_CMD_SIZE) {                        //    Fail if we've exhausted the buffer.
+      Com::printf(PSTR("Command string buffer full.\n"));
+      stopPrint();
       return;
     }
 
     int8_t ch = readByte();                              //    Read a byte.
 
-#if 0
-    Com::printf(PSTR("Read '%c' bufPos=%u\n"), ch, bufPos);
-#endif
+    //Com::printf(PSTR("Read '%c' bufPos=%u\n"), ch, bufPos);
 
     if ((ch == '\n') ||                                  //    If end-of-line, set it to
         (ch == '\r')) {                                  //    end-of-string.  Turn off any
@@ -82,10 +83,8 @@ gcodeQueue::executeNext(void) {
       break;                                             //    out of the loop.
   }
 
-#if 0
-  if (buf[0] != 0)
-    Com::printf(PSTR("COMMAND '%s'\n"), buf);
-#endif
+  //if (buf[0] != 0)
+  //  Com::printf(PSTR("COMMAND '%s'\n"), buf);
 
   _lineNumber++;
 
@@ -97,42 +96,158 @@ gcodeQueue::executeNext(void) {
   if ((cmd->hasM() == true) && (cmd->getM() == 112))     //  Handle emergency stops
     Commands::emergencyStop();                           //  IMMEDIATELY, regardless of queue.
 
-  if ((cmd->hasZ() == true) &&
-      (cmd->hasG() == true) &&
+  if ((cmd->hasZ() == true) &&                           //  If it's a move operation, remember
+      (cmd->hasG() == true) &&                           //  the Z position for the UI.
       (cmd->G      == 1))
     _currentHeight = cmd->Z;
 
   _cmdsIn++;                                             //  Add the command to the queue.
   _cmdsLen++;                                            //
 
-  if (_cmdsIn >= GCODE_BUFFER_SIZE)                      //  Loop around the circle,
+  if (_cmdsIn >= GCODE_QUEUE_LENGTH)                     //  Loop around the circle,
     _cmdsIn = 0;                                         //  if needed.
-
-#if 0
-  Com::printF(PSTR("ok\n"));                             //  Optionally append the line number that is being ACK'd.
-#endif
-
-  keepAlive(GCODE_NOT_BUSY);                             //  Update keep_alive status.
 }
 
 
 
 void
-gcodeQueue::fatalError(FSTRINGPARAM(message)) {
+gcodeQueue::startPrint(void) {
 
-  Printer::stopPrint();
+  Com::printf(PSTR("Starting print.\n"));
 
-  if(Printer::currentPosition[Z_AXIS] < Printer::zMin + Printer::zLength - 15)
-    PrintLine::moveRelativeDistanceInSteps(0, 0, 10 * Printer::axisStepsPerMM[Z_AXIS], 0, Printer::homingFeedrate[Z_AXIS], true, true);
+  uid.setMenuMode(MODE_PRINTING);
+  uid.clearMenuMode(MODE_PRINTED);
+
+  Printer::maxLayer     = 0;
+  Printer::currentLayer = 0;
+
+  _startTime    = millis();
+  _isPrinting   = true;
+
+  if (sd.isAvailable() == true)
+    sd.startFile();
+
+  Com::printf(PSTR("Print started - active %d.\n"), sd.isAvailable());
+}
+
+
+
+void
+gcodeQueue::stopPrint(void) {
+
+  Com::printf(PSTR("Stopping print.  SD isA %d isP %d isF %d\n"),
+              sd.isAvailable(), sd.isPrinting(), sd.isFinished());
+
+  _stopTime     = millis();
+  _isPrinting   = false;
+
+  if (sd.isPrinting() == true)
+    sd.stopFile();
+
+  //  Execute some gcode on stopping.
+  //GCode::executeFString(PSTR(SD_RUN_ON_STOP));
 
   Commands::waitUntilEndOfAllMoves();
 
-  Printer::kill(false);
+  //if(Printer::currentPosition[Z_AXIS] < Printer::zMin + Printer::zLength - 15)
+  //  PrintLine::moveRelativeDistanceInSteps(0, 0, 10 * Printer::axisStepsPerMM[Z_AXIS], 0, Printer::homingFeedrate[Z_AXIS], true, true);
 
-  Com::printF(PSTR("fatal:"));
-  Com::printF(message);
-  Com::printF(PSTR(" - Printer stopped and heaters disabled due to this error. Fix error and restart with M999.\n"));
+  Printer::disableSteppers();
+  Printer::disableHeaters();
+  Printer::disablePower();
 
-  uid.setStatusP(message);
-  uid.refreshPage();
+  uid.clearMenuMode(MODE_PRINTING);
+  uid.setMenuMode(MODE_PRINTED);
 }
+
+
+
+
+
+
+
+#if 0
+
+
+// Park position used when pausing from firmware side
+#define PARK_POSITION_X (0)
+#define PARK_POSITION_Y (70)
+#define PARK_POSITION_Z_RAISE 10
+
+void
+Printer::moveToParkPosition() {
+  if (isHomed() == false)
+    return;
+
+  moveToReal(EEPROM::parkX(),
+             EEPROM::parkY(),
+             IGNORE_COORDINATE,
+             IGNORE_COORDINATE,
+             Printer::maxFeedrate[X_AXIS],
+             true);
+
+  moveToReal(IGNORE_COORDINATE,
+             IGNORE_COORDINATE,
+             RMath::min(zMin + zLength, currentPosition[Z_AXIS] + EEPROM::parkZ()),
+             IGNORE_COORDINATE,
+             Printer::maxFeedrate[Z_AXIS],
+             true);
+}
+
+
+void
+SDCard::pausePrint(bool intern) {
+
+  if (_sdActive == false)
+    return;
+
+  _sdMode = SDMODE_STOPPED; // finish running line
+
+  uid.setMenuMode(MODE_PAUSED);
+
+  commandQueue.pauseFile();
+
+  if(intern) {
+    Commands::waitUntilEndOfAllBuffers();
+
+    Printer::MemoryPosition();
+
+    Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, IGNORE_COORDINATE,
+                        Printer::memoryE - RETRACT_ON_PAUSE,
+                        Printer::maxFeedrate[E_AXIS] / 2);
+
+    Printer::moveToParkPosition();
+
+    Printer::lastCmdPos[X_AXIS] = Printer::currentPosition[X_AXIS];
+    Printer::lastCmdPos[Y_AXIS] = Printer::currentPosition[Y_AXIS];
+    Printer::lastCmdPos[Z_AXIS] = Printer::currentPosition[Z_AXIS];
+
+    //commandQueue.executeFString(PSTR(PAUSE_START_COMMANDS));
+  }
+}
+
+
+
+void
+SDCard::continuePrint(bool intern) {
+
+  if (_sdActive == false)
+    return;
+
+  if(intern) {
+    //commandQueue.executeFString(PSTR(PAUSE_END_COMMANDS));
+
+    Printer::GoToMemoryPosition(true, true, false, false, Printer::maxFeedrate[X_AXIS]);
+    Printer::GoToMemoryPosition(false, false, true, false, Printer::maxFeedrate[Z_AXIS] / 2.0f);
+    Printer::GoToMemoryPosition(false, false, false, true, Printer::maxFeedrate[E_AXIS] / 2.0f);
+  }
+
+  commandQueue.resumeFile();
+
+  uid.clearMenuMode(MODE_PAUSED);
+
+  _sdMode = SDMODE_PRINTING;
+}
+
+
+#endif

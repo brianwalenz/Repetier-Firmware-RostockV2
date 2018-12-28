@@ -37,8 +37,9 @@ SDCard::SDCard() {
   _estFilament  = 0.0;
   _maxHeight    = 0.0;
 
-  _sdActive     = false;
-  _sdMode       = SDMODE_IDLE;
+  _cardPresent  = false;
+  _cardFailed   = false;
+  _filePrinting = false;
 
   _cwd[0]       = '/';
   _cwd[1]       = 0;
@@ -59,36 +60,38 @@ SDCard::automount(void) {
   //  If the card is there, and we're already active, just return.
   //  If the card is there, and we've failed to mount it, just return.
 
-  if ((inserted == true)  && (_sdActive == true)) {
+  if ((inserted == true)  && (_cardPresent == true)) {
     return;
   }
 
-  if ((inserted == true)  && (_sdMode == SDMODE_FAILED)) {
+  if ((inserted == true)  && (_cardFailed == true)) {
     return;
   }
 
   //  If the card isn't there, and we're flagged as failed, reset status.
 
-  if ((inserted == false) && (_sdMode == SDMODE_FAILED)) {
-    _sdActive = false;
-    _sdMode   = SDMODE_IDLE;
+  if ((inserted == false) && (_cardFailed == true)) {
+    Com::printf(PSTR("SDCard::automount()-- reset from FAILED to IDLE.\n"));
+
+    _cardPresent = false;
+    _cardFailed  = false;
     return;
   }
 
   //  If the card isn't there, but we're marked as active, unount the card.
 
-  if ((inserted == false) && (_sdActive == true)) {
-    Com::printF(PSTR("SD card removed.\n"));
+  if ((inserted == false) && (_cardPresent == true)) {
+    Com::printf(PSTR("SDCard::automount()-- SD card removed.\n"));
+
     unmount();
-    //uid.refreshPage();
   }
 
   //  If the card is there, but we're not active, mount the card.
 
-  if ((inserted == true) && (_sdActive == false)) {
-    Com::printF(PSTR("SD card inserted.\n"));
+  if ((inserted == true) && (_cardPresent == false)) {
+    Com::printF(PSTR("SDCard::automount()-- SD card inserted.\n"));
+
     mount();
-    //uid.refreshPage();
   }
 }
 
@@ -97,8 +100,9 @@ SDCard::automount(void) {
 void
 SDCard::mount() {
 
-  _sdActive = false;
-  _sdMode   = SDMODE_IDLE;
+  _cardPresent  = false;
+  _cardFailed   = false;
+  _filePrinting = false;
 
   //  If the SDCARDDETECT pin is low, there's no card present.
   if (READ(SDCARDDETECT) != 0)
@@ -116,7 +120,7 @@ SDCard::mount() {
   //  Try to initialize the card.  If it fals, alert the user.
 
   if (_fat.begin(SDSS, SD_SCK_MHZ(50)) == false) {
-    _sdMode = SDMODE_FAILED;
+    _cardFailed = true;
 
     //  If an error code (we failed to mount the card), alert the user.
     if (_fat.card()->errorCode()) {
@@ -139,11 +143,9 @@ SDCard::mount() {
     return;
   }
 
-  Com::printF(PSTR("Card successfully initialized.\n"));
+  _cardPresent = true;
 
-  _sdActive = true;
-
-  Printer::setMenuMode(MODE_CARD_PRESENT, true);
+  uid.setMenuMode(MODE_CARD_PRESENT);
 
   hal.pingWatchdog();
 
@@ -160,12 +162,14 @@ SDCard::mount() {
 void
 SDCard::unmount() {
 
-  _sdActive = false;
-  _sdMode   = SDMODE_IDLE;
+  _cardPresent  = false;
+  _cardFailed   = false;
+  _filePrinting = false;
 
-  Printer::setMenuMode(MODE_CARD_PRESENT, false);
-  Printer::setMenuMode(MODE_PAUSED,       false);
-  Printer::setMenuMode(MODE_PRINTING,     false);
+  _filePos      = 0;
+  _fileSize     = 0;
+
+  uid.clearMenuMode(MODE_CARD_PRESENT);
 
   _cwd[0] = '/';
   _cwd[1] = 0;
@@ -225,11 +229,21 @@ SDCard::scanCard(uint8_t filePos, char *filename) {
   uint8_t  nFiles = 0;
   uint8_t  isDir  = 0;
 
+  if (filename)
+    filename[0] = 0;
+
   root->rewind();
+
+#define SHOW_SCANCARD
 
 #ifdef SHOW_SCANCARD
   Com::printf(PSTR("\nscanCard\n"));
 #endif
+
+  if (_file.isOpen()) {
+    Com::printf(PSTR("OPEN FILE!\n"));
+    _file.close();
+  }
 
   while (_file.openNext(root, O_READ)) {
     hal.pingWatchdog();
@@ -279,122 +293,6 @@ SDCard::scanCard(uint8_t filePos, char *filename) {
 
 
 
-
-
-
-
-
-
-
-
-void
-SDCard::startPrint() {
-
-  if (_sdActive == false)
-    return;
-
-  _sdMode = SDMODE_PRINTING;
-
-  Printer::setMenuMode(MODE_PRINTING, true);
-  Printer::setMenuMode(MODE_PAUSED,   false);
-
-  Printer::setPrinting(true);
-
-  Printer::maxLayer     = 0;
-  Printer::currentLayer = 0;
-
-  uid.clearStatus();
-
-  commandQueue.startFile();
-}
-
-
-
-void
-SDCard::pausePrint(bool intern) {
-
-  if (_sdActive == false)
-    return;
-
-  _sdMode = SDMODE_STOPPED; // finish running line
-
-  Printer::setMenuMode(MODE_PAUSED, true);
-  Printer::setPrinting(false);
-
-  commandQueue.pauseFile();
-
-  if(intern) {
-    Commands::waitUntilEndOfAllBuffers();
-
-    Printer::MemoryPosition();
-    Printer::moveToReal(IGNORE_COORDINATE, IGNORE_COORDINATE, IGNORE_COORDINATE,
-                        Printer::memoryE - RETRACT_ON_PAUSE,
-                        Printer::maxFeedrate[E_AXIS] / 2);
-
-    //Printer::moveToParkPosition();
-
-    Printer::lastCmdPos[X_AXIS] = Printer::currentPosition[X_AXIS];
-    Printer::lastCmdPos[Y_AXIS] = Printer::currentPosition[Y_AXIS];
-    Printer::lastCmdPos[Z_AXIS] = Printer::currentPosition[Z_AXIS];
-
-    //commandQueue.executeFString(PSTR(PAUSE_START_COMMANDS));
-  }
-}
-
-
-
-void
-SDCard::continuePrint(bool intern) {
-
-  if (_sdActive == false)
-    return;
-
-  if(intern) {
-    //commandQueue.executeFString(PSTR(PAUSE_END_COMMANDS));
-
-    Printer::GoToMemoryPosition(true, true, false, false, Printer::maxFeedrate[X_AXIS]);
-    Printer::GoToMemoryPosition(false, false, true, false, Printer::maxFeedrate[Z_AXIS] / 2.0f);
-    Printer::GoToMemoryPosition(false, false, false, true, Printer::maxFeedrate[E_AXIS] / 2.0f);
-  }
-
-  commandQueue.resumeFile();
-
-  Printer::setPrinting(true);
-  Printer::setMenuMode(MODE_PAUSED, false);
-
-  _sdMode = SDMODE_PRINTING;
-}
-
-
-
-void
-SDCard::stopPrint() {
-
-  if (_sdActive == false)
-    return;
-
-  if (_sdMode == SDMODE_PRINTING)
-    Com::printF(PSTR("SD print stopped by user.\n"));
-
-  _sdMode = SDMODE_IDLE;
-
-  Printer::setMenuMode(MODE_PRINTING, false);
-  Printer::setMenuMode(MODE_PAUSED,   false);
-  Printer::setPrinting(false);
-
-  commandQueue.stopFile();
-
-  //  Execute some gcode on stopping.
-  //GCode::executeFString(PSTR(SD_RUN_ON_STOP));
-
-  Commands::waitUntilEndOfAllMoves();
-
-  //  Disable heaters and motors
-  Printer::kill(false);
-}
-
-
-
 bool
 SDCard::openFile(const char *filename) {
 
@@ -411,6 +309,17 @@ SDCard::openFile(const char *filename) {
   _fileSize = _file.fileSize();
 
   return(true);
+}
+
+
+
+void
+SDCard::closeFile(void) {
+
+  _file.close();
+
+  _filePos  = 0;
+  _fileSize = 0;
 }
 
 
@@ -598,25 +507,29 @@ SDCard::findStatistics(void) {
 
 
 bool
-SDCard::printFile(const char *filename) {
+SDCard::analyzeFile(const char *filename) {
 
   //  If no SD card, fail.
 
-  if (_sdActive == false)
+  if (_cardPresent == false)
     return(false);
 
-  //  Clear the display
+  //  If no filename, fail.
 
-  openFile(filename);
+  if (filename[0] == 0)
+    return(false);
 
-  //  Scan the file for statistics.
+  //  Open the file, then scan for statistics.
+
+  if (openFile(filename) == false)
+    return(false);
 
   _printName[0]  = 0;
   _nLines        = 0;
   _estBuildTime  = 0;
   _estFilament   = 0.0;
   _estWeight     = 0.0;
-  _maxHeight    = 0.0;
+  _maxHeight     = 0.0;
 
   savePrintName(filename);
   countLines();
@@ -629,9 +542,7 @@ SDCard::printFile(const char *filename) {
   Com::printf(PSTR("Estimated filament usage:  %.2f mm.\n"),     _estFilament);
   Com::printf(PSTR("Estimated filament weight: %.2f g.\n"),      _estWeight);
 
-  //  Start the print.
-
-  startPrint();
+  //  Ready to start printing.
 
   return(true);
 }

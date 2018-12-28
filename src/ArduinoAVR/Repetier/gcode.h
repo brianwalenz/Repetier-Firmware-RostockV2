@@ -35,9 +35,8 @@ class Commands;
 // - sd card
 
 
-#define GCODE_BUFFER_SIZE 1     //  Number of commands we buffer.
-#define MAX_DATA_SOURCES  4     //  Number of inputs we can have.
-#define MAX_CMD_SIZE      96    //  Maximum length of a command line.
+#define GCODE_QUEUE_LENGTH  3    //  Number of commands we buffer.
+#define MAX_CMD_SIZE       96    //  Maximum length of a command line.
 
 //  Previous enum FirmwareState
 #define GCODE_NOT_BUSY      0
@@ -199,9 +198,9 @@ public:
 class gcodeQueue {
 public:
   gcodeQueue() {
-    _sdCardActive   = false;    //  Set to true when SD card file is selected.
-
+    _isPrinting     = false;
     _startTime      = 0;
+    _stopTime       = 0;
     _lineNumber     = 0;
     _currentHeight  = 0.0;
 
@@ -224,123 +223,74 @@ public:
       _cmdsOut++;
       _cmdsLen--;
 
-      if (_cmdsOut == GCODE_BUFFER_SIZE)
+      if (_cmdsOut == GCODE_QUEUE_LENGTH)
         _cmdsOut = 0;
     }
 
     return(out);
   };
 
+
 private:
-  bool      dataAvailable(void) {
-
-    //  If no SD card file active, return the status of the serial port.
-
-    if (_sdCardActive == false)
-      return(Serial.available());
-
-    //  Otherwise, the status of the file on the SD card.
-
-    if (sd.isPrinting() == false)
-      return(false);
-
-    if (sd.isFinished() == false)
+  bool      dataAvailable(void) {          //  Returns true if there is data to read.
+    if ((sd.isPrinting() == true) &&       //  If the SD card isn't finished, data is available.
+        (sd.isFinished() == false))
       return(true);
 
-    //  Nope, no data.  Close the file.
-
-    sd.stopPrint();
-
-    Com::printF(PSTR("Done printing file.\n"));
-
-    _sdCardActive = false;
+    if (Serial.available() == true)        //  If the serial port has data, data is available.
+      return(true);
 
     return(false);
   };
 
+  int8_t      readByte(void) {             //  Returns a byte from the input.
+    if ((sd.isPrinting() == true) &&       //  If the SD card isn't finished, data is available.
+        (sd.isFinished() == false))
+      return(sd.readByte());
 
-private:
-  int8_t      readByte(void) {
-
-    //  If no SD card file active, read from the serial port.
-
-    if (_sdCardActive == false)
+    if (Serial.available() == true)        //  If the serial port has data, data is available.
       return(Serial.read());
 
-    //  Otherwise, try to read a byte from the card.
-
-    int8_t n = sd.readByte();
-
-    if (n == -1) {
-      _sdCardActive = false;
-      return(0);
-    }
-
-    return(n);
+    return(0);
   };
-
-
 
 
 public:
-  void      executeNext(void);
-
-  void      fatalError(FSTRINGPARAM(message));
-
-  void      startFile(void)   { _sdCardActive = true;   _startTime = millis();  };
-  void      stopFile(void)    { _sdCardActive = false;                          };
-
-  void      pauseFile(void)   { _sdCardActive = false;                          };
-  void      resumeFile(void)  { _sdCardActive = true;                           };
-
-
-  uint32_t  elapsedTime(void)    { return(millis() - _startTime); };
-  uint32_t  lineNumber(void)     { return(_lineNumber);           };
-  float     currentHeight(void)  { return(_currentHeight);        };
-
-  //  The original sent text over the serial port to tell the client we're
-  //  not dead.
-  void      keepAlive(uint8_t state) {
-#if 0
-    if ((state == NotBusy) ||
-        (KEEP_ALIVE_INTERVAL == 0))
+  void      loadNext(void);
+  void      executeNext(void) {
+    if (_isPrinting == false)               //  If not printing, return without doing anything.
       return;
 
-    uint32_t now = millis();
+    if (_cmdsLen >= GCODE_QUEUE_LENGTH)     //  If the buffer is full, return without doing
+      return;                               //  anything; wait for the commands to execute.
 
-    if (now - lastBusySignal < KEEP_ALIVE_INTERVAL)   //  No need to send keepalive
-      return;
-
-    if(state == Paused)
-      Com::printF(PSTR("busy:paused for user interaction\n"));  
-
-    else if(state == WaitHeater)
-      Com::printF(PSTR("busy:heating\n"));  
-
-    else // processing and uncaught cases
-      Com::printF(PSTR("busy:processing\n"));
-
-    lastBusySignal = now;
-#endif
+    loadNext();                             //  Otherwise, load the next command.
   };
 
+  void      startPrint(void);
+  void      stopPrint(void);
+
+  void      pausePrint(void)  {};
+  void      resumePrint(void) {};
+
+
+  uint32_t  elapsedTime(void)    { return(millis()  - _startTime); };
+  uint32_t  totalTime(void)      { return(_stopTime - _startTime); };
+  uint32_t  lineNumber(void)     { return(_lineNumber);            };
+  float     currentHeight(void)  { return(_currentHeight);         };
 
 private:
-  //  For sources.
-  bool          _sdCardActive;
-
-private:
+  uint8_t       _isPrinting;
   uint32_t      _startTime;
+  uint32_t      _stopTime;
   uint32_t      _lineNumber;
   float         _currentHeight;
 
 private:
-  gcodeCommand  _cmds[GCODE_BUFFER_SIZE];   //  Buffer of received commands.
-  uint8_t       _cmdsLen;                   //
-  uint8_t       _cmdsOut;                   //  Index of the next buffer to output to the processor.
-  uint8_t       _cmdsIn;                    //  Index of the next buffer to fill from the input file.
-
-  //uint32_t _lastBusySignal;            ///< When was the last busy signal
+  gcodeCommand  _cmds[GCODE_QUEUE_LENGTH];   //  Buffer of received commands.
+  uint8_t       _cmdsLen;                    //
+  uint8_t       _cmdsOut;                    //  Index of the next buffer to output to the processor.
+  uint8_t       _cmdsIn;                     //  Index of the next buffer to fill from the input file.
 };
 
 

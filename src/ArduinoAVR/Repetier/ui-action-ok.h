@@ -6,9 +6,13 @@ void
 UIDisplay::okAction_selectFile(uint8_t filePos) {
   char    filename[MAX_FILENAME_LEN + 1 + 1];   //  Needs one extra byte for an appended '/', and nul terminator.
 
+  uiChirp();
+
   //  Grab the name of the file at postion filePos.
 
   uint8_t  isDir = sd.scanCard(filePos, filename);
+
+  Com::printf(PSTR("selectFile()-- found file %d '%s'\n"), filePos, filename);
 
   //  If a directory was selected, go into it.
 
@@ -24,21 +28,21 @@ UIDisplay::okAction_selectFile(uint8_t filePos) {
     return;
   }
 
-  //  Otherwise, a file.  Print it.
+  //  Otherwise, a file.  Print it and reset the display if it starts.
 
-  if (sd.printFile(filename) == false) {
-    uiAlert();
-  }
+  if (sd.analyzeFile(filename) == true) {
+    commandQueue.startPrint();
 
-  //  And then reset the display if it successfully starts.
-
-  else {
     _menuPage = 1;
     _menuPos  = 0;
     _menuSel  = 255;
     _menuTop  = 0;
 
     refreshPage();
+  }
+
+  else {
+    uiAlert();
   }
 }
 
@@ -82,13 +86,11 @@ UIDisplay::okAction_start(bool allowMoves) {
   //  On a toggle item.  Toggle!
   else if (entryType == entryType_toggle) {
     if      (entryAction == ACT_ABORT_PRINT) {
-      sd.stopPrint();
-      //Printer::stopPrint();       //  What's the difference??
-      //Printer::continuePrint();
+      commandQueue.stopPrint();
     }
 
     else if (entryAction == ACT_HOME) {
-      Printer::homeAxis(true, true, true);
+      Printer::homeTowers();
       Commands::printCurrentPosition();
     }
 
@@ -100,7 +102,7 @@ UIDisplay::okAction_start(bool allowMoves) {
     }
 
     else if (entryAction == ACT_REL_MOTORS) {
-      Printer::kill(true);
+      Printer::disableSteppers();
     }
   }
 
@@ -143,11 +145,6 @@ UIDisplay::okAction_stop(bool allowMoves) {
 //  This is a button press.
 void
 UIDisplay::okAction(bool allowMoves) {
-
-  if (Printer::isUIErrorMessage()) {
-    Printer::setUIErrorMessage(false);
-    // return 0;
-  }
 
   uiChirp();
 

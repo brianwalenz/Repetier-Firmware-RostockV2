@@ -30,9 +30,6 @@ tempControl::checkInvalidTemperatures(void) {
     _flags |= TEMPCONTROL_FLAG_SENSOR_DEFECT;
 
     newDefectFound = true;
-
-    Printer::setAnyTempsensorDefect();
-    Printer::setUIErrorMessage(true);
   }
 
   return(newDefectFound);
@@ -72,9 +69,6 @@ tempControl::checkDecoupledTemperatures(void) {
       _flags |= TEMPCONTROL_FLAG_SENSOR_DECOUPLED;
 
       newDefectFound = true;
-
-      Printer::setAnyTempsensorDefect();
-      Printer::setUIErrorMessage(true);
     }
   }
 
@@ -87,9 +81,6 @@ tempControl::checkDecoupledTemperatures(void) {
     _flags |= TEMPCONTROL_FLAG_SENSOR_DECOUPLED;
 
     newDefectFound = true;
-
-    Printer::setAnyTempsensorDefect();
-    Printer::setUIErrorMessage(true);
   }
 
   return(newDefectFound);
@@ -148,10 +139,7 @@ tempControl::manageTemperature(void) {
       extruderTemp.disable();
       bedTemp.disable();
 
-      //Printer::stopPrint();
-      //Printer::kill(false);
-
-      //commandQueue.fatalError(PSTR("Heater/sensor error"));
+      commandQueue.stopPrint();
     }
 
     _lastDecoupleTime = time;
