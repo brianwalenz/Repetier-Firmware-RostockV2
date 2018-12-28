@@ -28,13 +28,12 @@
  */
 #ifndef BlockDriver_h
 #define BlockDriver_h
-#include "FatLib/BaseBlockDriver.h"
+
+//#include "FatLib/BaseBlockDriver.h"
+
 #include "SdCard/SdSpiCard.h"
-//-----------------------------------------------------------------------------
-/** typedef for BlockDriver */
-#if ENABLE_EXTENDED_TRANSFER_CLASS || ENABLE_SDIO_CLASS
-typedef BaseBlockDriver BlockDriver;
-#else  // ENABLE_EXTENDED_TRANSFER_CLASS || ENABLE_SDIO_CLASS
+
 typedef SdSpiCard BlockDriver;
-#endif  // ENABLE_EXTENDED_TRANSFER_CLASS || ENABLE_SDIO_CLASS
+
+
 #endif  // BlockDriver_h

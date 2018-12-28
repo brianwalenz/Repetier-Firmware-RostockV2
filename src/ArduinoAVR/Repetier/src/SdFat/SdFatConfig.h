@@ -55,32 +55,6 @@
 #define USE_LONG_FILE_NAMES 1
 //------------------------------------------------------------------------------
 /**
- * If the symbol ENABLE_EXTENDED_TRANSFER_CLASS is nonzero, the class SdFatEX
- * will be defined. If the symbol ENABLE_SOFTWARE_SPI_CLASS is also nonzero,
- * the class SdFatSoftSpiEX will be defined.
- *
- * These classes used extended multi-block SD I/O for better performance.
- * the SPI bus may not be shared with other devices in this mode.
- */
-#define ENABLE_EXTENDED_TRANSFER_CLASS 0
-//-----------------------------------------------------------------------------
-/**
- * If the symbol USE_STANDARD_SPI_LIBRARY is nonzero, the classes SdFat and
- * SdFatEX use the standard Arduino SPI.h library. If USE_STANDARD_SPI_LIBRARY
- * is zero, an optimized custom SPI driver is used if it exists.
- */
-#define USE_STANDARD_SPI_LIBRARY 0
-//-----------------------------------------------------------------------------
-/**
- * If the symbol ENABLE_SOFTWARE_SPI_CLASS is nonzero, the class SdFatSoftSpi
- * will be defined. If ENABLE_EXTENDED_TRANSFER_CLASS is also nonzero,
- * the class SdFatSoftSpiEX will be defined.
- */
-#ifndef ENABLE_SOFTWARE_SPI_CLASS
-#define ENABLE_SOFTWARE_SPI_CLASS 0
-#endif
-//------------------------------------------------------------------------------
-/**
  * If CHECK_FLASH_PROGRAMMING is zero, overlap of single sector flash 
  * programming and other operations will be allowed for faster write
  * performance.
@@ -133,6 +107,8 @@
  * Causes use of lots of heap in ARM.
  */
 #define DESTRUCTOR_CLOSES_FILE 0
+
+
 //------------------------------------------------------------------------------
 /**
  * Call flush for endl if ENDL_CALLS_FLUSH is nonzero
@@ -152,59 +128,36 @@
  * all data to be written to the SD.
  */
 #define ENDL_CALLS_FLUSH 0
+
+
 //------------------------------------------------------------------------------
 /**
  * Set USE_SEPARATE_FAT_CACHE nonzero to use a second 512 byte cache
  * for FAT table entries.  This improves performance for large writes
  * that are not a multiple of 512 bytes.
  */
-#ifdef __arm__
-#define USE_SEPARATE_FAT_CACHE 1
-#else // __arm__
 #define USE_SEPARATE_FAT_CACHE 0
-#endif // __arm__
+
+
 //------------------------------------------------------------------------------
 /**
  * Set USE_MULTI_BLOCK_IO nonzero to use multi-block SD read/write.
  *
  * Don't use mult-block read/write on small AVR boards.
  */
-#if defined(RAMEND) && RAMEND < 3000
-#define USE_MULTI_BLOCK_IO 0
-#else // RAMEND
 #define USE_MULTI_BLOCK_IO 1
-#endif // RAMEND
-//-----------------------------------------------------------------------------
-/** Enable SDIO driver if available. */
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define ENABLE_SDIO_CLASS 1
-#define ENABLE_SDIOEX_CLASS 1
-#else // ENABLE_SDIO_CLASS
-#define ENABLE_SDIO_CLASS 0
-#endif // ENABLE_SDIO_CLASS
+
 //------------------------------------------------------------------------------
 /**
  * Determine the default SPI configuration.
  */
-#if defined(__STM32F1__) || defined(__STM32F4__)
-// has multiple SPI ports
-#define SD_HAS_CUSTOM_SPI 2
-#elif defined(__AVR__) \
-    || defined(__SAM3X8E__) || defined(__SAM3X8H__) \
-    || (defined(__arm__) && defined(CORE_TEENSY)) \
-    || defined(ESP8266)
 #define SD_HAS_CUSTOM_SPI 1
-#else // SD_HAS_CUSTOM_SPI
-// Use standard SPI library.
-#define SD_HAS_CUSTOM_SPI 0
-#endif // SD_HAS_CUSTOM_SPI
+
 //------------------------------------------------------------------------------
 /**
  * Check if API to select HW SPI port is needed.
  */
-#if (USE_STANDARD_SPI_LIBRARY || SD_HAS_CUSTOM_SPI < 2)
 #define IMPLEMENT_SPI_PORT_SELECTION 0
-#else // USE_STANDARD_SPI_LIBRARY
-#define IMPLEMENT_SPI_PORT_SELECTION 1
-#endif // USE_STANDARD_SPI_LIBRARY
+
+
 #endif // SdFatConfig_h
