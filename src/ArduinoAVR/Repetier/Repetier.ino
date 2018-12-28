@@ -24,7 +24,9 @@ setup(void) {
 
   //hal.startWatchdog();
 
-	endstops.setup();
+  uid.initialize();
+
+  endstops.setup();
 
   extruderTemp.initialize();
   bedTemp.initialize();
@@ -33,8 +35,6 @@ setup(void) {
   extruder.initialize();
 
   Printer::setup();
-
-  uid.initialize();
 
   Com::printf(PSTR("\n"));
   Com::printf(PSTR("Booting Finished.  Free RAM: %d bytes.\n"), hal.getFreeRAM());
