@@ -138,8 +138,6 @@ class HAL {
 public:
 
   HAL() {
-    wdPinged          = false;
-
     counter500ms      = 0;
     counter100ms      = 0;
 
@@ -163,16 +161,9 @@ public:
   void resetHardware();
 
 
-  inline void pingWatchdog() {
-    wdPinged = true;
-  }
-
-
   inline float maxExtruderTimerFrequency() {
     return (float)F_CPU/TIMER0_PRESCALE;
   }
-
-  bool         wdPinged;
 
   volatile uint16_t     counter500ms;
   volatile uint16_t     counter100ms;

@@ -108,14 +108,11 @@ SDCard::mount() {
   if (READ(SDCARDDETECT) != 0)
     return;
 
-  hal.pingWatchdog();
-  delay(50);
+  delay(50);    //  WHAT ARE THESE delay()s FOR?
 
   _fat.begin(SDSS, SD_SCK_MHZ(50)); // dummy init of SD_CARD (???)
 
   delay(50);
-
-  hal.pingWatchdog();
 
   //  Try to initialize the card.  If it fals, alert the user.
 
@@ -146,8 +143,6 @@ SDCard::mount() {
   _cardPresent = true;
 
   uid.setMenuMode(MODE_CARD_PRESENT);
-
-  hal.pingWatchdog();
 
   _fat.chdir();
 
@@ -246,8 +241,6 @@ SDCard::scanCard(uint8_t filePos, char *filename) {
   }
 
   while (_file.openNext(root, O_READ)) {
-    hal.pingWatchdog();
-
     _file.getName(cardname, MAX_FILENAME_LEN);
     _file.close();
 

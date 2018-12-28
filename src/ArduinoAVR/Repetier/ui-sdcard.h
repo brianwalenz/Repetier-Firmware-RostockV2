@@ -106,9 +106,6 @@ UIDisplay::sdrefresh(char cache[UI_ROWS][MAX_COLS + 1]) {
   while ((enti < sd._nFilesOnCard) &&
          (rowi < UI_ROWS) &&
          (file.openNext(root, O_READ))) {
-
-    hal.pingWatchdog();
-
     bool isDir = file.isDir();
 
     file.getName(cardname, MAX_FILENAME_LEN);

@@ -150,11 +150,6 @@ ISR(TIMER0_COMPB_vect) {
     hal.counter500ms = 0;
     hal.execute500ms = 1;
   }
-
-  //if (hal.wdPinged) {
-  //  wdt_reset();
-  //  hal.wdPinged = false;
-  //}
 }
 
 
