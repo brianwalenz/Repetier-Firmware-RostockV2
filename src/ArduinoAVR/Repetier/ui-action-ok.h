@@ -51,18 +51,6 @@ UIDisplay::okAction_start(bool allowMoves) {
   uint8_t       entryType   = menu->entry(_menuPos)->type();
   uint16_t      entryAction = menu->entry(_menuPos)->action();
 
-#if 0
-  Com::print("okAction_start _menuPos=");
-  Com::print(_menuPos);
-  Com::print(" menuType=");
-  Com::print(menuType);
-  Com::print(" entryType=");
-  Com::print(entryType);
-  Com::print(" entryAction=");
-  Com::print(entryAction);
-  Com::print("\n");
-#endif
-
   //  For all menus, if we're on a page title, set that as the active item.
   //  Then, the wheel will scroll through available menus.
   //
@@ -114,20 +102,6 @@ UIDisplay::okAction_start(bool allowMoves) {
     else if (entryAction == ACT_REL_MOTORS) {
       Printer::kill(true);
     }
-
-#if 0
-    case UI_ACTION_STORE_EEPROM:
-      EEPROM::storeDataIntoEEPROM(false);
-      //pushMenu(&ui_menu_eeprom_saved, false);
-      uiAlert();
-      break;
-    case UI_ACTION_LOAD_EEPROM:
-      EEPROM::readDataFromEEPROM(true);
-      Printer::selectExtruderById(0);
-      //pushMenu(&ui_menu_eeprom_loaded, false);
-      uiAlert();
-      break;
-#endif
   }
 
   //  If we're on an action item, this is actually the easy case, just set the
@@ -146,15 +120,6 @@ UIDisplay::okAction_stop(bool allowMoves) {
   uint8_t       menuType    = menu->type();
   uint8_t       entryType   = menu->entry(_menuPos)->type();
   uint16_t      entryAction = menu->entry(_menuPos)->action();
-
-#if 0
-  Com::print("okAction_stop _menuSel=");
-  Com::print(_menuSel);
-  Com::print(" entryAction=");
-  Com::print(entryAction);
-  Com::print("\n");
-#endif
-
 
   //  A page selection.  Nothing to do, since we're already on the page to show.
   if ((entryType   == entryType_page) ||
